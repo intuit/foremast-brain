@@ -4,7 +4,11 @@ from metadata.metadata import METRIC_PERIOD
 
 
 class ModelHolder:
-    def __init__(self, modelname, modelconfig={}, modeldata={}, period = METRIC_PERIOD.HISTORICAL.value, id=''):
+    def __init__(self, modelname, modelconfig=None, modeldata=None, period = METRIC_PERIOD.HISTORICAL.value, id=''):
+        if modelconfig is None:
+            modelconfig = {}
+        if modeldata is None:
+            modeldata = {}
         self.modelname = modelname
         self.modeldata = modeldata
         self.period = period
