@@ -11,7 +11,7 @@ There are two set of evaluations Foremast-brain mades :
 2. Calculate the historical model and detect current metric anomalies 
 
 Foremast-brain will made judgement health or unhealth based on evaluation result.
-Please check out the Check out the [architecture and design](/foremast/tree/master/docs/design.md) for deatil
+Please check out the Check out the [architecture and design](https://github.com/intuit/foremast/blob/master/docs/design.md) for deatil
 
 ### Overwrite default algorithm, parameters 
 There are multiple set of parameters can be overwritten.
