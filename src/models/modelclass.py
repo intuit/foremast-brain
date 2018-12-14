@@ -9,7 +9,7 @@ class ModelHolder:
         self.modeldata = modeldata
         self.period = period
         self.modelconfig = modelconfig
-        self.id = id
+        self._id = id
     def getModelByKey(self, key):
         return self.modeldata.get(key)
     def setModelKV(self, key, value):
@@ -26,8 +26,10 @@ class ModelHolder:
         self.modeldata = data
     def setModelMetadata(self, metadata):
         self.metadata = metadata
-    def getId(self):
-        return self.id
+
+    @property
+    def id(self):
+        return self._id
 
     def __str__(self):
         sb = []
