@@ -28,12 +28,6 @@ class ModelHolder:
     def setModelConfig(self, key, value):
         self.modelconfig.setdefault(key, value)
 
-    def setModelName(self, name):
-        self.modelname = name
-
-    def resetModel(self, data):
-        self.modeldata = data
-
     def setModelMetadata(self, metadata):
         self.metadata = metadata
 
