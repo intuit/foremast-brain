@@ -213,7 +213,7 @@ def main():
                 modelHolder, msg = computeHistoricalModel(configMapHistorical, modelHolder, isProphet)
                 if (msg!=''):
                     outputMsg.append(msg)
-                if (not modelHolder.hasModel()):
+                if (not modelHolder.hasModel):
                     outputMsg.append("Warning: No historical Data and model ")
                     logger.warning("Warning: No historical: "+str(modelHolder))
                     print(getNowStr(), ": Warning: No historical: "+str(modelHolder))

@@ -1,10 +1,11 @@
 import sys
+
 sys.path.append('../')
 from metadata.metadata import METRIC_PERIOD
 
 
 class ModelHolder:
-    def __init__(self, modelname, modelconfig=None, modeldata=None, period = METRIC_PERIOD.HISTORICAL.value, id=''):
+    def __init__(self, modelname, modelconfig=None, modeldata=None, period=METRIC_PERIOD.HISTORICAL.value, id=''):
         if modelconfig is None:
             modelconfig = {}
         if modeldata is None:
@@ -19,16 +20,13 @@ class ModelHolder:
         return self.modeldata.get(key)
 
     def setModelKV(self, key, value):
-        self.modeldata.setdefault(key, value) 
-
-    def hasModel(self):
-        return len(self.modeldata)>0
+        self.modeldata.setdefault(key, value)
 
     def getModelConfigByKey(self, key):
         return self.modelconfig.get(key)
 
-    def setModelConfig(self, key ,value):
-        self.modelconfig.setdefault(key,value)
+    def setModelConfig(self, key, value):
+        self.modelconfig.setdefault(key, value)
 
     def setModelName(self, name):
         self.modelname = name
@@ -38,6 +36,10 @@ class ModelHolder:
 
     def setModelMetadata(self, metadata):
         self.metadata = metadata
+
+    @property
+    def hasModel(self):
+        return len(self.modeldata) > 0
 
     @property
     def id(self):
@@ -60,11 +62,3 @@ class ModelHolder:
         sb.append(', period: ')
         sb.append(self.period)
         return ''.join(sb)
-
-    
-
-
-
-        
-        
-
