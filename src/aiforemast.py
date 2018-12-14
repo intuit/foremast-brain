@@ -203,7 +203,7 @@ def main():
                 modelHolder = ModelHolder(ML_ALGORITHM,modelConfig,{}, METRIC_PERIOD.HISTORICAL.value, uuid)
 
                 
-            if  (not (modelHolder.hasModel() or skipHistorical) ):
+            if  (not (modelHolder.hasModel or skipHistorical) ):
                 configMapHistorical = convertStringToMap(historicalConfig)
                 isProphet = False
                 if (ML_ALGORITHM==AI_MODEL.PROPHET.value):
@@ -218,7 +218,7 @@ def main():
                     logger.warning("Warning: No historical: "+str(modelHolder))
                     print(getNowStr(), ": Warning: No historical: "+str(modelHolder))
                                 
-            hasHistorical =  modelHolder.hasModel()
+            hasHistorical =  modelHolder.hasModel
             
             #start baseline             
             to_do = []
