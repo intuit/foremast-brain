@@ -181,7 +181,7 @@ def updateDocStatus(url_update, uuid, status, info='', reason=''):
             if (req.status_code == 200):
                 return True
         except (OSError, RuntimeError, Exception) as ex:
-            logger.error('Elastic search query error {0} {1}'.format(payload, ex))
+            logger.error('Elastic search query error '+payload,ex)
         
     return False   
     
@@ -203,8 +203,8 @@ def searchByID(url_search, id):
             else:
                 if i ==RETRY_COUNT:
                     failedResult =strcat(  "Error: Failed to find ",id)
-        except Exception:
-            logger.error(strcat( 'Elastic search query error :', id))
+        except Exception as e:
+            logger.error( id+ ' Elastic search query error :',e)
             if i ==RETRY_COUNT:
                 failedResult = strcat( "Error: failed to find ",id)
     #TODO:
@@ -264,8 +264,8 @@ def searchByStatus(url_status, status, needLastModifiedFilter = True, pastMinute
             else:
                 if i ==RETRY_COUNT:
                     failedResult = strcat( 'Error: Search failed while try to find ',status)
-        except Exception:
-            logger.error(strcat( 'Elastic search query error :', data))
+        except Exception as e:
+            logger.error('Elastic search query error :'+url_status, e)
             if i ==RETRY_COUNT:
                 failedResult = strcat( 'Error: Search failed while try to find ',status)     
     #TODO:
@@ -291,8 +291,8 @@ def searchByStatuslist(url_status, status0, status1, status2=''):
             else:
                 if i ==RETRY_COUNT:
                     failedResult = strcat(  ERROR,' search failed while try to find ' ,status0, status1, status2)
-        except Exception:
-            logger.error(strcat('Elastic search query error :', jsontxt))
+        except Exception as e:
+            logger.error('Elastic search query error :'+url_status,e)
             if i ==RETRY_COUNT:
                 failedResult = strcat(  ERROR,' search failed while try to find ' ,status0, status1, status2)
     return failedResult    
