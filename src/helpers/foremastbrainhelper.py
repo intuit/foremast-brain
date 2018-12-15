@@ -38,7 +38,7 @@ def queryData(metricUrl, period, isProphet = False, datasource='PROMETHEUS'):
             except Exception as e:
                 logger.error(e.__cause__)
                 if i==2:
-                    logger.info("Failed to query  metricUrl: " +metricUrl)
+                    logger.warning("Failed to query  metricUrl: " +metricUrl)
                     return []
         ###### TODO remove 
         '''

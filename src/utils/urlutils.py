@@ -1,26 +1,38 @@
+import urllib3
 
+
+
+def dorequest(url, data = '', method = 'GET'):
+  http = urllib3.PoolManager(timeout=urllib3.Timeout(connect=10.0, read=10.0))
+  try:
+    if method == 'GET':
+        resp = http.request(
+           'GET',
+          url)
+        return resp.data.decode('utf-8')
+    else: 
+        resp = http.request(
+        'POST',
+        url,
+        fields=data.encode('ascii')) 
+        return resp.data.decode('utf-8')  
+  except Exception as e:
+    print("dorequest error",url,"  error ",str(e))
+  return ''  
+
+'''
 from urllib import request, error
-
-
 def dorequest(url, data = '', method = 'GET'):
     try: 
         if method == 'GET':
             resp = request.urlopen(url, timeout=10).read()
         else:
-            # use PUT/DELETE/POST, data should be encoded in ascii/bytes 
+
             req = request.Request(url, data = data.encode('ascii'), method = method)
             resp = request.urlopen(request, timeout=10).read()
-    # etcd may return json result with response http error code
-    # http error code will raise exception in urlopen
-    # catch the HTTPError and get the json result
     except error.HTTPError as e:
-        # e.fp must be read() in this except block.
-        # the e will be deleted and e.fp will be closed after this block
         resp = e.fp.read()
-    # response is encoded in bytes. 
-    # recoded in utf-8 and loaded in json
-    #return str(resp, encoding='utf-8')
     return resp.decode('utf-8')
-
+'''
         
 

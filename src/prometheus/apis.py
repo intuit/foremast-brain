@@ -1,7 +1,4 @@
-from utils.urlutils import dorequest
-
-
-    
+   
 def buildUrl(endpoint, startInSec, endInSec,queryString, steps):
     sb = []
     sb.append(endpoint)
