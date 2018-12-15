@@ -264,7 +264,7 @@ def main():
                     logger.warning("Current metric is empty, jobid "+uuid+"  time past mark job unknow "+  currentConfig+" ".join(outputMsg))
                 else:
                     cacheModels(modelHolder, max_cache) 
-                    updateDocStatus(es_url_status_update, uuid, REQUEST_STATE.PREPROCESS_INPROGRESS.value, "Warning: there is no current Metric, Will keep try until reachs endTime. "+escapeString(''.join(outputMsg)))
+                    updateDocStatus(es_url_status_update, uuid, REQUEST_STATE.PREPROCESS_INPROGRESS.value, "Warning: there is no current Metric, Will keep try until reachs endTime. ")
                     # print(getNowStr(), ":  no current metric is not ready, jobid ",uuid,"  ",  currentConfig)
                     logger.warning("Current metric is empty, jobid "+uuid+"  end time is not reach, will cache and retry "+  currentConfig+" ".join(outputMsg))
                 continue
@@ -273,9 +273,7 @@ def main():
                 hasSameDistribution, detailedResults, meetSize = pairWiseComparson (currentDataSet, baselineDataSet, ML_PAIRWISE_ALGORITHM, ML_PAIRWISE_THRESHOLD, ML_BOUND)
                 if (not hasSameDistribution):
                     logger.warning("current and base line does not have same distribution "+str(detailedResults)+" ".join(outputMsg))
-                    
-                    #print(getNowStr(), ":  jobId ", uuid, " pairwise comparsion result ",str(detailedResults))
-                    outputMsg.append("Warning: current and base are not same distribution "+str(detailedResults)+" ".join(outputMsg))
+
                     '''
                     if hasHistorical == True:
                         if meetSize :
