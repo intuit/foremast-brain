@@ -260,22 +260,22 @@ def main():
             
             if hasCurrent == False:
                 if isPast(endTime, 20):
-                    updateDocStatus(es_url_status_update, uuid, REQUEST_STATE.COMPLETED_UNKNOWN.value, "Error: there is no current Metric. "+escapeString(''.join(outputMsg)))
-                    logger.warning("Current metric is empty, jobid "+uuid+"  time past mark job unknow "+  currentConfig)
+                    updateDocStatus(es_url_status_update, uuid, REQUEST_STATE.COMPLETED_UNKNOWN.value, "Error: there is no current Metric. ")
+                    logger.warning("Current metric is empty, jobid "+uuid+"  time past mark job unknow "+  currentConfig+" ".join(outputMsg))
                 else:
                     cacheModels(modelHolder, max_cache) 
                     updateDocStatus(es_url_status_update, uuid, REQUEST_STATE.PREPROCESS_INPROGRESS.value, "Warning: there is no current Metric, Will keep try until reachs endTime. "+escapeString(''.join(outputMsg)))
                     # print(getNowStr(), ":  no current metric is not ready, jobid ",uuid,"  ",  currentConfig)
-                    logger.warning("Current metric is empty, jobid "+uuid+"  end time is not reach, will cache and retry "+  currentConfig)
+                    logger.warning("Current metric is empty, jobid "+uuid+"  end time is not reach, will cache and retry "+  currentConfig+" ".join(outputMsg))
                 continue
             
             if (hasBaseline):
                 hasSameDistribution, detailedResults, meetSize = pairWiseComparson (currentDataSet, baselineDataSet, ML_PAIRWISE_ALGORITHM, ML_PAIRWISE_THRESHOLD, ML_BOUND)
                 if (not hasSameDistribution):
-                    logger.warning("current and base line does not have same distribution "+str(detailedResults))
+                    logger.warning("current and base line does not have same distribution "+str(detailedResults)+" ".join(outputMsg))
                     
                     #print(getNowStr(), ":  jobId ", uuid, " pairwise comparsion result ",str(detailedResults))
-                    outputMsg.append("Warning: current and base are not same distribution "+str(detailedResults))
+                    outputMsg.append("Warning: current and base are not same distribution "+str(detailedResults)+" ".join(outputMsg))
                     '''
                     if hasHistorical == True:
                         if meetSize :
@@ -285,73 +285,73 @@ def main():
                     else:
                     '''
                     if meetSize :
-                        updateDocStatus(url_update, uuid, REQUEST_STATE.COMPLETED_UNHEALTH , "Warning:  baseline and current are different pattern. "+escapeString(''.join(outputMsg)))
+                        updateDocStatus(url_update, uuid, REQUEST_STATE.COMPLETED_UNHEALTH , "Warning:  baseline and current are different pattern. ")
                         #print(getNowStr(),": id ",uuid, " completed_unhealth... bacause pairwise is not same" )
-                        logger.warning("job id :"+uuid+" completed_unhealth... bacause current and baseline has different distribution pattern" )
+                        logger.warning("job id :"+uuid+" completed_unhealth... bacause current and baseline has different distribution pattern ".join(outputMsg))
                     else:
                         if isPast(endTime, 10):
-                            updateDocStatus(url_update, uuid, REQUEST_STATE.COMPLETED_UNKNOWN.value, "Warning: baseline and current are different pattern but do not have enough datapoints "+escapeString(''.join(outputMsg)))
+                            updateDocStatus(url_update, uuid, REQUEST_STATE.COMPLETED_UNKNOWN.value, "Warning: baseline and current are different pattern but do not have enough datapoints ")
                             #print(getNowStr(),": id ",uuid, " completed_unknown... bacause pairwise is not same but not enough datapoints " )
-                            logger.warning("job id :"+uuid+" completed_unknown...current or baseline is not same but not enough datapoints to confirm " )
+                            logger.warning("job id :"+uuid+" completed_unknown...current or baseline is not same but not enough datapoints to confirm  ".join(outputMsg))
                         else: 
                             cacheModels(modelHolder,  max_cache) 
-                            updateDocStatus(es_url_status_update, uuid, REQUEST_STATE.PREPROCESS_INPROGRESS.value, " pairwise not same and not enough datapoints "+escapeString(' '.join(outputMsg)))
+                            updateDocStatus(es_url_status_update, uuid, REQUEST_STATE.PREPROCESS_INPROGRESS.value, " pairwise not same and not enough datapoints ")
                             #print(getNowStr(),": id ",uuid, "  bacause pairwise is not same and not enough datapoint " )
-                            logger.warning("job id :"+uuid+" need to retry until collect enough data points to confirm...current or baseline is not same but not enough datapoints to confirm " )
+                            logger.warning("job id :"+uuid+" need to retry until collect enough data points to confirm...current or baseline is not same but not enough datapoints to confirm  ".join(outputMsg) )
                 else:
                     if isPast(endTime, 10):
-                        updateDocStatus(es_url_status_update, uuid, REQUEST_STATE.COMPLETED_HEALTH.value, escapeString(''.join(outputMsg)))
+                        updateDocStatus(es_url_status_update, uuid, REQUEST_STATE.COMPLETED_HEALTH.value, '')
                         logger.warning("job ID : "+uuid+" is health")
                         #print(getNowStr(),": id ",uuid, "mark as health....")
                     else:
-                        updateDocStatus(url_update, uuid, REQUEST_STATE.PREPROCESS_INPROGRESS.value , " current and baseline have same but not past endtime yet "+escapeString(''.join(outputMsg)))
+                        updateDocStatus(url_update, uuid, REQUEST_STATE.PREPROCESS_INPROGRESS.value , " current and baseline have same but not past endtime yet ")
                         # print(getNowStr(),": id ",uuid, " continue . bacause pairwise is not same but not past endTime yet " )                      
-                        logger.warning("job id :"+uuid+" will reprocess . current and base have same distribution but not past endTime yet " )
+                        logger.warning("job id :"+uuid+" will reprocess . current and base have same distribution but not past endTime yet  ".join(outputMsg))
                 continue
             else:
                 if not skipBaseline:
                     if isPast(endTime, 10):
-                        updateDocStatus(es_url_status_update, uuid, REQUEST_STATE.COMPLETED_UNKNOWN.value, "baseline query is empty "+escapeString(''.join(outputMsg)))
-                        logger.warning("job ID : "+uuid+ " is unknown because baseline no data ")
+                        updateDocStatus(es_url_status_update, uuid, REQUEST_STATE.COMPLETED_UNKNOWN.value, "baseline query is empty ")
+                        logger.warning("job ID : "+uuid+ " is unknown because baseline no data ".join(outputMsg))
                         #print(getNowStr(),": id ",uuid, "mark as unknown because baseline no data...")
                     else:
-                        updateDocStatus(url_update, uuid, REQUEST_STATE.PREPROCESS_INPROGRESS.value , " no baseline data yet "+escapeString(''.join(outputMsg)))
+                        updateDocStatus(url_update, uuid, REQUEST_STATE.PREPROCESS_INPROGRESS.value , " no baseline data yet ")
                         # print(getNowStr(),": id ",uuid, " continue . no baseline data yet. " )  
-                        logger.warning("job ID : "+uuid+ " continue . no baseline data yet. " )                    
+                        logger.warning("job ID : "+uuid+ " continue . no baseline data yet.  ".join(outputMsg))                  
                     continue
                     
             
             #check historical and  baseline
             if hasHistorical == False :
                     if isPast(endTime, 10):    
-                        updateDocStatus(es_url_status_update, uuid, REQUEST_STATE.COMPLETED_UNKNOWN.value, "Error: no enough historical data and no baseline data. "+escapeString(' '.join(outputMsg)))
+                        updateDocStatus(es_url_status_update, uuid, REQUEST_STATE.COMPLETED_UNKNOWN.value, "Error: no enough historical data and no baseline data. ")
                     else:
                         cacheModels(modelHolder,  max_cache) 
-                        updateDocStatus(es_url_status_update, uuid, REQUEST_STATE.PREPROCESS_INPROGRESS.value, "Warning: not enough  historical data and no baseline data. "+escapeString(' '.join(outputMsg)))
+                        updateDocStatus(es_url_status_update, uuid, REQUEST_STATE.PREPROCESS_INPROGRESS.value, "Warning: not enough  historical data and no baseline data. ")
                         #print(getNowStr(),": id ",uuid, "  will reprocess because no historical.. " )
-                        logger.warning("job id: "+uuid+ " will reprocess because no historical.. " )
+                        logger.warning("job id: "+uuid+ " will reprocess because no historical.. ".join(outputMsg))
                     continue
                 
             hasAnomaly, anomaliesDataStr = computeAnomaly(currentDataSet,modelHolder)    
-            logger.warning("job ID is "+uuid+ " has anomaly is "+ str(hasAnomaly)+ " anomalies data is "+ anomaliesDataStr)
+            logger.warning("job ID is "+uuid+ " has anomaly is "+ str(hasAnomaly)+ " anomalies data is "+ anomaliesDataStr+" ".join(outputMsg))
             
             if hasAnomaly:
                 #update ES to anomaly otherwise continue 
                 anomalyInfo = escapeString(anomaliesDataStr)
-                updateDocStatus(es_url_status_update, uuid, REQUEST_STATE.COMPLETED_UNHEALTH.value , "Warning: anomaly detected between current and historical. "+escapeString(''.join(outputMsg)),anomalyInfo)
+                updateDocStatus(es_url_status_update, uuid, REQUEST_STATE.COMPLETED_UNHEALTH.value , "Warning: anomaly detected between current and historical. ",anomalyInfo)
                 #print(getNowStr(),"job ID is ",uuid, " mark unhealth anomalies data is ", anomalyInfo)
-                logger.warning("job ID is "+uuid+" mark unhealth anomalies data is "+ anomalyInfo)
+                logger.warning("job ID is "+uuid+" mark unhealth anomalies data is "+ anomalyInfo+" ".join(outputMsg))
                 
                 continue
             else:
                 if isPast(endTime, 10):
-                    updateDocStatus(es_url_status_update, uuid, REQUEST_STATE.COMPLETED_HEALTH.value, escapeString(''.join(outputMsg)))
-                    logger.warning("job ID: "+uuid+ " is health")
+                    updateDocStatus(es_url_status_update, uuid, REQUEST_STATE.COMPLETED_HEALTH.value, "")
+                    logger.warning("job ID: "+uuid+ " is health ".join(outputMsg))
                     #print(getNowStr(),"job ID is ",uuid, " mark as health....")
                 else:
                     cacheModels( modelHolder,  max_cache)    
-                    updateDocStatus(es_url_status_update, uuid, REQUEST_STATE.PREPROCESS_INPROGRESS.value, "Need to continuous to check untile reachs deployment endTime. "+escapeString(''.join(outputMsg)))
-                    logger.warning("job ID : "+uuid+ " will reprocess until endtime reached")
+                    updateDocStatus(es_url_status_update, uuid, REQUEST_STATE.PREPROCESS_INPROGRESS.value, "Need to continuous to check untile reachs deployment endTime. ")
+                    logger.warning("job ID : "+uuid+ " will reprocess until endtime reached ".join(outputMsg))
                     #print(getNowStr(),"job ID is ",uuid, " so far health, continue check ....")
         except Exception as e:
             #print("uuid ",uuid, " error :",str(e))
@@ -359,9 +359,9 @@ def main():
             #print(getNowStr(),"job ID is ",uuid, " critical error encounted ", str(e))
             try:
                 if isPast(endTime, 5):
-                    updateDocStatus(es_url_status_update, uuid, REQUEST_STATE.PREPROCESS_FAILED.value,"Critical: encount code exception "+escapeString(str(e)) )
+                    updateDocStatus(es_url_status_update, uuid, REQUEST_STATE.PREPROCESS_FAILED.value,"Critical: encount code exception " )
                 else:
-                    updateDocStatus(es_url_status_update, uuid, REQUEST_STATE.PREPROCESS_COMPLETED.value,"Critical: encount code exception "+escapeString(str(e)) )
+                    updateDocStatus(es_url_status_update, uuid, REQUEST_STATE.PREPROCESS_COMPLETED.value,"Critical: encount code exception " )
 
             except Exception as ee:
                 #print(getNowStr(),"job ID is ",uuid, " critical error encounted +str(ee) )
