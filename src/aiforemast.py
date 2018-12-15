@@ -10,7 +10,6 @@ from concurrent.futures import ProcessPoolExecutor
 
 from prometheus.apis import buildUrl
 
-from utils.urlutils import dorequest
 from utils.converterutils import convertStringToMap,convertStrToInt, convertStrToFloat
 from utils.strutils import listToString,queryEscape, escapeString
 from utils.timeutils import isPast, getNowStr
@@ -58,8 +57,11 @@ def cacheModels(modelHolder, max_cache_size = MAX_CACHE_SIZE):
         cachedJobs.pop(jobId)
         jobs.remove(jobId)
     uuid = modelHolder.getId()
-    cachedJobs[uuid]= modelHolder
-    jobs.append(uuid) 
+    if uuid in cachedJobs:
+        cachedJobs[uuid]= modelHolder
+    else:
+        cachedJobs[uuid]= modelHolder        
+        jobs.append(uuid) 
 
 def retrieveCachedRequest(es_url_status_search):
     for jobId in jobs:
@@ -85,7 +87,7 @@ def retrieveCachedRequest(es_url_status_search):
             del cachedJobs[jobId]
             return openRequest, modelHolder 
         except Exception as e:
-            print("encount error while retrieving cache ",str(e))
+            logger.error("retrieveCachedRequest encount error while retrieving cache ",e)
     return None, None
 
  
@@ -143,22 +145,21 @@ def main():
         openRequestlist=parseResult(resp)
         openRequest =selectRequestToProcess(openRequestlist)
         if openRequest == None :
-            logger.info("No initial, preprocess_complete requests found .....")
+            logger.warning("No initial, preprocess_complete requests found .....")
             openRequest, modelHolder = retrieveCachedRequest(es_url_status_search)
             if (openRequest == None):
                 resp = searchByStatus(es_url_status_search, REQUEST_STATE.PREPROCESS_INPROGRESS.value)
                 openRequestlist=parseResult(resp)
                 openRequest = selectRequestToProcess(openRequestlist)
                 if openRequest == None :
-                    logger.info("No long running preprocess job found .....")
-                    #TODO
-                    
+                    logger.warning("No long running preprocess job found .....")
+    
                     time.sleep(2)
                     continue
                 
                     #Test Start########################
                     '''
-                    id ='3494193bf136c021ae250fa813b9117ac4a7f7854bf1a45aee66a8e2ec8e4e3d'
+                    id ='62d9825d549f4988484045cd9f0aec1e0f19209133106e0f7125b7cd56a0968d'
                     openRequest = retrieveRequestById(es_url_status_search, id)
                     if (openRequest==None):
                         print("es is down, will sleep and retry")
@@ -172,9 +173,9 @@ def main():
         status = openRequest['status']
         updatedStatus = reserveJob(es_url_status_update, uuid, status)
 
-        logger.info("Start to processing uuid ..... ",uuid," status:", status)
+        logger.warning("Start to processing job id "+uuid+ " original status:"+ status)
         
-        print(getNowStr(), ": start to processing uuid ..... ",uuid," status:", status)
+        #print(getNowStr(), ": start to processing uuid ..... ",uuid," status:", status)
 
         historicalConfig =openRequest['historicalConfig']
         currentConfig = openRequest['currentConfig']
@@ -185,13 +186,14 @@ def main():
         skipBaseline = (baselineConfig=='')
         
         #Need to be removed below line due to baseline is enabled at upstream
-        skipBaseline = True
+        #skipBaseline = True
         skipCurrent = (currentConfig=='')
         
         try:
             if (skipCurrent):
                 updateDocStatus(es_url_status_update, uuid, REQUEST_STATE.COMPLETED_UNKNOWN.value, "Error: no current config")
-                print(getNowStr(), " : jobid  ",uuid, " current config is empty. make status unknown")
+                logger.warning("request error : jobid  "+uuid+" current config is empty. make status unknown")
+                #print(getNowStr(), " : jobid  ",uuid, " current config is empty. make status unknown")
                 continue
 
 
@@ -215,8 +217,8 @@ def main():
                     outputMsg.append(msg)
                 if (not modelHolder.hasModel()):
                     outputMsg.append("Warning: No historical Data and model ")
-                    logger.warning("Warning: No historical: "+str(modelHolder))
-                    print(getNowStr(), ": Warning: No historical: "+str(modelHolder))
+                    logger.warning("Warning: Expect histical data but No historical. jobid :"+ uuid+ ",  "+str(modelHolder))
+                    #print(getNowStr(), ": Warning: No historical: "+str(modelHolder))
                                 
             hasHistorical =  modelHolder.hasModel()
             
@@ -243,7 +245,7 @@ def main():
                             else:
                                 baselineDataSet = res[0]
                         except Exception as e:
-                            logger.error("encount errorProcessPoolExecutor " ,str(e))
+                            logger.error("job id"+ uuid+ " encount errorProcessPoolExecutor " +str(e))
                             
                                       
                     
@@ -252,25 +254,27 @@ def main():
             baselineLen= len(baselineDataSet)
             hasCurrent = currentLen>0
             hasBaseline = baselineLen>0
-            logger.info("hasCurrent, hasBaseline ", str(hasCurrent), str(hasBaseline) )
-            print(getNowStr(), ": hasCurrent, hasBaseline ", str(hasCurrent), str(hasBaseline)," id ",uuid , " skip bseline is ", skipBaseline)
+            logger.warning("jobid:"+ uuid +" hasCurrent "+ str(hasCurrent)+", hasBaseline "+ str(hasBaseline) )
+            #print(getNowStr(), ": hasCurrent, hasBaseline ", str(hasCurrent), str(hasBaseline)," id ",uuid , " skip bseline is ", skipBaseline)
 
             
             if hasCurrent == False:
                 if isPast(endTime, 20):
                     updateDocStatus(es_url_status_update, uuid, REQUEST_STATE.COMPLETED_UNKNOWN.value, "Error: there is no current Metric. "+escapeString(''.join(outputMsg)))
+                    logger.warning("Current metric is empty, jobid "+uuid+"  time past mark job unknow "+  currentConfig)
                 else:
                     cacheModels(modelHolder, max_cache) 
                     updateDocStatus(es_url_status_update, uuid, REQUEST_STATE.PREPROCESS_INPROGRESS.value, "Warning: there is no current Metric, Will keep try until reachs endTime. "+escapeString(''.join(outputMsg)))
-                print(getNowStr(), ":  no current metric is not ready, jobid ",uuid,"  ",  currentConfig)
+                    # print(getNowStr(), ":  no current metric is not ready, jobid ",uuid,"  ",  currentConfig)
+                    logger.warning("Current metric is empty, jobid "+uuid+"  end time is not reach, will cache and retry "+  currentConfig)
                 continue
             
             if (hasBaseline):
                 hasSameDistribution, detailedResults, meetSize = pairWiseComparson (currentDataSet, baselineDataSet, ML_PAIRWISE_ALGORITHM, ML_PAIRWISE_THRESHOLD, ML_BOUND)
                 if (not hasSameDistribution):
-                    logger.info("require lower threshold is true : due to current and base are not same distribution"+str(detailedResults))
+                    logger.warning("current and base line does not have same distribution "+str(detailedResults))
                     
-                    print(getNowStr(), ":  jobId ", uuid, " pairwise comparsion result ",str(detailedResults))
+                    #print(getNowStr(), ":  jobId ", uuid, " pairwise comparsion result ",str(detailedResults))
                     outputMsg.append("Warning: current and base are not same distribution "+str(detailedResults))
                     '''
                     if hasHistorical == True:
@@ -282,33 +286,38 @@ def main():
                     '''
                     if meetSize :
                         updateDocStatus(url_update, uuid, REQUEST_STATE.COMPLETED_UNHEALTH , "Warning:  baseline and current are different pattern. "+escapeString(''.join(outputMsg)))
-                        print(getNowStr(),": id ",uuid, " completed_unhealth... bacause pairwise is not same" )
+                        #print(getNowStr(),": id ",uuid, " completed_unhealth... bacause pairwise is not same" )
+                        logger.warning("job id :"+uuid+" completed_unhealth... bacause current and baseline has different distribution pattern" )
                     else:
                         if isPast(endTime, 10):
                             updateDocStatus(url_update, uuid, REQUEST_STATE.COMPLETED_UNKNOWN.value, "Warning: baseline and current are different pattern but do not have enough datapoints "+escapeString(''.join(outputMsg)))
-                            print(getNowStr(),": id ",uuid, " completed_unknown... bacause pairwise is not same but not enough datapoints " )
+                            #print(getNowStr(),": id ",uuid, " completed_unknown... bacause pairwise is not same but not enough datapoints " )
+                            logger.warning("job id :"+uuid+" completed_unknown...current or baseline is not same but not enough datapoints to confirm " )
                         else: 
                             cacheModels(modelHolder,  max_cache) 
                             updateDocStatus(es_url_status_update, uuid, REQUEST_STATE.PREPROCESS_INPROGRESS.value, " pairwise not same and not enough datapoints "+escapeString(' '.join(outputMsg)))
-                            print(getNowStr(),": id ",uuid, "  bacause pairwise is not same and not enough datapoint " )
+                            #print(getNowStr(),": id ",uuid, "  bacause pairwise is not same and not enough datapoint " )
+                            logger.warning("job id :"+uuid+" need to retry until collect enough data points to confirm...current or baseline is not same but not enough datapoints to confirm " )
                 else:
                     if isPast(endTime, 10):
                         updateDocStatus(es_url_status_update, uuid, REQUEST_STATE.COMPLETED_HEALTH.value, escapeString(''.join(outputMsg)))
-                        logger.info("job ID is ",uuid, " health")
-                        print(getNowStr(),": id ",uuid, "mark as health....")
+                        logger.warning("job ID : "+uuid+" is health")
+                        #print(getNowStr(),": id ",uuid, "mark as health....")
                     else:
-                        updateDocStatus(url_update, uuid, REQUEST_STATE.PREPROCESS_INPROGRESS.value , " current and baseline are same but not past endtime yet "+escapeString(''.join(outputMsg)))
-                        print(getNowStr(),": id ",uuid, " continue . bacause pairwise is not same but not past endTime yet " )                      
+                        updateDocStatus(url_update, uuid, REQUEST_STATE.PREPROCESS_INPROGRESS.value , " current and baseline have same but not past endtime yet "+escapeString(''.join(outputMsg)))
+                        # print(getNowStr(),": id ",uuid, " continue . bacause pairwise is not same but not past endTime yet " )                      
+                        logger.warning("job id :"+uuid+" will reprocess . current and base have same distribution but not past endTime yet " )
                 continue
             else:
                 if not skipBaseline:
                     if isPast(endTime, 10):
                         updateDocStatus(es_url_status_update, uuid, REQUEST_STATE.COMPLETED_UNKNOWN.value, "baseline query is empty "+escapeString(''.join(outputMsg)))
-                        logger.info("job ID is ",uuid, " unknown because baseline no data ")
-                        print(getNowStr(),": id ",uuid, "mark as unknown because baseline no data...")
+                        logger.warning("job ID : "+uuid+ " is unknown because baseline no data ")
+                        #print(getNowStr(),": id ",uuid, "mark as unknown because baseline no data...")
                     else:
                         updateDocStatus(url_update, uuid, REQUEST_STATE.PREPROCESS_INPROGRESS.value , " no baseline data yet "+escapeString(''.join(outputMsg)))
-                        print(getNowStr(),": id ",uuid, " continue . no baseline data yet. " )                      
+                        # print(getNowStr(),": id ",uuid, " continue . no baseline data yet. " )  
+                        logger.warning("job ID : "+uuid+ " continue . no baseline data yet. " )                    
                     continue
                     
             
@@ -319,63 +328,46 @@ def main():
                     else:
                         cacheModels(modelHolder,  max_cache) 
                         updateDocStatus(es_url_status_update, uuid, REQUEST_STATE.PREPROCESS_INPROGRESS.value, "Warning: not enough  historical data and no baseline data. "+escapeString(' '.join(outputMsg)))
-                        print(getNowStr(),": id ",uuid, "  continue because no historical.. " )
+                        #print(getNowStr(),": id ",uuid, "  will reprocess because no historical.. " )
+                        logger.warning("job id: "+uuid+ " will reprocess because no historical.. " )
                     continue
                 
             hasAnomaly, anomaliesDataStr = computeAnomaly(currentDataSet,modelHolder)    
-            logger.info("job ID is ",uuid, " has anomaly is ", hasAnomaly, " anomalies data is ", anomaliesDataStr)
+            logger.warning("job ID is "+uuid+ " has anomaly is "+ str(hasAnomaly)+ " anomalies data is "+ anomaliesDataStr)
             
             if hasAnomaly:
                 #update ES to anomaly otherwise continue 
                 anomalyInfo = escapeString(anomaliesDataStr)
                 updateDocStatus(es_url_status_update, uuid, REQUEST_STATE.COMPLETED_UNHEALTH.value , "Warning: anomaly detected between current and historical. "+escapeString(''.join(outputMsg)),anomalyInfo)
-                print(getNowStr(),"job ID is ",uuid, " mark unhealth anomalies data is ", anomalyInfo)
+                #print(getNowStr(),"job ID is ",uuid, " mark unhealth anomalies data is ", anomalyInfo)
+                logger.warning("job ID is "+uuid+" mark unhealth anomalies data is "+ anomalyInfo)
+                
                 continue
             else:
                 if isPast(endTime, 10):
                     updateDocStatus(es_url_status_update, uuid, REQUEST_STATE.COMPLETED_HEALTH.value, escapeString(''.join(outputMsg)))
-                    logger.info("job ID is ",uuid, " health")
-                    print(getNowStr(),"job ID is ",uuid, " mark as health....")
+                    logger.warning("job ID: "+uuid+ " is health")
+                    #print(getNowStr(),"job ID is ",uuid, " mark as health....")
                 else:
                     cacheModels( modelHolder,  max_cache)    
                     updateDocStatus(es_url_status_update, uuid, REQUEST_STATE.PREPROCESS_INPROGRESS.value, "Need to continuous to check untile reachs deployment endTime. "+escapeString(''.join(outputMsg)))
-                    logger.info("job ID is ",uuid, " will re-evaluate until endtime reachef")
-                    print(getNowStr(),"job ID is ",uuid, " so far health, continue check ....")
+                    logger.warning("job ID : "+uuid+ " will reprocess until endtime reached")
+                    #print(getNowStr(),"job ID is ",uuid, " so far health, continue check ....")
         except Exception as e:
             #print("uuid ",uuid, " error :",str(e))
             logger.error("uuid : "+ uuid+" failed because ",e )
-            print(getNowStr(),"job ID is ",uuid, " critical error encounted ", str(e))
+            #print(getNowStr(),"job ID is ",uuid, " critical error encounted ", str(e))
             try:
-                updateDocStatus(es_url_status_update, uuid, REQUEST_STATE.PREPROCESS_FAILED.value,"Critical: encount code exception "+escapeString(str(e)) )
+                if isPast(endTime, 5):
+                    updateDocStatus(es_url_status_update, uuid, REQUEST_STATE.PREPROCESS_FAILED.value,"Critical: encount code exception "+escapeString(str(e)) )
+                else:
+                    updateDocStatus(es_url_status_update, uuid, REQUEST_STATE.PREPROCESS_COMPLETED.value,"Critical: encount code exception "+escapeString(str(e)) )
+
             except Exception as ee:
-                print(getNowStr(),"job ID is ",uuid, " critical error encounted could be es servcer issue ", str(ee))
+                #print(getNowStr(),"job ID is ",uuid, " critical error encounted +str(ee) )
+                logger.error("uuid : "+ uuid+" failed because "+str(ee) )
             continue
      
-   
-        #break
-        #mtypes, mdf = fetchMetrics(openRequest['currentConfig'])    
-        #print(".....mtypes.......",mtypes)
-        #print("..mdf....",mdf)
-        #TODO : store data model ----es is short term 
-   
-            
-        #processPool 
-        
-        
-            
-        
-        #strategy = openRequest['strategy']   
-        #if updatedStatus == REQUEST_STATE.POSTPROCESS:
-        #    currentConfig = openRequest['currentConfig']
-        #    baselineConfig =openRequest['baselineConfig'] 
-        #    configMapCurrent = convertStringToMap(currentConfig)
-        #    configMapBaseline = convertStringToMap(baselineConfig) 
-        #    processDeploymentTimeData(configMapCurrent, configMapBaseline, strategy)
-            
-            
-        
-        #logging.info("process %s, %s, %s, %s ", uuid, currentConfig, baselineConfig, historicalConfig)
-        
         
 
 
