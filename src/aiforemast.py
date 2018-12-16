@@ -56,7 +56,7 @@ def cacheModels(modelHolder, max_cache_size = MAX_CACHE_SIZE):
         jobId = jobs[MAX_CACHE_SIZE-1]
         cachedJobs.pop(jobId)
         jobs.remove(jobId)
-    uuid = modelHolder.getId()
+    uuid = modelHolder.id
     if uuid in cachedJobs:
         cachedJobs[uuid]= modelHolder
     else:
