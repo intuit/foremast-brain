@@ -29,7 +29,7 @@ from mlalgms.pairwisemodel import MANN_WHITE,WILCOXON,KRUSKAL,FRIED_MANCHI_SQUAR
 from mlalgms.statsmodel import IS_UPPER_BOUND, IS_UPPER_O_LOWER_BOUND, IS_LOWER_BOUND
 
 from mlalgms.fbprophet import PROPHET_PERIOD, PROPHET_FREQ, DEFAULT_PROPHET_PERIOD, DEFAULT_PROPHET_FREQ
-from metadata.globalconfig import globalconfig
+from metadata.globalconfig import CONFIG
 from mlalgms.pairwisemodel import MANN_WHITE_MIN_DATA_POINT,WILCOXON_MIN_DATA_POINTS,KRUSKAL_MIN_DATA_POINTS 
 # logging
 logging.basicConfig(format='%(asctime)s %(message)s')
@@ -93,7 +93,7 @@ def retrieveCachedRequest(es_url_status_search):
  
 def main():
     #Default Parameters can be overwrite by environments
-    config =  globalconfig()
+    config = CONFIG
     max_cache = convertStrToInt(os.environ.get("MAX_CACHE_SIZE", str(MAX_CACHE_SIZE)), MAX_CACHE_SIZE) 
     ES_ENDPOINT = os.environ.get('ES_ENDPOINT', 'http://a31008275fcf911e8bde30674acac93e-885155939.us-west-2.elb.amazonaws.com:9200')
     ML_ALGORITHM = os.environ.get('ML_ALGORITHM', AI_MODEL.MOVING_AVERAGE_ALL.value)
@@ -110,9 +110,9 @@ def main():
 
     MIN_KRUSKAL_DATA_POINTS=convertStrToInt(os.environ.get("MIN_KRUSKAL_DATA_POINTS", str(KRUSKAL_MIN_DATA_POINTS)), KRUSKAL_MIN_DATA_POINTS) 
 
-    config.setKV("MIN_MANN_WHITE_DATA_POINTS",MIN_MANN_WHITE_DATA_POINTS)
-    config.setKV("MIN_WILCOXON_DATA_POINTS",MIN_WILCOXON_DATA_POINTS)
-    config.setKV("MIN_KRUSKAL_DATA_POINTS",MIN_KRUSKAL_DATA_POINTS)
+    config["MIN_MANN_WHITE_DATA_POINTS"] = MIN_MANN_WHITE_DATA_POINTS
+    config["MIN_WILCOXON_DATA_POINTS"] = MIN_WILCOXON_DATA_POINTS
+    config["MIN_KRUSKAL_DATA_POINTS"] = MIN_KRUSKAL_DATA_POINTS
     
 
     ML_PROPHET_PERIOD = convertStrToInt(os.environ.get(PROPHET_PERIOD, str(DEFAULT_PROPHET_PERIOD)),DEFAULT_PROPHET_PERIOD) 
@@ -174,7 +174,7 @@ def main():
         updatedStatus = reserveJob(es_url_status_update, uuid, status)
 
         logger.warning("Start to processing job id "+uuid+ " original status:"+ status)
-        
+
         #print(getNowStr(), ": start to processing uuid ..... ",uuid," status:", status)
 
         historicalConfig =openRequest['historicalConfig']
@@ -184,11 +184,11 @@ def main():
         endTime = openRequest['endTime']
         skipHistorical =( historicalConfig=='')
         skipBaseline = (baselineConfig=='')
-        
+
         #Need to be removed below line due to baseline is enabled at upstream
         #skipBaseline = True
         skipCurrent = (currentConfig=='')
-        
+
         try:
             if (skipCurrent):
                 updateDocStatus(es_url_status_update, uuid, REQUEST_STATE.COMPLETED_UNKNOWN.value, "Error: no current config")
@@ -199,12 +199,12 @@ def main():
 
             #dict  metric name : url , if modelHolder does not have model, give chance to recalculate
             if modelHolder == None:
-                modelConfig = {THRESHOLD : threshold,LOWER_THRESHOLD : lower_threshold, 
-                                MIN_DATA_POINTS:min_historical_data_points, BOUND: ML_BOUND, 
+                modelConfig = {THRESHOLD : threshold,LOWER_THRESHOLD : lower_threshold,
+                                MIN_DATA_POINTS:min_historical_data_points, BOUND: ML_BOUND,
                                 PAIRWISE_ALGORITHM:ML_PAIRWISE_ALGORITHM,PAIRWISE_THRESHOLD:ML_PAIRWISE_THRESHOLD}
                 modelHolder = ModelHolder(ML_ALGORITHM,modelConfig,{}, METRIC_PERIOD.HISTORICAL.value, uuid)
 
-                
+
             if  (not (modelHolder.hasModel or skipHistorical) ):
                 configMapHistorical = convertStringToMap(historicalConfig)
                 isProphet = False

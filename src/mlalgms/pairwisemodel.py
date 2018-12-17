@@ -1,5 +1,5 @@
 from scipy.stats import mannwhitneyu, wilcoxon,kruskal,friedmanchisquare
-from metadata.globalconfig import globalconfig
+from metadata.globalconfig import CONFIG
 from mlalgms.statsmodel import IS_UPPER_BOUND,IS_UPPER_O_LOWER_BOUND,IS_LOWER_BOUND
 import warnings                                  
 warnings.filterwarnings('ignore')
@@ -30,7 +30,7 @@ DEFAULT_PAIRWISE_THRESHOLD = 0.05
 
 
 def TwoDataSetSameDistribution(dataset1, dataset2, alpha=DEFAULT_PAIRWISE_THRESHOLD, algorithm=ANY, bound= IS_UPPER_BOUND):
-  config = globalconfig()
+  config = CONFIG
   
   size = min(len(dataset1),len(dataset2))
   p = 0
@@ -38,9 +38,9 @@ def TwoDataSetSameDistribution(dataset1, dataset2, alpha=DEFAULT_PAIRWISE_THRESH
       try:
           stat, p = wilcoxon(dataset1, dataset2,"pratt", True)
           if p >= alpha:
-              return True, p, WILCOXON,size>=config.getValueByKey("MIN_WILCOXON_DATA_POINTS")
+              return True, p, WILCOXON,size>=config["MIN_WILCOXON_DATA_POINTS"]
           else:
-              return False, p, WILCOXON, size>=config.getValueByKey("MIN_WILCOXON_DATA_POINTS")
+              return False, p, WILCOXON, size>=config["MIN_WILCOXON_DATA_POINTS"]
       except Exception as e:
           try:
               if (bound== IS_UPPER_BOUND):
@@ -50,18 +50,18 @@ def TwoDataSetSameDistribution(dataset1, dataset2, alpha=DEFAULT_PAIRWISE_THRESH
               else:
                   stat, p = mannwhitneyu(dataset1, dataset2,True, 'two-sided')
               if p >= alpha:
-                  return True, p , MANN_WHITE, size>=config.getValueByKey("MIN_MANN_WHITE_DATA_POINTS")
+                  return True, p , MANN_WHITE, size>=config["MIN_MANN_WHITE_DATA_POINTS"]
               else:
-                  return False, p,  MANN_WHITE, size>=config.getValueByKey("MIN_MANN_WHITE_DATA_POINTS") 
+                  return False, p,  MANN_WHITE, size>=config["MIN_MANN_WHITE_DATA_POINTS"]
           except Exception as e:
-                  return True, 0, ERROR , size>=config.getValueByKey("MIN_MANN_WHITE_DATA_POINTS") 
+                  return True, 0, ERROR , size>=config["MIN_MANN_WHITE_DATA_POINTS"]
   elif algorithm == KRUSKAL:
       try:
           stat, p = kruskal(dataset1, dataset2)
           if p >= alpha:
-              return True, p,KRUSKAL, size>=config.getValueByKey("MIN_KRUSKAL_DATA_POINTS")
+              return True, p,KRUSKAL, size>=config["MIN_KRUSKAL_DATA_POINTS"]
           else:
-              return False, p,KRUSKAL, size>=config.getValueByKey("MIN_KRUSKAL_DATA_POINTS")
+              return False, p,KRUSKAL, size>=config["MIN_KRUSKAL_DATA_POINTS"]
       except Exception as e:
           try:
               if (bound== IS_UPPER_BOUND):
