@@ -1,6 +1,4 @@
-import sys
 
-sys.path.append('../')
 from metadata.metadata import METRIC_PERIOD
 
 

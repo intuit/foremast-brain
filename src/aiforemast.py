@@ -153,13 +153,13 @@ def main():
                 openRequest = selectRequestToProcess(openRequestlist)
                 if openRequest == None :
                     logger.warning("No long running preprocess job found .....")
-    
+                    
                     time.sleep(2)
                     continue
                 
                     #Test Start########################
                     '''
-                    id ='62d9825d549f4988484045cd9f0aec1e0f19209133106e0f7125b7cd56a0968d'
+                    id ='8def9532f0f903fb1ce2ff833a977bdca58142bc8159de3e98aeed5a719e8e75'
                     openRequest = retrieveRequestById(es_url_status_search, id)
                     if (openRequest==None):
                         print("es is down, will sleep and retry")

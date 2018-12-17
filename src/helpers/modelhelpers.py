@@ -19,7 +19,7 @@ BETA = 'beta'
 #            different models 
 #  Parameters: series --- input dataframe 
 #              modelHolder  --ModelHolder object
-#                             contains modelname
+#                             contains model_name
 #                             configuration, etc. 
 #
 ##################################################
@@ -40,7 +40,7 @@ def detectAnomalyData(metricInfo,  modelHolder):
        pass        
 
 def calculateSingleMetricModel(series, modelHolder):
-    if modelHolder.modelname == AI_MODEL.MOVING_AVERAGE.value:
+    if modelHolder.model_name == AI_MODEL.MOVING_AVERAGE.value:
         window = modelHolder.getModelConfigByKey(WINDOW)
         if window == None:
             window = 0
@@ -50,7 +50,7 @@ def calculateSingleMetricModel(series, modelHolder):
         lower_bound, upper_bound = calculateMovingAverageParameters(series, window, threshold)
         modelHolder[LOWER_BOUND] = lower_bound
         modelHolder[UPPER_BOUND] = upper_bound
-    elif modelHolder.modelname == AI_MODEL.EXPONENTIAL_SMOOTHING.value:
+    elif modelHolder.model_name == AI_MODEL.EXPONENTIAL_SMOOTHING.value:
         alpha = modelHolder.getModelConfigByKey(ALPHA)
         if alpha == None:
             alpha = 0.9
@@ -61,7 +61,7 @@ def calculateSingleMetricModel(series, modelHolder):
         modelHolder[LOWER_BOUND] = lower_bound
         modelHolder[UPPER_BOUND] = upper_bound
 
-    elif modelHolder.modelname == AI_MODEL.DOUBLE_EXPONENTIAL_SMOOTHING.value:
+    elif modelHolder.model_name == AI_MODEL.DOUBLE_EXPONENTIAL_SMOOTHING.value:
         alpha = modelHolder.getModelConfigByKey(ALPHA)
         if alpha == None:
             alpha = 0.95
@@ -74,7 +74,7 @@ def calculateSingleMetricModel(series, modelHolder):
         lower_bound, upper_bound= calculateDoubleExponentialSmoothingParameters(series, alpha, beta, threshold)
         modelHolder[LOWER_BOUND] = lower_bound
         modelHolder[UPPER_BOUND] = upper_bound
-    elif modelHolder.modelname == AI_MODEL.HOLT_WINDER.value:
+    elif modelHolder.model_name == AI_MODEL.HOLT_WINDER.value:
         nextPredictHours = modelHolder.getModelConfigByKey('nextPredictHours')
         if nextPredictHours == None:
             nextPredictHours = 1
@@ -88,7 +88,7 @@ def calculateSingleMetricModel(series, modelHolder):
         lower_bound, upper_bound = retrieveSaveModelData(series, lmodel)
         modelHolder[UPPER_BOUND] = upper_bound
         modelHolder[LOWER_BOUND] = lower_bound
-    elif modelHolder.modelname == AI_MODEL.PROPHET.value:
+    elif modelHolder.model_name == AI_MODEL.PROPHET.value:
         period = modelHolder.getModelConfigByKey(PROPHET_PERIOD)
         if period == None:
             period=DEFAULT_PROPHET_PERIOD
@@ -99,7 +99,7 @@ def calculateSingleMetricModel(series, modelHolder):
         modelHolder[LOWER_BOUND] = lower_bound
         modelHolder[UPPER_BOUND] = upper_bound
     else:
-        # default is  modelHolder.modelname == AI_MODEL.MOVING_AVERAGE_ALL.value:
+        # default is  modelHolder.model_name == AI_MODEL.MOVING_AVERAGE_ALL.value:
         mean, deviation = calculateHistoricalParameters(series)
         modelHolder[MAE] = mean
         modelHolder[DEVIATION] = deviation
@@ -114,7 +114,7 @@ def detectSignalAnomalyData( series, modelHolder):
     bound = modelHolder.getModelConfigByKey(BOUND)
     if bound == None:
         bound = IS_UPPER_BOUND
-    if modelHolder.modelname == AI_MODEL.MOVING_AVERAGE.value or  modelHolder.modelname == AI_MODEL.EXPONENTIAL_SMOOTHING.value or modelHolder.modelname == AI_MODEL.DOUBLE_EXPONENTIAL_SMOOTHING.value:
+    if modelHolder.model_name == AI_MODEL.MOVING_AVERAGE.value or  modelHolder.model_name == AI_MODEL.EXPONENTIAL_SMOOTHING.value or modelHolder.model_name == AI_MODEL.DOUBLE_EXPONENTIAL_SMOOTHING.value:
         lower_bound = modelHolder[LOWER_BOUND]
         if lower_bound == None:
             pass
@@ -125,7 +125,7 @@ def detectSignalAnomalyData( series, modelHolder):
             #TODO: raise error 
         ts,data,flags =detectLowerUpperAnomalies(series, lower_bound , upper_bound, bound)
         return ts,data
-    elif  modelHolder.modelname == AI_MODEL.PROPHET.value:        
+    elif  modelHolder.model_name == AI_MODEL.PROPHET.value:        
         lower_bound = modelHolder[LOWER_BOUND]
         if lower_bound == None:
             pass
@@ -136,7 +136,7 @@ def detectSignalAnomalyData( series, modelHolder):
             #TODO: raise error 
         ts,data,flags =detectLowerUpperAnomalies(series, lower_bound , upper_bound, bound)
         return ts,data
-    elif modelHolder.modelname == AI_MODEL.HOLT_WINDER.value:
+    elif modelHolder.model_name == AI_MODEL.HOLT_WINDER.value:
         upper_bound = modelHolder[UPPER_BOUND]
         if upper_bound == None:
             pass
@@ -147,7 +147,7 @@ def detectSignalAnomalyData( series, modelHolder):
         ts,adata,flags = retrieveHW_Anomalies( y, upper_bound, lower_bound, bound) 
         return ts,data
     else:
-        #default is modelHolder.modelname == AI_MODEL.MOVING_AVERAGE_ALL.value:
+        #default is modelHolder.model_name == AI_MODEL.MOVING_AVERAGE_ALL.value:
         mean = modelHolder[MAE]
         if mean == None:
             pass
