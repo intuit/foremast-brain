@@ -1,7 +1,5 @@
 from enum import Enum
 
-
-
 MAE = "mae"
 DEVIATION = "deviation"
 THRESHOLD = "threshold"
@@ -14,13 +12,11 @@ LOWER_THRESHOLD = "lower_threshold"
 LLOWER_BOUND = "llower_bound"
 LUPPER_BOUND = "lupper_bound"
 
-
 DEFAULT_THRESHOLD = 2
-DEFAULT_LOWER_THRESHOLD =1.75
+DEFAULT_LOWER_THRESHOLD = 1.75
 
 PAIRWISE_ALGORITHM = 'PAIRWISE_ALGORITHM'
 PAIRWISE_THRESHOLD = 'PAIRWISE_THRESHOLD'
-
 
 
 class REQUEST_STATE(Enum):
@@ -33,12 +29,14 @@ class REQUEST_STATE(Enum):
     POSTPROCESS = 'postprocess_inprogress'
     INITIAL = 'initial'
     ABORT = 'abort'
-    
+
+
 class METRIC_PERIOD(Enum):
     CURRENT = 'current'
     HISTORICAL = 'historical'
     BASELINE = 'baseline'
-    
+
+
 class AI_MODEL(Enum):
     MOVING_AVERAGE_ALL = 'moving_average_all'
     MOVING_AVERAGE = 'moving_average'
@@ -48,18 +46,16 @@ class AI_MODEL(Enum):
     PROPHET = 'prophet'
     BIVARIANT_GAUSSIAN = 'bivariant_gaussian'
     LSTM = 'lstm'
-    
-
 
 ##Test ##   
-#ll  = list(REQUEST_STATE)    
-#print(len(ll))
-#print(ll)
-#dd =[c.value for c in REQUEST_STATE]
-#print(dd)
-#ww= REQUEST_STATE.COMPLETED_HEALTH
-#print(type(REQUEST_STATE.COMPLETED_HEALTH.value))
-#if (ww == REQUEST_STATE.COMPLETED_HEALTH):
+# ll  = list(REQUEST_STATE)
+# print(len(ll))
+# print(ll)
+# dd =[c.value for c in REQUEST_STATE]
+# print(dd)
+# ww= REQUEST_STATE.COMPLETED_HEALTH
+# print(type(REQUEST_STATE.COMPLETED_HEALTH.value))
+# if (ww == REQUEST_STATE.COMPLETED_HEALTH):
 #    print("True")
-#else:
+# else:
 #    print("False")
