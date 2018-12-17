@@ -1,50 +1,60 @@
 import sys
+
 sys.path.append('../')
 from metadata.metadata import METRIC_PERIOD
 
 
 class ModelHolder:
-    def __init__(self, modelname, modelconfig={}, modeldata={}, period = METRIC_PERIOD.HISTORICAL.value, id=''):
-        self.modelname = modelname
-        self.modeldata = modeldata
-        self.period = period
-        self.modelconfig = modelconfig
-        self.id = id
+    def __init__(self, model_name, model_config=None, model_data=None, period=METRIC_PERIOD.HISTORICAL.value, id=''):
+        if model_config is None:
+            model_config = {}
+        if model_data is None:
+            model_data = {}
+        self._model_name = model_name
+        self._model_data = model_data
+        self._period = period
+        self._model_config = model_config
+        self._id = id
+
     def getModelByKey(self, key):
-        return self.modeldata.get(key)
+        return self._model_data.get(key)
+
     def setModelKV(self, key, value):
-        self.modeldata.setdefault(key, value) 
-    def hasModel(self):
-        return len(self.modeldata)>0
+        self._model_data.setdefault(key, value)
+
     def getModelConfigByKey(self, key):
-        return self.modelconfig.get(key)
-    def setModelConfig(self, key ,value):
-        self.modelconfig.setdefault(key,value)
-    def setModelName(self, name):
-        self.modelname = name
-    def resetModel(self, data):
-        self.modeldata = data
-    def setModelMetadata(self, metadata):
-        self.metadata = metadata
-    def getId(self):
-        return self.id
+        return self._model_config.get(key)
+
+    @property
+    def period(self):
+        return self._period
+
+    @property
+    def model_name(self):
+        return self._model_name
+
+    @property
+    def hasModel(self):
+        return len(self._model_data) > 0
+
+    @property
+    def id(self):
+        return self._id
+
+    def __getitem__(self, item):
+        return self.getModelByKey(item)
+
+    def __setitem__(self, key, value):
+        self.setModelKV(key, value)
 
     def __str__(self):
         sb = []
-        sb.append('modelname: ')
-        sb.append(self.modelname)
-        sb.append(', modedata: ')
-        sb.append(str(self.modeldata))
+        sb.append('model_name: ')
+        sb.append(self.model_name)
+        sb.append(', modeldata: ')
+        sb.append(str(self._model_data))
         sb.append(', modelconfig: ')
-        sb.append(str(self.modelconfig))
+        sb.append(str(self._model_config))
         sb.append(', period: ')
         sb.append(self.period)
         return ''.join(sb)
-
-    
-
-
-
-        
-        
-

@@ -56,7 +56,7 @@ def cacheModels(modelHolder, max_cache_size = MAX_CACHE_SIZE):
         jobId = jobs[MAX_CACHE_SIZE-1]
         cachedJobs.pop(jobId)
         jobs.remove(jobId)
-    uuid = modelHolder.getId()
+    uuid = modelHolder.id
     if uuid in cachedJobs:
         cachedJobs[uuid]= modelHolder
     else:
@@ -205,7 +205,7 @@ def main():
                 modelHolder = ModelHolder(ML_ALGORITHM,modelConfig,{}, METRIC_PERIOD.HISTORICAL.value, uuid)
 
                 
-            if  (not (modelHolder.hasModel() or skipHistorical) ):
+            if  (not (modelHolder.hasModel or skipHistorical) ):
                 configMapHistorical = convertStringToMap(historicalConfig)
                 isProphet = False
                 if (ML_ALGORITHM==AI_MODEL.PROPHET.value):
@@ -215,12 +215,12 @@ def main():
                 modelHolder, msg = computeHistoricalModel(configMapHistorical, modelHolder, isProphet)
                 if (msg!=''):
                     outputMsg.append(msg)
-                if (not modelHolder.hasModel()):
+                if (not modelHolder.hasModel):
                     outputMsg.append("Warning: No historical Data and model ")
                     logger.warning("Warning: Expect histical data but No historical. jobid :"+ uuid+ ",  "+str(modelHolder))
                     #print(getNowStr(), ": Warning: No historical: "+str(modelHolder))
                                 
-            hasHistorical =  modelHolder.hasModel()
+            hasHistorical =  modelHolder.hasModel
             
             #start baseline             
             to_do = []
