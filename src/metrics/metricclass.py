@@ -1,46 +1,39 @@
 from metadata.metadata import METRIC_PERIOD
 
+
 class MetricInfo:
     def __init__(self, metricClass='MetricInfo'):
-        self.metricClass= metricClass
+        self.metricClass = metricClass
 
 
 class SingleMetricInfo(MetricInfo):
-    def __init__(self,  metricName, metricKeys, columnmap, metricDF, metricTCategory=METRIC_PERIOD.CURRENT.value, metricClass = 'SingleMetricInfo'):
+    def __init__(self, metricName, metricKeys, columnmap, metricDF, metricTCategory=METRIC_PERIOD.CURRENT.value,
+                 metricClass='SingleMetricInfo'):
         self.columnmap = columnmap
         self.metricDF = metricDF
-        self.metricName= metricName
+        self.metricName = metricName
         self.metricKeys = metricKeys
-        self.metricTCategory =  metricTCategory
+        self.metricTCategory = metricTCategory
         self.metricClass = metricClass
-    def copyConfig(self):
-        return SingleMetricInfo(metricName, metricKeys,{},None, metricCategory,metricClass)
 
 
-    
-        
-        
-        
 class MultiTypeMetricInfo(MetricInfo):
-    def __init__(self, metricNamelist, metricKeys, columnmap, metricDF ,metricTCategorylist,  metricClass='MultiTypeMetricInfo'):
+    def __init__(self, metricNamelist, metricKeys, columnmap, metricDF, metricTCategorylist,
+                 metricClass='MultiTypeMetricInfo'):
         self.columnmap = columnmap
         self.metricNamelist = metricNamelist
         self.metricKeys = metricKeys
         self.metricDF = metricDF
-        self.metricTCategorylist =  metricTCategorylist
+        self.metricTCategorylist = metricTCategorylist
         self.metricClass = metricClass
 
-    def copyConfig(self):
-        return MultiTypeMetricInfo(metricNameList, metricKeys,{}, None, metricTCategorylist, metricClass)
 
-    
 class MultiKeyMetricInfo(MetricInfo):
-    def __init__(self, metricName, metricKeyslist, columnmap, metricDF, metricTCategorylist, metricClass ='MultiKeyMetricInfo'):
+    def __init__(self, metricName, metricKeyslist, columnmap, metricDF, metricTCategorylist,
+                 metricClass='MultiKeyMetricInfo'):
         self.columnmap = columnmap
-        self.metricName= metricName
+        self.metricName = metricName
         self.metricKeyslist = metricKeyslist
         self.metricDF = metricDF
-        self.metricTCategorylist =  metricTCategorylist
+        self.metricTCategorylist = metricTCategorylist
         self.metricClass = metricClass
-    def copyConfig(self):
-        return MultiKeyMetricInfo (metricName, metricKeyslist, {}, null, metricTCategorylist, metricClass )
