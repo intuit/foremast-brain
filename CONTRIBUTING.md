@@ -2,16 +2,6 @@
 
 ## How to become a contributor and submit your own code
 
-### Contributor License Agreements
-
-We'd love to accept your patches! Before we can take them, we have to jump a couple of legal hurdles.
-
-Please fill out either the individual or corporate Contributor License Agreement (CLA).
-
-  * If you are an individual writing original source code and you're sure you own the intellectual property, then you'll need to sign an individual CLA.
-  * If you work for a company that wants to allow you to contribute your work, then you'll need to sign a corporate CLA.
-
-
 ### Contributing A Patch
 
 1. Submit an issue describing your proposed change to the repo in question.
