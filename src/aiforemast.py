@@ -93,7 +93,6 @@ def retrieveCachedRequest(es_url_status_search):
  
 def main():
     #Default Parameters can be overwrite by environments
-    config = CONFIG
     max_cache = convertStrToInt(os.environ.get("MAX_CACHE_SIZE", str(MAX_CACHE_SIZE)), MAX_CACHE_SIZE) 
     ES_ENDPOINT = os.environ.get('ES_ENDPOINT', 'http://a31008275fcf911e8bde30674acac93e-885155939.us-west-2.elb.amazonaws.com:9200')
     ML_ALGORITHM = os.environ.get('ML_ALGORITHM', AI_MODEL.MOVING_AVERAGE_ALL.value)
@@ -110,9 +109,9 @@ def main():
 
     MIN_KRUSKAL_DATA_POINTS=convertStrToInt(os.environ.get("MIN_KRUSKAL_DATA_POINTS", str(KRUSKAL_MIN_DATA_POINTS)), KRUSKAL_MIN_DATA_POINTS) 
 
-    config["MIN_MANN_WHITE_DATA_POINTS"] = MIN_MANN_WHITE_DATA_POINTS
-    config["MIN_WILCOXON_DATA_POINTS"] = MIN_WILCOXON_DATA_POINTS
-    config["MIN_KRUSKAL_DATA_POINTS"] = MIN_KRUSKAL_DATA_POINTS
+    CONFIG["MIN_MANN_WHITE_DATA_POINTS"] = MIN_MANN_WHITE_DATA_POINTS
+    CONFIG["MIN_WILCOXON_DATA_POINTS"] = MIN_WILCOXON_DATA_POINTS
+    CONFIG["MIN_KRUSKAL_DATA_POINTS"] = MIN_KRUSKAL_DATA_POINTS
     
 
     ML_PROPHET_PERIOD = convertStrToInt(os.environ.get(PROPHET_PERIOD, str(DEFAULT_PROPHET_PERIOD)),DEFAULT_PROPHET_PERIOD) 
