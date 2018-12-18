@@ -17,7 +17,7 @@ Please check out the Check out the [architecture and design](https://github.com/
 There are multiple sets of parameters can be overwritten.
 
 #### machine learning algorithm related parameters -- used for post-deployment use cases
- ML_ALGORITHM --- algorithm which you want to pick Please refer to  AI_MODEL for all the supported algorithms
+ ML_ALGORITHM --- algorithm which you want to pick Please refer to  [AI_MODEL](https://github.com/intuit/foremast-brain/blob/master/src/models/modelclass.py) for all the supported algorithms
  
  MIN_HISTORICAL_DATA_POINT_TO_MEASURE -- minimum historical data points size
  
