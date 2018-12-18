@@ -5,7 +5,7 @@ import json
 from scipy.stats import mannwhitneyu, wilcoxon,kruskal,friedmanchisquare
 
 from utils.timeutils import  canProcess, rateLimitCheck
-from elasticsearch.elasticsearchutils import updateDocStatus, searchByID , parseResult
+from elasticsearch.elasticsearchutils import updateDocStatus, searchByID , parseResult,RETRY_COUNT
 from metadata.metadata import REQUEST_STATE, METRIC_PERIOD, MIN_DATA_POINTS
 from prometheus.metric import convertPromesResponseToMetricInfos
 from utils.urlutils import dorequest
@@ -18,8 +18,6 @@ from mlalgms.pairwisemodel import TwoDataSetSameDistribution,MultipleDataSetSame
 ### TODO comment remove line below
 #from helpers.foremastbrainhelper_test import getBaselinejson, getCurrentjson,getHistoricaljson
 
-
-RETRY_COUNT = 2
 
 # logging
 logging.basicConfig(format='%(asctime)s %(message)s')
@@ -113,21 +111,52 @@ def postprocess (url_update, uuid):
 # statues --- status in elasticsearch
 # return status for reservation
 
-def reserveJob(url_update, uuid, status):
-    if status == REQUEST_STATE.INITIAL.value :
-        updatedStatus = REQUEST_STATE.PREPROCESS_INPROGRESS.value
-        updateDocStatus(url_update, uuid, updatedStatus)
-        return updatedStatus
-    elif status == REQUEST_STATE.PREPROCESS_COMPLETED.value:
-        updatedStatus = REQUEST_STATE.PREPROCESS_INPROGRESS.value
-        updateDocStatus(url_update, uuid, updatedStatus)
-        return updatedStatus 
-    elif status == REQUEST_STATE.PREPROCESS_INPROGRESS.value:
-        updatedStatus = REQUEST_STATE.PREPROCESS_INPROGRESS.value
-        updateDocStatus(url_update, uuid, updatedStatus)
-        return updatedStatus  
-    return  status 
+def reserveJob(url_update, url_search, uuid, status):
+    for i in range(RETRY_COUNT):
+        if status == REQUEST_STATE.INITIAL.value :
+            updatedStatus = REQUEST_STATE.PREPROCESS_INPROGRESS.value
+            updateDocStatus(url_update, uuid, updatedStatus)
+        elif status == REQUEST_STATE.PREPROCESS_COMPLETED.value:
+            updatedStatus = REQUEST_STATE.PREPROCESS_INPROGRESS.value
+            updateDocStatus(url_update, uuid, updatedStatus)
+        elif status == REQUEST_STATE.PREPROCESS_INPROGRESS.value:
+            updatedStatus = REQUEST_STATE.PREPROCESS_INPROGRESS.value
+            updateDocStatus(url_update, uuid, updatedStatus)
+        else:  
+            #leave this for test
+            updatedStatus = status
+            updateDocStatus(url_update, uuid, updatedStatus) 
+        openRequest = retrieveRequestById(url_search, uuid)
+        if openRequest == None:
+            logger.error("failed to find uuid "+uuid)
+            continue
+        new_status = openRequest['status']
+        if new_status == updatedStatus:
+            return  updatedStatus
+        else:
+            if i == 2 :
+               logger.error("failed to update uuid  "+uuid+"  from "+status +" to "+updatedStatus) 
+            continue
+    return status
+    
 
+
+def updateESDocStatus(url_update, url_search, uuid, status, info='', reason=''):
+    for i in range(RETRY_COUNT):
+        updateDocStatus(url_update, uuid, status, info, reason)
+        #leave this for test
+        openRequest = retrieveRequestById(url_search, uuid)
+        if openRequest == None:
+            logger.error("failed to find uuid "+uuid)
+            continue
+        new_status = openRequest['status']
+        if new_status == status:
+            return  True
+        else:
+            if i == 2 :
+               logger.error("failed to update uuid  "+uuid+" to "+status ) 
+            continue
+    return False
 
 def isCompletedStatus (status):
     if status == REQUEST_STATE.INITIAL.value:

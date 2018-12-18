@@ -176,7 +176,7 @@ def updateDocStatus(url_update, uuid, status, info='', reason=''):
     for i in range(RETRY_COUNT):
         i += 1
         try:
-            req = requests.post(url_update, data=payload, headers=headers, timeout=10)
+            req = requests.post(url_update, data=payload, headers=headers, timeout=5)
             #print(req.status_code)
             if (req.status_code == 200):
                 return True
