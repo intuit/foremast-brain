@@ -156,6 +156,13 @@ def updateESDocStatus(url_update, url_search, uuid, status, info='', reason=''):
             if i == 2 :
                logger.error("failed to update uuid  "+uuid+" to "+status ) 
             continue
+    #one more last try
+    updateDocStatus(url_update, uuid, status)
+    openRequest = retrieveRequestById(url_search, uuid)
+    if openRequest != None:
+        new_status = openRequest['status']
+        if new_status == status:
+            return  True
     return False
 
 def isCompletedStatus (status):

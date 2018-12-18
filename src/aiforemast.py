@@ -160,15 +160,15 @@ def main():
                 
                     #Test Start########################
                     '''
-                    id ='8def9532f0f903fb1ce2ff833a977bdca58142bc8159de3e98aeed5a719e8e75'
+                    id ='ebfc2cfd5fae051a7b9fb1dacdddc9d5a31b40f5a6bcb326a767a1774f942147'
                     openRequest = retrieveRequestById(es_url_status_search, id)
                     if (openRequest==None):
                         print("es is down, will sleep and retry")
                         time.sleep(1)
                         continue
-                    
-                    #Test End##########################
                     '''
+                    #Test End##########################
+                    
         outputMsg = []
         uuid = openRequest['id']
         status = openRequest['status']
@@ -193,8 +193,8 @@ def main():
         
         try:
             if (skipCurrent):
-                updateESDocStatus(es_url_status_update, es_url_status_search, uuid, REQUEST_STATE.COMPLETED_UNKNOWN.value, "Error: no current config")
-                logger.warning("request error : jobid  "+uuid+" current config is empty. make status unknown")
+                ret = updateESDocStatus(es_url_status_update, es_url_status_search, uuid, REQUEST_STATE.COMPLETED_UNKNOWN.value, "Error: no current config")
+                logger.warning("request error : jobid  "+uuid+" updateESDocStatus  is :"+ str(ret)+ " current config is empty. make status unknown")
                 #print(getNowStr(), " : jobid  ",uuid, " current config is empty. make status unknown")
                 continue
 
@@ -218,8 +218,7 @@ def main():
                 if (msg!=''):
                     outputMsg.append(msg)
                 if (not modelHolder.hasModel):
-                    outputMsg.append("Warning: No historical Data and model ")
-                    logger.warning("Warning: Expect histical data but No historical. jobid :"+ uuid+ ",  "+str(modelHolder))
+                    outputMsg.append("No historical Data and model ")
                     #print(getNowStr(), ": Warning: No historical: "+str(modelHolder))
                                 
             hasHistorical =  modelHolder.hasModel
@@ -262,13 +261,13 @@ def main():
             
             if hasCurrent == False:
                 if isPast(endTime, 20):
-                    updateESDocStatus(es_url_status_update, es_url_status_search, uuid, REQUEST_STATE.COMPLETED_UNKNOWN.value, "Error: there is no current Metric. ")
-                    logger.warning("Current metric is empty, jobid "+uuid+"  time past mark job unknow "+  currentConfig+" ".join(outputMsg))
+                    ret = updateESDocStatus(es_url_status_update, es_url_status_search, uuid, REQUEST_STATE.COMPLETED_UNKNOWN.value, "Error: there is no current Metric. ")
+                    logger.warning("Current metric is empty, jobid "+uuid+" updateESDocStatus  is :"+ str(ret)+ "  time past mark job unknow "+  currentConfig+" ".join(outputMsg))
                 else:
-                    cacheModels(modelHolder, max_cache) 
+                    ret = cacheModels(modelHolder, max_cache) 
                     updateESDocStatus(es_url_status_update, es_url_status_search, uuid, REQUEST_STATE.PREPROCESS_INPROGRESS.value, "Warning: there is no current Metric, Will keep try until reachs endTime. ")
                     # print(getNowStr(), ":  no current metric is not ready, jobid ",uuid,"  ",  currentConfig)
-                    logger.warning("Current metric is empty, jobid "+uuid+"  end time is not reach, will cache and retry "+  currentConfig+" ".join(outputMsg))
+                    logger.warning("Current metric is empty, jobid "+uuid+" updateESDocStatus  is :"+ str(ret)+ " end time is not reach, will cache and retry "+  currentConfig+" ".join(outputMsg))
                 continue
             
             if (hasBaseline):
@@ -285,73 +284,75 @@ def main():
                     else:
                     '''
                     if meetSize :
-                        updateESDocStatus(es_url_status_update, es_url_status_search, uuid, REQUEST_STATE.COMPLETED_UNHEALTH , "Warning:  baseline and current are different pattern. "+escapeString(''.join(outputMsg)))
+                        ret = updateESDocStatus(es_url_status_update, es_url_status_search, uuid, REQUEST_STATE.COMPLETED_UNHEALTH , "Warning:  baseline and current are different pattern. ")
                         #print(getNowStr(),": id ",uuid, " completed_unhealth... bacause pairwise is not same" )
-                        logger.warning("job id :"+uuid+" completed_unhealth... bacause current and baseline has different distribution pattern ".join(outputMsg))
+                        logger.warning("job id :"+uuid+"completed_unhealth, current and baseline has different distribution pattern,  updateESDocStatus  is :"+ str(ret))
                     else:
                         if isPast(endTime, 10):
-                            updateESDocStatus(es_url_status_update, es_url_status_search, uuid, REQUEST_STATE.COMPLETED_UNKNOWN.value, "Warning: baseline and current are different pattern but do not have enough datapoints. "+escapeString(''.join(outputMsg)))
+                            ret = updateESDocStatus(es_url_status_update, es_url_status_search, uuid, REQUEST_STATE.COMPLETED_UNKNOWN.value, "Warning: baseline and current are different pattern but not meet min datapoints to determine . ")
                             #print(getNowStr(),": id ",uuid, " completed_unknown... bacause pairwise is not same but not enough datapoints " )
-                            logger.warning("job id :"+uuid+" completed_unknown...current or baseline is not same but not enough datapoints to confirm  ".join(outputMsg))
+                            logger.warning("job id :"+uuid+"completed_unknown...current or baseline is not same but not enough datapoints to confirm,  updateESDocStatus  is :"+ str(ret))
                         else: 
-                            cacheModels(modelHolder,  max_cache) 
-                            updateESDocStatus(es_url_status_update, es_url_status_search, uuid, REQUEST_STATE.PREPROCESS_INPROGRESS.value, " pairwise not same and not enough datapoints."+escapeString(''.join(outputMsg)))
+                            
+                            ret = updateESDocStatus(es_url_status_update, es_url_status_search, uuid, REQUEST_STATE.PREPROCESS_COMPLETED.value, " pairwise not same so far and not meet min datapoints to determine.")
                             #print(getNowStr(),": id ",uuid, "  bacause pairwise is not same and not enough datapoint " )
-                            logger.warning("job id :"+uuid+" need to retry until collect enough data points to confirm...current or baseline is not same but not enough datapoints to confirm  ".join(outputMsg) )
+                            logger.warning("job id :"+uuid+" pairwise not same and not enough datapoints but not meet min datapoint to determine ,  updateESDocStatus  is :"+ str(ret))
                 else:
                     if isPast(endTime, 10):
-                        updateESDocStatus(es_url_status_update, es_url_status_search, uuid, REQUEST_STATE.COMPLETED_HEALTH.value, '')
-                        logger.warning("job ID : "+uuid+" is health")
+                        ret = updateESDocStatus(es_url_status_update, es_url_status_search, uuid, REQUEST_STATE.COMPLETED_HEALTH.value, '')
+                        logger.warning("job ID : "+uuid+" is health. updateESDocStatus  is :"+ str(ret))
                         #print(getNowStr(),": id ",uuid, "mark as health....")
                     else:
-                        updateESDocStatus(es_url_status_update, es_url_status_search, uuid, REQUEST_STATE.PREPROCESS_INPROGRESS.value , " current and baseline have same but not past endtime yet. "+escapeString(''.join(outputMsg)))
+                        ret = updateESDocStatus(es_url_status_update, es_url_status_search, uuid, REQUEST_STATE.PREPROCESS_COMPLETED.value , " current and baseline have same distribution but not past endtime yet. ")
                         # print(getNowStr(),": id ",uuid, " continue . bacause pairwise is not same but not past endTime yet " )                      
-                        logger.warning("job id :"+uuid+" will reprocess . current and base have same distribution but not past endTime yet  ".join(outputMsg))
+                        logger.warning("job id :"+uuid+" will reprocess . current and base have same distribution but not past endTime yet, updateESDocStatus  is :"+ str(ret))
                 continue
             else:
                 if not skipBaseline:
                     if isPast(endTime, 10):
-                        updateESDocStatus(es_url_status_update, es_url_status_search, uuid, REQUEST_STATE.COMPLETED_UNKNOWN.value, "baseline query is empty. "+escapeString(''.join(outputMsg)))
-                        logger.warning("job ID : "+uuid+ " is unknown because baseline no data ".join(outputMsg))
+                        ret =updateESDocStatus(es_url_status_update, es_url_status_search, uuid, REQUEST_STATE.COMPLETED_UNKNOWN.value, "baseline query is empty. ")
+                        logger.warning("job ID : "+uuid+" unknown because baseline no data, updateESDocStatus  is :"+ str(ret))
                         #print(getNowStr(),": id ",uuid, "mark as unknown because baseline no data...")
                     else:
-                        updateESDocStatus(es_url_status_update, es_url_status_search, uuid, REQUEST_STATE.PREPROCESS_INPROGRESS.value , " no baseline data yet, "+escapeString(''.join(outputMsg)))
+                        
+                        ret = updateESDocStatus(es_url_status_update, es_url_status_search, uuid, REQUEST_STATE.PREPROCESS_COMPLETED.value , " no baseline data yet, ")
                         # print(getNowStr(),": id ",uuid, " continue . no baseline data yet. " )  
-                        logger.warning("job ID : "+uuid+ " continue . no baseline data yet.  ".join(outputMsg))                  
+                        logger.warning("job ID : "+uuid+" continue . no baseline data yet. updateESDocStatus  is :"+ str(ret))                  
                     continue
                     
             
             #check historical and  baseline
             if hasHistorical == False :
                     if isPast(endTime, 10):    
-                        updateESDocStatus(es_url_status_update, es_url_status_search, uuid, REQUEST_STATE.COMPLETED_UNKNOWN.value, "Error: no enough historical data and no baseline data. "+escapeString(''.join(outputMsg)))
+                        ret = updateESDocStatus(es_url_status_update, es_url_status_search, uuid, REQUEST_STATE.COMPLETED_UNKNOWN.value, "Error: no enough historical data and no baseline data. ")
+                        logger.warning("job id: "+uuid+" completed unknown  no enough historical data and no baseline data , updateESDocStatus  is :"+ str(ret))
                     else:
                         cacheModels(modelHolder,  max_cache) 
-                        updateESDocStatus(es_url_status_update, es_url_status_search, uuid, REQUEST_STATE.PREPROCESS_INPROGRESS.value, "Warning: not enough  historical data and no baseline data. "+escapeString(''.join(outputMsg)))
+                        ret = updateESDocStatus(es_url_status_update, es_url_status_search, uuid, REQUEST_STATE.PREPROCESS_INPROGRESS.value, "Warning: not enough  historical data and no baseline data will retry until endtime reaches. ")
                         #print(getNowStr(),": id ",uuid, "  will reprocess because no historical.. " )
-                        logger.warning("job id: "+uuid+ " will reprocess because no historical.. ".join(outputMsg))
+                        logger.warning("job id: "+uuid+"  will cache and reprocess becasue no historical, updateESDocStatus  is :"+ str(ret))
                     continue
                 
-            hasAnomaly, anomaliesDataStr = computeAnomaly(currentDataSet,modelHolder)    
-            logger.warning("job ID is "+uuid+ " has anomaly is "+ str(hasAnomaly)+ " anomalies data is "+ anomaliesDataStr+" ".join(outputMsg))
-            
+            hasAnomaly, anomaliesDataStr = computeAnomaly(currentDataSet,modelHolder)   
+            logger.warning("job ID is "+uuid+"  hasAnomaly is "+str(hasAnomaly) )
+
             if hasAnomaly:
                 #update ES to anomaly otherwise continue 
                 anomalyInfo = escapeString(anomaliesDataStr)
-                updateESDocStatus(es_url_status_update, es_url_status_search, uuid, REQUEST_STATE.COMPLETED_UNHEALTH.value , "Warning: anomaly detected between current and historical. "+escapeString(''.join(outputMsg)),anomalyInfo)
+                ret = updateESDocStatus(es_url_status_update, es_url_status_search, uuid, REQUEST_STATE.COMPLETED_UNHEALTH.value , "Warning: anomaly detected between current and historical. ",anomalyInfo)
                 #print(getNowStr(),"job ID is ",uuid, " mark unhealth anomalies data is ", anomalyInfo)
-                logger.warning("job ID is "+uuid+" mark unhealth anomalies data is "+ anomalyInfo+" ".join(outputMsg))
+                logger.warning("job ID is unhealth  "+uuid+" updateESDocStatus  is :"+ str(ret))
                 
                 continue
             else:
                 if isPast(endTime, 10):
-                    updateESDocStatus(es_url_status_update, es_url_status_search, uuid, REQUEST_STATE.COMPLETED_HEALTH.value, "")
-                    logger.warning("job ID: "+uuid+ " is health ".join(outputMsg))
+                    ret = updateESDocStatus(es_url_status_update, es_url_status_search, uuid, REQUEST_STATE.COMPLETED_HEALTH.value, "")
+                    logger.warning("job ID: "+uuid+" is health, updateESDocStatus is :"+ str(ret))
                     #print(getNowStr(),"job ID is ",uuid, " mark as health....")
                 else:
                     cacheModels( modelHolder,  max_cache)    
-                    updateESDocStatus(es_url_status_update, es_url_status_search, uuid, REQUEST_STATE.PREPROCESS_INPROGRESS.value, "Need to continuous to check untile reachs deployment endTime. "+escapeString(''.join(outputMsg)))
-                    logger.warning("job ID : "+uuid+ " will reprocess until endtime reached ".join(outputMsg))
+                    ret = updateESDocStatus(es_url_status_update, es_url_status_search, uuid, REQUEST_STATE.PREPROCESS_INPROGRESS.value, "Need to continuous to check untile reachs deployment endTime. ")
+                    logger.warning("job ID : "+uuid+" health so far will reprocess  updateESDocStatus is :"+ str(ret))
                     #print(getNowStr(),"job ID is ",uuid, " so far health, continue check ....")
         except Exception as e:
             #print("uuid ",uuid, " error :",str(e))
