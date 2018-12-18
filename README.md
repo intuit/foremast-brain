@@ -25,7 +25,7 @@ MIN_HISTORICAL_DATA_POINT_TO_MEASURE -- minimum historical data points size
 
 ML_BOUND -- measurement is upper bound, lower bound or upper and lower bound
 
-ML_THRESHOLD --- threshold
+ML_THRESHOLD --- machine learning algorithm threshold
 
 #### performance, fault-tolerant related parameters
 
