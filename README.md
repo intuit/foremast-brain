@@ -43,7 +43,8 @@ MIN_KRUSKAL_DATA_POINTS -- minimum data points required by Kruskal algorithm.
 
 
 ### How to make change:
-You can add algorithm name, different parameters Please refer [foremast-brain.yaml] (https://github.com/intuit/foremast/blob/master/deploy/foremast/3_judgement/foremast-brain.yaml) for detail
+You can add algorithm name, different parameters 
+Please refer [foremast-brain](https://github.com/intuit/foremast/blob/master/deploy/foremast/3_judgement/foremast-brain.yaml) for detail
 
 You can refer below ES_ENDPOINT as an example
 
