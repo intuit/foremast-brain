@@ -15,6 +15,8 @@ matrix:
     - DEPLOY=true
 install:
   - pip3 install -r requirements_test.txt
+  - cd src
+  - pwd
 script:
   - python tests/test_foremast_brain.py
 services:
