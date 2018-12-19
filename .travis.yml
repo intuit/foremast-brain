@@ -1,6 +1,8 @@
-sudo: required
 language: python
+sudo: required
 python_import_path: foremast.ai/foremast-brain
+python:
+  - 3.6
 dist: trusty
 matrix:
   include:
@@ -11,6 +13,10 @@ matrix:
     env:
     - DOCKER=true
     - DEPLOY=true
+install:
+  - pip3 install -r requirements_test.txt
+script:
+  - python tests/test_foremast_brain.py
 services:
 - docker
 env:
