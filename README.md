@@ -29,7 +29,7 @@ ML_THRESHOLD --- machine learning algorithm threshold
 
 #### performance, fault-tolerant related parameters
 
-MAX_STUCK_IN_MINUTES ---- max process time until another foremast-brain process will take over and reprocess
+MAX_STUCK_IN_SECONDS ---- max process time until another foremast-brain process will take over and reprocess
 
 MAX_CACHE_SIZE --- max cached model size
 
