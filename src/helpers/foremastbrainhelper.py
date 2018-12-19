@@ -1,5 +1,6 @@
 import logging
 import json
+import time
 #import sys
 #sys.path.append('../')
 from scipy.stats import mannwhitneyu, wilcoxon,kruskal,friedmanchisquare
@@ -147,6 +148,7 @@ def updateESDocStatus(url_update, url_search, uuid, status, info='', reason=''):
         #leave this for test
         openRequest = retrieveRequestById(url_search, uuid)
         if openRequest == None:
+            time.sleep(1)
             logger.error("failed to find uuid "+uuid)
             continue
         new_status = openRequest['status']
@@ -157,9 +159,12 @@ def updateESDocStatus(url_update, url_search, uuid, status, info='', reason=''):
                logger.error("failed to update uuid  "+uuid+" to "+status ) 
             continue
     #one more last try
-    updateDocStatus(url_update, uuid, status)
-    openRequest = retrieveRequestById(url_search, uuid)
-    if openRequest != None:
+    for i in range(RETRY_COUNT):
+        updateDocStatus(url_update, uuid, status)
+        openRequest = retrieveRequestById(url_search, uuid)
+        if openRequest == None:
+            time.sleep(1)
+            continue
         new_status = openRequest['status']
         if new_status == status:
             return  True

@@ -20,7 +20,7 @@ PH_STATUS2= '<STATUS2>'
 PH_INFO = '<INFO>'
 PH_REASON = '<REASON>'
 PH_MODIFIED_AT = '<MODIFIED_AT>'
-PH_PAST_MINUTE = '<PAST_MINUTE>'
+PH_PAST_SECOND = '<PAST_SECOND>'
 ERROR = 'Error:'
 
 
@@ -86,7 +86,7 @@ payload_search_status_with_filter = {
         {
           "range":{  
                "modified_at":{  
-                  "lt":"now-<PAST_MINUTE>m/s"
+                  "lt":"now-<PAST_SECOND>s/s"
                }
             }
         }
@@ -246,12 +246,12 @@ def parseHits(txt):
 #  Name searchByStatus
 #  
 # 
-def searchByStatus(url_status, status, needLastModifiedFilter = True, pastMinutes=5): 
+def searchByStatus(url_status, status, needLastModifiedFilter = True, pastMinutes=3): 
     i = 0
     failedResult = ''
     data=''
     if needLastModifiedFilter:
-        data=(json.dumps(payload_search_status_with_filter).replace(PH_STATUS ,status)).replace(PH_PAST_MINUTE, str(pastMinutes)) 
+        data=(json.dumps(payload_search_status_with_filter).replace(PH_STATUS ,status)).replace(PH_PAST_SECOND, str(pastMinutes)) 
     else:
         data=json.dumps(payload_search_status).replace(PH_STATUS ,status) 
     for i in range (RETRY_COUNT):

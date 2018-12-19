@@ -41,9 +41,10 @@ logger = logging.getLogger('aiformast')
 ES_INDEX = 'documents'
 
 MAX_CACHE_SIZE = 2000
-DEFAULT_MAX_STUCK_IN_MINUTES =3
+DEFAULT_MAX_STUCK_IN_SECONDS=50
 DEFAULT_AGGREGATED_METRIC_SECOND = 60
 DEFAULT_MIN_HISTORICAL_DATA_POINT_TO_MEASURE = 1
+#DEFAULT_ENABLE_CACHE = '0'
 
 #key is jobid value is modelHolder
 cachedJobs = {}
@@ -52,6 +53,8 @@ jobs=[]
             
 
 def cacheModels(modelHolder, max_cache_size = MAX_CACHE_SIZE):
+    #if not enableCache:
+    #    return
     if(len(jobs)== MAX_CACHE_SIZE):
         #always remove the lst one because rate limiting.
         jobId = jobs[MAX_CACHE_SIZE-1]
@@ -62,11 +65,18 @@ def cacheModels(modelHolder, max_cache_size = MAX_CACHE_SIZE):
         cachedJobs[uuid]= modelHolder
     else:
         cachedJobs[uuid]= modelHolder        
-        jobs.append(uuid) 
+        jobs.append(uuid)
 
-def retrieveCachedRequest(es_url_status_search):
-    for jobId in jobs:
-        try:
+def retrieveOneCachedRequest(es_url_status_search, jobId):
+    if jobId in jobs:
+        precessCached(es_url_status_search, jobId)
+    return None, None
+
+   
+def precessCached(es_url_status_search, jobId):
+    #if not enableCache:
+    #    return None, None
+    try:
             modelHolder = cachedJobs[jobId]
             if(modelHolder==None):
                 #this should never happen
@@ -76,19 +86,31 @@ def retrieveCachedRequest(es_url_status_search):
             if openRequest== None:
                 jobs.remove(jobId)
                 del cachedJobs[jobId]
-                continue
+                return None, None
             if isCompletedStatus(openRequest['status']):
                 jobs.remove(jobId)
                 del cachedJobs[jobId]
-                continue 
+                return None, None
             ret = canRequestProcess(openRequest)
             if (ret == None):
-                continue
+                return None, None
             jobs.remove(jobId)
             del cachedJobs[jobId]
             return openRequest, modelHolder 
-        except Exception as e:
-            logger.error("retrieveCachedRequest encount error while retrieving cache ",e)
+    except Exception as e:
+            logger.warning("retrieveCachedRequest encount error while retrieving cache ",e)
+    return None, None
+
+
+def retrieveCachedRequest(es_url_status_search):
+    #if not enableCache:
+    #    return None, None
+    for jobId in jobs:
+       openRequest, modelHolder = retrieveOneCachedRequest(es_url_status_search, jobId)
+       if (openRequest == None):
+           continue
+       else:
+           return openRequest, modelHolder
     return None, None
 
  
@@ -97,6 +119,10 @@ def main():
     config =  globalconfig()
     max_cache = convertStrToInt(os.environ.get("MAX_CACHE_SIZE", str(MAX_CACHE_SIZE)), MAX_CACHE_SIZE) 
     ES_ENDPOINT = os.environ.get('ES_ENDPOINT', 'http://a31008275fcf911e8bde30674acac93e-885155939.us-west-2.elb.amazonaws.com:9200')
+    #cache= os.environ.get('ENABLE_CACHE', DEFAULT_ENABLE_CACHE)
+    #enableCache = False
+    #if cache=='':
+    #    enableCache = True
     ML_ALGORITHM = os.environ.get('ML_ALGORITHM', AI_MODEL.MOVING_AVERAGE_ALL.value)
     #ML_ALGORITHM= AI_MODEL.EXPONENTIAL_SMOOTHING.value
     #ML_ALGORITHM= AI_MODEL.DOUBLE_EXPONENTIAL_SMOOTHING.value
@@ -128,7 +154,7 @@ def main():
     
     ML_BOUND = convertStrToInt(os.environ.get(BOUND, str(IS_UPPER_BOUND)), IS_UPPER_BOUND)
 
-    MAX_STUCK_IN_MINUTES = convertStrToInt(os.environ.get('MAX_STUCK_IN_MINUTES', str(DEFAULT_MAX_STUCK_IN_MINUTES)), DEFAULT_MAX_STUCK_IN_MINUTES)
+    MAX_STUCK_IN_SECONDS = convertStrToInt(os.environ.get('MAX_STUCK_IN_SECONDS', str(DEFAULT_MAX_STUCK_IN_SECONDS)), DEFAULT_MAX_STUCK_IN_SECONDS)
     min_historical_data_points = convertStrToInt(os.environ.get('MIN_HISTORICAL_DATA_POINT_TO_MEASURE', str(DEFAULT_MIN_HISTORICAL_DATA_POINT_TO_MEASURE)), DEFAULT_MIN_HISTORICAL_DATA_POINT_TO_MEASURE)
 
     es_url_status_search=buildElasticSearchUrl(ES_ENDPOINT, ES_INDEX)
@@ -143,13 +169,17 @@ def main():
       
   
         resp = searchByStatuslist(es_url_status_search, REQUEST_STATE.INITIAL.value ,REQUEST_STATE.PREPROCESS_COMPLETED.value)
+        #resp = searchByStatuslist(es_url_status_search, REQUEST_STATE.COMPLETED_UNHEALTH.value, REQUEST_STATE.COMPLETED_HEALTH.value,
+        #                         REQUEST_STATE.COMPLETED_UNKNOWN.value)
         openRequestlist=parseResult(resp)
         openRequest =selectRequestToProcess(openRequestlist)
         if openRequest == None :
-            logger.warning("No initial, preprocess_complete requests found .....")
-            openRequest, modelHolder = retrieveCachedRequest(es_url_status_search)
-            if (openRequest == None):
-                resp = searchByStatus(es_url_status_search, REQUEST_STATE.PREPROCESS_INPROGRESS.value)
+            #process stucked preprogress_inprogress event.
+            resp = searchByStatus(es_url_status_search, REQUEST_STATE.PREPROCESS_INPROGRESS.value,MAX_STUCK_IN_SECONDS)
+            openRequestlist=parseResult(resp)
+            openRequest = selectRequestToProcess(openRequestlist)
+            if openRequest == None:
+                openRequest, modelHolder = retrieveCachedRequest(es_url_status_search)
                 openRequestlist=parseResult(resp)
                 openRequest = selectRequestToProcess(openRequestlist)
                 if openRequest == None :
@@ -168,7 +198,10 @@ def main():
                         continue
                     '''
                     #Test End##########################
-                    
+            else:
+                uuid = openRequest['id']
+                openRequest_tmp, modelHolder = retrieveOneCachedRequest(es_url_status_search,uuid)
+
         outputMsg = []
         uuid = openRequest['id']
         status = openRequest['status']
@@ -260,18 +293,23 @@ def main():
 
             
             if hasCurrent == False:
+                ret = True
                 if isPast(endTime, 20):
                     ret = updateESDocStatus(es_url_status_update, es_url_status_search, uuid, REQUEST_STATE.COMPLETED_UNKNOWN.value, "Error: there is no current Metric. ")
                     logger.warning("Current metric is empty, jobid "+uuid+" updateESDocStatus  is :"+ str(ret)+ "  time past mark job unknow "+  currentConfig+" ".join(outputMsg))
                 else:
-                    ret = cacheModels(modelHolder, max_cache) 
-                    updateESDocStatus(es_url_status_update, es_url_status_search, uuid, REQUEST_STATE.PREPROCESS_INPROGRESS.value, "Warning: there is no current Metric, Will keep try until reachs endTime. ")
+                    cacheModels(modelHolder, max_cache) 
+                    ret =updateESDocStatus(es_url_status_update, es_url_status_search, uuid, REQUEST_STATE.PREPROCESS_INPROGRESS.value, "Warning: there is no current Metric, Will keep try until reachs endTime. ")
                     # print(getNowStr(), ":  no current metric is not ready, jobid ",uuid,"  ",  currentConfig)
                     logger.warning("Current metric is empty, jobid "+uuid+" updateESDocStatus  is :"+ str(ret)+ " end time is not reach, will cache and retry "+  currentConfig+" ".join(outputMsg))
+                if not ret:
+                    cacheModels( modelHolder,  max_cache)
+                    logger.error("ES update failed: job ID: "+uuid) 
                 continue
             
             if (hasBaseline):
                 hasSameDistribution, detailedResults, meetSize = pairWiseComparson (currentDataSet, baselineDataSet, ML_PAIRWISE_ALGORITHM, ML_PAIRWISE_THRESHOLD, ML_BOUND)
+                ret = True
                 if (not hasSameDistribution):
                     logger.warning("current and base line does not have same distribution "+str(detailedResults)+" ".join(outputMsg))
 
@@ -299,38 +337,48 @@ def main():
                             logger.warning("job id :"+uuid+" pairwise not same and not enough datapoints but not meet min datapoint to determine ,  updateESDocStatus  is :"+ str(ret))
                 else:
                     if isPast(endTime, 10):
-                        ret = updateESDocStatus(es_url_status_update, es_url_status_search, uuid, REQUEST_STATE.COMPLETED_HEALTH.value, '')
+                        ret = updateESDocStatus(es_url_status_update, es_url_status_search, uuid, REQUEST_STATE.COMPLETED_HEALTH.value, 'health')
                         logger.warning("job ID : "+uuid+" is health. updateESDocStatus  is :"+ str(ret))
                         #print(getNowStr(),": id ",uuid, "mark as health....")
                     else:
                         ret = updateESDocStatus(es_url_status_update, es_url_status_search, uuid, REQUEST_STATE.PREPROCESS_COMPLETED.value , " current and baseline have same distribution but not past endtime yet. ")
                         # print(getNowStr(),": id ",uuid, " continue . bacause pairwise is not same but not past endTime yet " )                      
                         logger.warning("job id :"+uuid+" will reprocess . current and base have same distribution but not past endTime yet, updateESDocStatus  is :"+ str(ret))
+                if not ret:
+                    cacheModels( modelHolder,  max_cache)
+                    logger.error("ES update failed: job ID: "+uuid)     
                 continue
             else:
                 if not skipBaseline:
+                    ret = True
                     if isPast(endTime, 10):
                         ret =updateESDocStatus(es_url_status_update, es_url_status_search, uuid, REQUEST_STATE.COMPLETED_UNKNOWN.value, "baseline query is empty. ")
                         logger.warning("job ID : "+uuid+" unknown because baseline no data, updateESDocStatus  is :"+ str(ret))
-                        #print(getNowStr(),": id ",uuid, "mark as unknown because baseline no data...")
                     else:
                         
                         ret = updateESDocStatus(es_url_status_update, es_url_status_search, uuid, REQUEST_STATE.PREPROCESS_COMPLETED.value , " no baseline data yet, ")
                         # print(getNowStr(),": id ",uuid, " continue . no baseline data yet. " )  
-                        logger.warning("job ID : "+uuid+" continue . no baseline data yet. updateESDocStatus  is :"+ str(ret))                  
+                        logger.warning("job ID : "+uuid+" continue . no baseline data yet. updateESDocStatus  is :"+ str(ret)) 
+                    if not ret:
+                        cacheModels( modelHolder,  max_cache)
+                        logger.error("ES update failed: job ID: "+uuid)                
                     continue
                     
             
             #check historical and  baseline
             if hasHistorical == False :
-                    if isPast(endTime, 10):    
+                    ret = True
+                    if isPast(endTime, 5):    
                         ret = updateESDocStatus(es_url_status_update, es_url_status_search, uuid, REQUEST_STATE.COMPLETED_UNKNOWN.value, "Error: no enough historical data and no baseline data. ")
                         logger.warning("job id: "+uuid+" completed unknown  no enough historical data and no baseline data , updateESDocStatus  is :"+ str(ret))
                     else:
-                        cacheModels(modelHolder,  max_cache) 
-                        ret = updateESDocStatus(es_url_status_update, es_url_status_search, uuid, REQUEST_STATE.PREPROCESS_INPROGRESS.value, "Warning: not enough  historical data and no baseline data will retry until endtime reaches. ")
+                        ret = updateESDocStatus(es_url_status_update, es_url_status_search, uuid, REQUEST_STATE.PREPROCESS_COMPLETED.value, "Warning: not enough  historical data and no baseline data will retry until endtime reaches. ")
                         #print(getNowStr(),": id ",uuid, "  will reprocess because no historical.. " )
                         logger.warning("job id: "+uuid+"  will cache and reprocess becasue no historical, updateESDocStatus  is :"+ str(ret))
+
+                    if not ret:
+                        cacheModels( modelHolder,  max_cache)
+                        logger.error("ES update failed: job ID: "+uuid)    
                     continue
                 
             hasAnomaly, anomaliesDataStr = computeAnomaly(currentDataSet,modelHolder)   
@@ -342,12 +390,17 @@ def main():
                 ret = updateESDocStatus(es_url_status_update, es_url_status_search, uuid, REQUEST_STATE.COMPLETED_UNHEALTH.value , "Warning: anomaly detected between current and historical. ",anomalyInfo)
                 #print(getNowStr(),"job ID is ",uuid, " mark unhealth anomalies data is ", anomalyInfo)
                 logger.warning("job ID is unhealth  "+uuid+" updateESDocStatus  is :"+ str(ret))
-                
-                continue
+                if not ret:
+                    cacheModels( modelHolder,  max_cache)
+                    logger.error("ES update failed: job ID: "+uuid)
             else:
                 if isPast(endTime, 10):
-                    ret = updateESDocStatus(es_url_status_update, es_url_status_search, uuid, REQUEST_STATE.COMPLETED_HEALTH.value, "")
+                    ret = updateESDocStatus(es_url_status_update, es_url_status_search, uuid, REQUEST_STATE.COMPLETED_HEALTH.value,"current compare to histroical model is health")
                     logger.warning("job ID: "+uuid+" is health, updateESDocStatus is :"+ str(ret))
+                    if not ret:
+                        cacheModels( modelHolder,  max_cache)
+                        logger.error("ES update failed: job ID: "+uuid)
+   
                     #print(getNowStr(),"job ID is ",uuid, " mark as health....")
                 else:
                     cacheModels( modelHolder,  max_cache)    
