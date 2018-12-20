@@ -1,4 +1,6 @@
 # Foremast brain
+[![Build Status](https://api.travis-ci.org/intuit/foremast.svg?branch=master)](https://www.travis-ci.org/intuit/foremast)
+[![Slack Chat](https://img.shields.io/badge/slack-live-orange.svg)](https://foremastio.slack.com/)
 
 Foremast-brain makes health judgments of [Foremast](https://github.com/intuit/foremast), a service health detection and canary analysis system for Kubernetes. There are two main criteria that Foremast-brain evaluates:
 
