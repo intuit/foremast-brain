@@ -15,10 +15,8 @@ matrix:
     - DEPLOY=true
 install:
   - pip3 install -r requirements_test.txt
-  - cd src
-  - echo `pwd`
 script:
-  - python ./test_foremast_brain.py
+  - python ./src/test_foremast_brain.py
 services:
 - docker
 env:
