@@ -1,4 +1,4 @@
-# Foremast brain
+# Foremast Brain
 [![Build Status](https://api.travis-ci.org/intuit/foremast-brain.svg?branch=master)](https://www.travis-ci.org/intuit/foremast-brain)
 [![Slack Chat](https://img.shields.io/badge/slack-live-orange.svg)](https://foremastio.slack.com/)
 
