@@ -2,7 +2,7 @@ import unittest
 import sys
 sys.path.append('../')
 
-from tests.foremastbrainhelper_test import getBaselinejson,getCurrentjson, getHistoricaljson
+from helpers.foremastbrainhelper_test import getBaselinejson,getCurrentjson, getHistoricaljson
 
 from prometheus.metric import convertPromesResponseToMetricInfos
 from metadata.metadata import REQUEST_STATE, METRIC_PERIOD, MIN_DATA_POINTS
