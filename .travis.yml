@@ -14,7 +14,8 @@ matrix:
     - DOCKER=true
     - DEPLOY=true
 install:
-  - pip3 install -r requirementstest.txt
+  - pip install -r requirementstest.txt
+  - pip install pandas
 script:
   - python ./src/test_foremast_brain.py
 services:
