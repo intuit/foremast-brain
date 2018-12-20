@@ -1,30 +1,9 @@
 language: python
-sudo: required
-python_import_path: foremast.ai/foremast-brain
 python:
   - 3.6
-dist: trusty
-matrix:
-  include:
-  - python: 3.6
-    env:
-    - ALL_IN_ONE=true
-  - python: 3.6
-    env:
-    - DOCKER=true
-    - DEPLOY=true
 install:
   - pip install -r requirementstest.txt
-  - pip install pandas
 script:
   - python ./src/test_foremast_brain.py
-services:
-- docker
-env:
-  global:
-  - COMMIT=${TRAVIS_COMMIT::8}
-  - secure: PDagISWjg5XIlF6nyzGlFTlKSFc3nF1qwVFp250mF2DmV16FLxkg+insnTQlZj3yB6q4iG6PvxZGIwTRun3jQPY/j0rC6Is0Ao9R8G8IE33A1P2uQmRF3hoX9RdOutJ1sUoctD/05x0epB9WIXUIVZ0Zk5vmFNiqTQ1c67iBdozKtAaFJnHMUbl2Qrky1acMncb9nHuJW9A0ITtIMG27GkWJHdMTh+LN1vFJpAcd3dEEN0osYytoc9JXnKyJhX7c147PpaELlGiSax+MPI3TxIkQ43AezayQJyIstgDwInLK37SYf4IL3S/zGN3NT3hHxt//8b/fHm0RQJkddCRPmX+kXCTZNJ5PIc7bEluGzVIuHAy3IRe3mMMhX+PxWjAQdc2uELwP4zqQzjK5L0ZhFTkgRQFEEr3SBTqEiXfr5r9ahtIJ8kjHMgRuthCk6JbOAZkFXYkAqq8FUOJeukkRBysSeImhEPItZn4K7BPPNCIBs7DFoXr7LoYkQFlxiflQLdS3i0XApImBnKgkr7xYAF0nmZGw9GdOwuRe3/AwdmQPIKvpc4ncXQ32J1+E3Xia+L0edPMIdBOZTd5m8COqClokurW4JXqYz6gMGqbxn+0g7v09jpBX78b24A+LH6wZBByh8MM06cJIPzNwVz5yO6FkcTLPj0pDULr3MnmJazM=
-  - secure: ZtVZPAyuBBukEe2ct+ws8hlNexb5DBZdU2xrW9EtFLcO+iblLHFa2s/Ku89ciovyZxZi4DoKBT8BhTO7xs/Pc3V1eZURuoI17yiqHVlvghxUCOgHXVUKMDjt2QyvYIH20zuDJLWwet5A0rT12Ryu7mfUnXottTNqNLgDUuzec99oM8L7OhYIQvRZ2fpjbzQNAZdmo5SMVXmzOwY3GjJ79gguuEeFGxb6haI89/IQJ8MkheBIG91BIM9WLQ7qeuoITTtsNtKNEhblfWg7iU6Mx4N8mfLggsNwb1wxv2YdcMbVO9WRWkGK/8c+chKfP/wWCULhgW61fRZvY5TebWqRiarBNeL+qGyYezSTFKwy9x8C91pjOlQiBcVDRXeWWhDLkEIqkVYLLGpp3CKkQX3Bynei6UFF3kVz3okWqLT0UnJDDhOHmnu9PTxl2dbIJCcie65HNZbaAOrWnFXq7U7XsnV3IKOR8AI4tnLn6/svoQGqwtrcwGorMygL3qnjkaUy56HkgH28w8Yf1b7bIn44IT3bH2gz9Tm6JSEpzrS6Sda/aPo3kfpTfA+qEYFWcAckKTxAzeplKAm3pm3Nn1JHv8Xr8MBRQKMApG1aKgJWhzh7m86igOouBicGVfeqJvSf6Hjpc6+U/pdwE4idHRGrFgf18ZMj72k1pd2OUY3yuKs=
-install:
-- if [ "$ALL_IN_ONE" == true ]; then docker build . ; fi
-- if [ "$DOCKER" == true ]; then docker build . ; fi
+after_success:
+  - coveralls
