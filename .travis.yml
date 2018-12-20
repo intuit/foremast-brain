@@ -18,7 +18,7 @@ install:
   - cd src
   - echo `pwd`
 script:
-  - python ./tests/test_foremast_brain.py
+  - python ./test_foremast_brain.py
 services:
 - docker
 env:
