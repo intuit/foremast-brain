@@ -52,7 +52,7 @@ def _try_to_convert(conversion_fn):
     @functools.wraps(conversion_fn)
     def wrapped(arg, defaultValue):
         try:
-            return f(arg)
+            return conversion_fn(arg)
         except ValueError:
             return defaultValue
     return wrapped
