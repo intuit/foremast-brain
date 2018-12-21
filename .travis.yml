@@ -4,6 +4,6 @@ python:
 install:
   - pip install -r requirementstest.txt
 script:
-  - python ./src/test_foremast_brain.py
+  - cd src && pytest
 after_success:
   - coveralls
