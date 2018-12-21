@@ -4,6 +4,6 @@ python:
 install:
   - pip install -r requirementstest.txt
 script:
-  - cd src && pytest
+  - pytest
 after_success:
   - coveralls
