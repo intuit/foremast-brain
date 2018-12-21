@@ -11,7 +11,7 @@ from concurrent.futures import ProcessPoolExecutor
 from prometheus.apis import buildUrl
 
 from utils.converterutils import convertStringToMap,convertStrToInt, convertStrToFloat
-from utils.strutils import listToString, escapeString
+from utils.strutils import listToString, escapeQuotes
 from utils.timeutils import isPast, getNowStr
 
 
@@ -316,7 +316,7 @@ def main():
                     '''
                     if hasHistorical == True:
                         if meetSize :
-                             updateESDocStatus(es_url_status_update, es_url_status_search, uuid, REQUEST_STATE.COMPLETED_UNHEALTH , "baseline and current are different pattern. "+escapeString(''.join(outputMsg)))
+                             updateESDocStatus(es_url_status_update, es_url_status_search, uuid, REQUEST_STATE.COMPLETED_UNHEALTH , "baseline and current are different pattern. "+escapeQuotes(''.join(outputMsg)))
                              continue
                         requireLowerThreshold = True
                     else:
@@ -386,7 +386,7 @@ def main():
 
             if hasAnomaly:
                 #update ES to anomaly otherwise continue
-                anomalyInfo = escapeString(anomaliesDataStr)
+                anomalyInfo = escapeQuotes(anomaliesDataStr)
                 ret = updateESDocStatus(es_url_status_update, es_url_status_search, uuid, REQUEST_STATE.COMPLETED_UNHEALTH.value , "Warning: anomaly detected between current and historical. ",anomalyInfo)
                 #print(getNowStr(),"job ID is ",uuid, " mark unhealth anomalies data is ", anomalyInfo)
                 logger.warning("job ID is unhealth  "+uuid+" updateESDocStatus  is :"+ str(ret))
@@ -413,9 +413,9 @@ def main():
             #print(getNowStr(),"job ID is ",uuid, " critical error encounted ", str(e))
             try:
                 if isPast(endTime, 5):
-                    updateESDocStatus(es_url_status_update, es_url_status_search, uuid, REQUEST_STATE.PREPROCESS_FAILED.value,"Critical: encount code exception. "+escapeString(''.join(outputMsg)))
+                    updateESDocStatus(es_url_status_update, es_url_status_search, uuid, REQUEST_STATE.PREPROCESS_FAILED.value,"Critical: encount code exception. "+escapeQuotes(''.join(outputMsg)))
                 else:
-                    updateESDocStatus(es_url_status_update, es_url_status_search, uuid, REQUEST_STATE.PREPROCESS_COMPLETED.value,"Critical: encount code exception. "+escapeString(''.join(outputMsg)))
+                    updateESDocStatus(es_url_status_update, es_url_status_search, uuid, REQUEST_STATE.PREPROCESS_COMPLETED.value,"Critical: encount code exception. "+escapeQuotes(''.join(outputMsg)))
 
             except Exception as ee:
                 #print(getNowStr(),"job ID is ",uuid, " critical error encounted +str(ee) )
