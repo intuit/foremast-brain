@@ -1,5 +1,3 @@
-
-
 def retrieveKVList(dicts):
     keys=[]
     values=[]
