@@ -1,6 +1,7 @@
 from utils.encodedecode import encoded, decoded
 from utils.dictutils import retrieveKVList
 from utils.strutils import strcat, listToString, escapeQuotes
+from utils.converterutils import convertStrToInt, convertStrToFloat
 
 def test_encoded_and_decoded():
     example_str = "Hello World!"
@@ -63,3 +64,19 @@ def test_escapeQuotes():
 
     assert escapeQuotes("<p> Hello & World </p>") == "<p> Hello & World </p>", \
         "Other html entities are not inserted"
+
+def test_convertStrToInt():
+    assert convertStrToInt("not a number", 1) == 1,\
+        "uses default if conversion fails"
+    assert convertStrToInt("10", 2) == 10,\
+        "Int conversion succeeds"
+    assert convertStrToInt("3.12", 2) == 2,\
+        "Float conversion fails"
+
+def test_convertStrToFloat():
+    assert convertStrToFloat("not a number", 1.0) == 1.0,\
+        "uses default if conversion fails"
+    assert convertStrToFloat("10", 2.0) == 10.0,\
+        "Int conversion succeeds"
+    assert convertStrToFloat("3.12", 2.0) == 3.12,\
+        "Float conversion succeeds"
