@@ -5,9 +5,6 @@ from datetime import datetime as dt
 CONFIG_SEPARATE =' ||'
 KV_SEPARATE = '== '
 
-def convertStrToJson(content):
-    return json.loads(content)
-
 def convertArrayListToDataFrame(arrayList):
     i = 0
     ts =[]
