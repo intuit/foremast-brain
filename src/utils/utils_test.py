@@ -1,6 +1,6 @@
 from utils.encodedecode import encoded, decoded
 from utils.dictutils import retrieveKVList
-from utils.strutils import strcat, listToString, queryEscape, stringEscape
+from utils.strutils import strcat, listToString, stringEscape
 
 def test_encoded_and_decoded():
     example_str = "Hello World!"

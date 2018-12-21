@@ -11,7 +11,7 @@ from concurrent.futures import ProcessPoolExecutor
 from prometheus.apis import buildUrl
 
 from utils.converterutils import convertStringToMap,convertStrToInt, convertStrToFloat
-from utils.strutils import listToString,queryEscape, escapeString
+from utils.strutils import listToString, escapeString
 from utils.timeutils import isPast, getNowStr
 
 
@@ -31,7 +31,7 @@ from mlalgms.statsmodel import IS_UPPER_BOUND, IS_UPPER_O_LOWER_BOUND, IS_LOWER_
 
 from mlalgms.fbprophet import PROPHET_PERIOD, PROPHET_FREQ, DEFAULT_PROPHET_PERIOD, DEFAULT_PROPHET_FREQ
 from metadata.globalconfig import globalconfig
-from mlalgms.pairwisemodel import MANN_WHITE_MIN_DATA_POINT,WILCOXON_MIN_DATA_POINTS,KRUSKAL_MIN_DATA_POINTS 
+from mlalgms.pairwisemodel import MANN_WHITE_MIN_DATA_POINT,WILCOXON_MIN_DATA_POINTS,KRUSKAL_MIN_DATA_POINTS
 # logging
 logging.basicConfig(format='%(asctime)s %(message)s')
 logger = logging.getLogger('aiformast')
@@ -48,9 +48,9 @@ DEFAULT_MIN_HISTORICAL_DATA_POINT_TO_MEASURE = 1
 
 #key is jobid value is modelHolder
 cachedJobs = {}
-### list will serve queue purposes 
+### list will serve queue purposes
 jobs=[]
-            
+
 
 def cacheModels(modelHolder, max_cache_size = MAX_CACHE_SIZE):
     #if not enableCache:
@@ -64,7 +64,7 @@ def cacheModels(modelHolder, max_cache_size = MAX_CACHE_SIZE):
     if uuid in cachedJobs:
         cachedJobs[uuid]= modelHolder
     else:
-        cachedJobs[uuid]= modelHolder        
+        cachedJobs[uuid]= modelHolder
         jobs.append(uuid)
 
 def retrieveOneCachedRequest(es_url_status_search, jobId):
@@ -72,7 +72,7 @@ def retrieveOneCachedRequest(es_url_status_search, jobId):
         precessCached(es_url_status_search, jobId)
     return None, None
 
-   
+
 def precessCached(es_url_status_search, jobId):
     #if not enableCache:
     #    return None, None
@@ -96,7 +96,7 @@ def precessCached(es_url_status_search, jobId):
                 return None, None
             jobs.remove(jobId)
             del cachedJobs[jobId]
-            return openRequest, modelHolder 
+            return openRequest, modelHolder
     except Exception as e:
             logger.warning("retrieveCachedRequest encount error while retrieving cache ",e)
     return None, None
@@ -113,11 +113,11 @@ def retrieveCachedRequest(es_url_status_search):
            return openRequest, modelHolder
     return None, None
 
- 
+
 def main():
     #Default Parameters can be overwrite by environments
     config =  globalconfig()
-    max_cache = convertStrToInt(os.environ.get("MAX_CACHE_SIZE", str(MAX_CACHE_SIZE)), MAX_CACHE_SIZE) 
+    max_cache = convertStrToInt(os.environ.get("MAX_CACHE_SIZE", str(MAX_CACHE_SIZE)), MAX_CACHE_SIZE)
     ES_ENDPOINT = os.environ.get('ES_ENDPOINT', 'http://a31008275fcf911e8bde30674acac93e-885155939.us-west-2.elb.amazonaws.com:9200')
     #cache= os.environ.get('ENABLE_CACHE', DEFAULT_ENABLE_CACHE)
     #enableCache = False
@@ -130,28 +130,28 @@ def main():
     #ML_ALGORITHM = AI_MODEL.PROPHET.value
 
 
-    
-    MIN_MANN_WHITE_DATA_POINTS = convertStrToInt(os.environ.get("MIN_MANN_WHITE_DATA_POINTS", str(MANN_WHITE_MIN_DATA_POINT)), MANN_WHITE_MIN_DATA_POINT) 
 
-    MIN_WILCOXON_DATA_POINTS = convertStrToInt(os.environ.get("MIN_WILCOXON_DATA_POINTS", str(WILCOXON_MIN_DATA_POINTS)), WILCOXON_MIN_DATA_POINTS) 
+    MIN_MANN_WHITE_DATA_POINTS = convertStrToInt(os.environ.get("MIN_MANN_WHITE_DATA_POINTS", str(MANN_WHITE_MIN_DATA_POINT)), MANN_WHITE_MIN_DATA_POINT)
 
-    MIN_KRUSKAL_DATA_POINTS=convertStrToInt(os.environ.get("MIN_KRUSKAL_DATA_POINTS", str(KRUSKAL_MIN_DATA_POINTS)), KRUSKAL_MIN_DATA_POINTS) 
+    MIN_WILCOXON_DATA_POINTS = convertStrToInt(os.environ.get("MIN_WILCOXON_DATA_POINTS", str(WILCOXON_MIN_DATA_POINTS)), WILCOXON_MIN_DATA_POINTS)
+
+    MIN_KRUSKAL_DATA_POINTS=convertStrToInt(os.environ.get("MIN_KRUSKAL_DATA_POINTS", str(KRUSKAL_MIN_DATA_POINTS)), KRUSKAL_MIN_DATA_POINTS)
 
     config.setKV("MIN_MANN_WHITE_DATA_POINTS",MIN_MANN_WHITE_DATA_POINTS)
     config.setKV("MIN_WILCOXON_DATA_POINTS",MIN_WILCOXON_DATA_POINTS)
     config.setKV("MIN_KRUSKAL_DATA_POINTS",MIN_KRUSKAL_DATA_POINTS)
-    
 
-    ML_PROPHET_PERIOD = convertStrToInt(os.environ.get(PROPHET_PERIOD, str(DEFAULT_PROPHET_PERIOD)),DEFAULT_PROPHET_PERIOD) 
+
+    ML_PROPHET_PERIOD = convertStrToInt(os.environ.get(PROPHET_PERIOD, str(DEFAULT_PROPHET_PERIOD)),DEFAULT_PROPHET_PERIOD)
     ML_PROPHET_FREQ = os.environ.get(PROPHET_FREQ, DEFAULT_PROPHET_FREQ)
     #prophet algm parameters end
-    
+
     ML_PAIRWISE_ALGORITHM =os.environ.get(PAIRWISE_ALGORITHM, ALL)
     ML_PAIRWISE_THRESHOLD = convertStrToFloat(os.environ.get(PAIRWISE_THRESHOLD, str(DEFAULT_PAIRWISE_THRESHOLD)), DEFAULT_PAIRWISE_THRESHOLD)
-    
+
     ML_THRESHOLD = convertStrToFloat(os.environ.get(THRESHOLD, str(DEFAULT_THRESHOLD)), DEFAULT_THRESHOLD)
     ML_LOWER_THRESHOLD = convertStrToFloat(os.environ.get(LOWER_THRESHOLD, str(DEFAULT_LOWER_THRESHOLD)), DEFAULT_LOWER_THRESHOLD)
-    
+
     ML_BOUND = convertStrToInt(os.environ.get(BOUND, str(IS_UPPER_BOUND)), IS_UPPER_BOUND)
 
     MAX_STUCK_IN_SECONDS = convertStrToInt(os.environ.get('MAX_STUCK_IN_SECONDS', str(DEFAULT_MAX_STUCK_IN_SECONDS)), DEFAULT_MAX_STUCK_IN_SECONDS)
@@ -163,11 +163,11 @@ def main():
     while True:
         resp=''
         modelHolder = None
-        
+
         threshold = ML_THRESHOLD
         lower_threshold = ML_LOWER_THRESHOLD
-      
-  
+
+
         resp = searchByStatuslist(es_url_status_search, REQUEST_STATE.INITIAL.value ,REQUEST_STATE.PREPROCESS_COMPLETED.value)
         #resp = searchByStatuslist(es_url_status_search, REQUEST_STATE.COMPLETED_UNHEALTH.value, REQUEST_STATE.COMPLETED_HEALTH.value,
         #                         REQUEST_STATE.COMPLETED_UNKNOWN.value)
@@ -184,10 +184,10 @@ def main():
                 openRequest = selectRequestToProcess(openRequestlist)
                 if openRequest == None :
                     logger.warning("No long running preprocess job found .....")
-                    
+
                     time.sleep(2)
                     continue
-                
+
                     #Test Start########################
                     '''
                     id ='ebfc2cfd5fae051a7b9fb1dacdddc9d5a31b40f5a6bcb326a767a1774f942147'
@@ -209,7 +209,7 @@ def main():
         updatedStatus = reserveJob(es_url_status_update,es_url_status_search, uuid,status)
 
         logger.warning("Start to processing job id "+uuid+ " original status:"+ status)
-        
+
         #print(getNowStr(), ": start to processing uuid ..... ",uuid," status:", status)
 
         historicalConfig =openRequest['historicalConfig']
@@ -219,11 +219,11 @@ def main():
         endTime = openRequest['endTime']
         skipHistorical =( historicalConfig=='')
         skipBaseline = (baselineConfig=='')
-        
+
         #Need to be removed below line due to baseline is enabled at upstream
         #skipBaseline = True
         skipCurrent = (currentConfig=='')
-        
+
         try:
             if (skipCurrent):
                 ret = updateESDocStatus(es_url_status_update, es_url_status_search, uuid, REQUEST_STATE.COMPLETED_UNKNOWN.value, "Error: no current config")
@@ -234,12 +234,12 @@ def main():
 
             #dict  metric name : url , if modelHolder does not have model, give chance to recalculate
             if modelHolder == None:
-                modelConfig = {THRESHOLD : threshold,LOWER_THRESHOLD : lower_threshold, 
-                                MIN_DATA_POINTS:min_historical_data_points, BOUND: ML_BOUND, 
+                modelConfig = {THRESHOLD : threshold,LOWER_THRESHOLD : lower_threshold,
+                                MIN_DATA_POINTS:min_historical_data_points, BOUND: ML_BOUND,
                                 PAIRWISE_ALGORITHM:ML_PAIRWISE_ALGORITHM,PAIRWISE_THRESHOLD:ML_PAIRWISE_THRESHOLD}
                 modelHolder = ModelHolder(ML_ALGORITHM,modelConfig,{}, METRIC_PERIOD.HISTORICAL.value, uuid)
 
-                
+
             if  (not (modelHolder.hasModel or skipHistorical) ):
                 configMapHistorical = convertStringToMap(historicalConfig)
                 isProphet = False
@@ -253,19 +253,19 @@ def main():
                 if (not modelHolder.hasModel):
                     outputMsg.append("No historical Data and model ")
                     #print(getNowStr(), ": Warning: No historical: "+str(modelHolder))
-                                
+
             hasHistorical =  modelHolder.hasModel
-            
-            #start baseline             
+
+            #start baseline
             to_do = []
-            
+
             currentDataSet={}
             baselineDataSet={}
-            
+
 
             if skipBaseline :
                 currentDataSet, p = computeNonHistoricalModel(convertStringToMap(currentConfig), METRIC_PERIOD.CURRENT.value)
-            else:                
+            else:
                 with ProcessPoolExecutor(max_workers=2) as executor:
                     currentjob = executor.submit(computeNonHistoricalModel, convertStringToMap(currentConfig),METRIC_PERIOD.CURRENT.value);
                     baselinejob = executor.submit(computeNonHistoricalModel, convertStringToMap(baselineConfig), METRIC_PERIOD.BASELINE.value);
@@ -280,10 +280,10 @@ def main():
                                 baselineDataSet = res[0]
                         except Exception as e:
                             logger.error("job id"+ uuid+ " encount errorProcessPoolExecutor " +str(e))
-                            
-                                      
-                    
-            #This is used for canary deployment to comarsion how close baseline and current 
+
+
+
+            #This is used for canary deployment to comarsion how close baseline and current
             currentLen = len(currentDataSet)
             baselineLen= len(baselineDataSet)
             hasCurrent = currentLen>0
@@ -291,22 +291,22 @@ def main():
             logger.warning("jobid:"+ uuid +" hasCurrent "+ str(hasCurrent)+", hasBaseline "+ str(hasBaseline) )
             #print(getNowStr(), ": hasCurrent, hasBaseline ", str(hasCurrent), str(hasBaseline)," id ",uuid , " skip bseline is ", skipBaseline)
 
-            
+
             if hasCurrent == False:
                 ret = True
                 if isPast(endTime, 20):
                     ret = updateESDocStatus(es_url_status_update, es_url_status_search, uuid, REQUEST_STATE.COMPLETED_UNKNOWN.value, "Error: there is no current Metric. ")
                     logger.warning("Current metric is empty, jobid "+uuid+" updateESDocStatus  is :"+ str(ret)+ "  time past mark job unknow "+  currentConfig+" ".join(outputMsg))
                 else:
-                    cacheModels(modelHolder, max_cache) 
+                    cacheModels(modelHolder, max_cache)
                     ret =updateESDocStatus(es_url_status_update, es_url_status_search, uuid, REQUEST_STATE.PREPROCESS_INPROGRESS.value, "Warning: there is no current Metric, Will keep try until reachs endTime. ")
                     # print(getNowStr(), ":  no current metric is not ready, jobid ",uuid,"  ",  currentConfig)
                     logger.warning("Current metric is empty, jobid "+uuid+" updateESDocStatus  is :"+ str(ret)+ " end time is not reach, will cache and retry "+  currentConfig+" ".join(outputMsg))
                 if not ret:
                     cacheModels( modelHolder,  max_cache)
-                    logger.error("ES update failed: job ID: "+uuid) 
+                    logger.error("ES update failed: job ID: "+uuid)
                 continue
-            
+
             if (hasBaseline):
                 hasSameDistribution, detailedResults, meetSize = pairWiseComparson (currentDataSet, baselineDataSet, ML_PAIRWISE_ALGORITHM, ML_PAIRWISE_THRESHOLD, ML_BOUND)
                 ret = True
@@ -330,8 +330,8 @@ def main():
                             ret = updateESDocStatus(es_url_status_update, es_url_status_search, uuid, REQUEST_STATE.COMPLETED_UNKNOWN.value, "Warning: baseline and current are different pattern but not meet min datapoints to determine . ")
                             #print(getNowStr(),": id ",uuid, " completed_unknown... bacause pairwise is not same but not enough datapoints " )
                             logger.warning("job id :"+uuid+"completed_unknown...current or baseline is not same but not enough datapoints to confirm,  updateESDocStatus  is :"+ str(ret))
-                        else: 
-                            
+                        else:
+
                             ret = updateESDocStatus(es_url_status_update, es_url_status_search, uuid, REQUEST_STATE.PREPROCESS_COMPLETED.value, " pairwise not same so far and not meet min datapoints to determine.")
                             #print(getNowStr(),": id ",uuid, "  bacause pairwise is not same and not enough datapoint " )
                             logger.warning("job id :"+uuid+" pairwise not same and not enough datapoints but not meet min datapoint to determine ,  updateESDocStatus  is :"+ str(ret))
@@ -342,11 +342,11 @@ def main():
                         #print(getNowStr(),": id ",uuid, "mark as health....")
                     else:
                         ret = updateESDocStatus(es_url_status_update, es_url_status_search, uuid, REQUEST_STATE.PREPROCESS_COMPLETED.value , " current and baseline have same distribution but not past endtime yet. ")
-                        # print(getNowStr(),": id ",uuid, " continue . bacause pairwise is not same but not past endTime yet " )                      
+                        # print(getNowStr(),": id ",uuid, " continue . bacause pairwise is not same but not past endTime yet " )
                         logger.warning("job id :"+uuid+" will reprocess . current and base have same distribution but not past endTime yet, updateESDocStatus  is :"+ str(ret))
                 if not ret:
                     cacheModels( modelHolder,  max_cache)
-                    logger.error("ES update failed: job ID: "+uuid)     
+                    logger.error("ES update failed: job ID: "+uuid)
                 continue
             else:
                 if not skipBaseline:
@@ -355,20 +355,20 @@ def main():
                         ret =updateESDocStatus(es_url_status_update, es_url_status_search, uuid, REQUEST_STATE.COMPLETED_UNKNOWN.value, "baseline query is empty. ")
                         logger.warning("job ID : "+uuid+" unknown because baseline no data, updateESDocStatus  is :"+ str(ret))
                     else:
-                        
+
                         ret = updateESDocStatus(es_url_status_update, es_url_status_search, uuid, REQUEST_STATE.PREPROCESS_COMPLETED.value , " no baseline data yet, ")
-                        # print(getNowStr(),": id ",uuid, " continue . no baseline data yet. " )  
-                        logger.warning("job ID : "+uuid+" continue . no baseline data yet. updateESDocStatus  is :"+ str(ret)) 
+                        # print(getNowStr(),": id ",uuid, " continue . no baseline data yet. " )
+                        logger.warning("job ID : "+uuid+" continue . no baseline data yet. updateESDocStatus  is :"+ str(ret))
                     if not ret:
                         cacheModels( modelHolder,  max_cache)
-                        logger.error("ES update failed: job ID: "+uuid)                
+                        logger.error("ES update failed: job ID: "+uuid)
                     continue
-                    
-            
+
+
             #check historical and  baseline
             if hasHistorical == False :
                     ret = True
-                    if isPast(endTime, 5):    
+                    if isPast(endTime, 5):
                         ret = updateESDocStatus(es_url_status_update, es_url_status_search, uuid, REQUEST_STATE.COMPLETED_UNKNOWN.value, "Error: no enough historical data and no baseline data. ")
                         logger.warning("job id: "+uuid+" completed unknown  no enough historical data and no baseline data , updateESDocStatus  is :"+ str(ret))
                     else:
@@ -378,14 +378,14 @@ def main():
 
                     if not ret:
                         cacheModels( modelHolder,  max_cache)
-                        logger.error("ES update failed: job ID: "+uuid)    
+                        logger.error("ES update failed: job ID: "+uuid)
                     continue
-                
-            hasAnomaly, anomaliesDataStr = computeAnomaly(currentDataSet,modelHolder)   
+
+            hasAnomaly, anomaliesDataStr = computeAnomaly(currentDataSet,modelHolder)
             logger.warning("job ID is "+uuid+"  hasAnomaly is "+str(hasAnomaly) )
 
             if hasAnomaly:
-                #update ES to anomaly otherwise continue 
+                #update ES to anomaly otherwise continue
                 anomalyInfo = escapeString(anomaliesDataStr)
                 ret = updateESDocStatus(es_url_status_update, es_url_status_search, uuid, REQUEST_STATE.COMPLETED_UNHEALTH.value , "Warning: anomaly detected between current and historical. ",anomalyInfo)
                 #print(getNowStr(),"job ID is ",uuid, " mark unhealth anomalies data is ", anomalyInfo)
@@ -400,10 +400,10 @@ def main():
                     if not ret:
                         cacheModels( modelHolder,  max_cache)
                         logger.error("ES update failed: job ID: "+uuid)
-   
+
                     #print(getNowStr(),"job ID is ",uuid, " mark as health....")
                 else:
-                    cacheModels( modelHolder,  max_cache)    
+                    cacheModels( modelHolder,  max_cache)
                     ret = updateESDocStatus(es_url_status_update, es_url_status_search, uuid, REQUEST_STATE.PREPROCESS_INPROGRESS.value, "Need to continuous to check untile reachs deployment endTime. ")
                     logger.warning("job ID : "+uuid+" health so far will reprocess  updateESDocStatus is :"+ str(ret))
                     #print(getNowStr(),"job ID is ",uuid, " so far health, continue check ....")
@@ -421,12 +421,12 @@ def main():
                 #print(getNowStr(),"job ID is ",uuid, " critical error encounted +str(ee) )
                 logger.error("uuid : "+ uuid+" failed because "+str(ee) )
             continue
-     
-        
+
+
 
 
 
 
 
 if __name__ == '__main__':
-    main()  
+    main()
