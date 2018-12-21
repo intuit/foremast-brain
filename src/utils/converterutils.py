@@ -42,18 +42,18 @@ def convertStringToMap(mystr, sep1=CONFIG_SEPARATE, sep2=KV_SEPARATE):
             mymap[li[0]]=li[1]
     return mymap
 
-def convertStrToInt(mystr, defaultInt):
-    ret = defaultInt
-    try:
-        ret = int(mystr)
-    except ValueError:
-        ret= defaultInt
-    return ret
+def _try_to_convert(conversion_fn):
+    """Given a single argument function that will either return a value
+    or raise a ValueError, will return a function that takes two arguments,
+    the value to convert and a default value to use if the function raises
+    a ValueError.
+    """
+    @functools.wraps(conversion_fn)
+    def wrapped(arg, defaultValue):
+        try:
+            return f(arg)
+        except ValueError:
+            return defaultValue
 
-def convertStrToFloat(mystr, defaultInt):
-    ret = defaultInt
-    try:
-        ret = float(mystr)
-    except ValueError:
-        ret= defaultInt
-    return ret
+convertStrToInt = _try_to_convert(int)
+convertStrToFloat = _try_to_convert(float)
