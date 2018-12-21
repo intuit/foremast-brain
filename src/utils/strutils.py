@@ -7,6 +7,7 @@ def listToString(list, sep=' '):
     return sep.join(list)
 
 def escapeQuotes(query):
+    "Replaces both the \" and the ' literals with &quot;"
     bad_chars = [ ('"', "&quot;" ),("'", "&quot;")]
     for char, replacement in bad_chars:
         query = query.replace(char, replacement)
