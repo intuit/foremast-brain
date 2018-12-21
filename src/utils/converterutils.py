@@ -55,6 +55,7 @@ def _try_to_convert(conversion_fn):
             return f(arg)
         except ValueError:
             return defaultValue
+    return wrapped
 
 convertStrToInt = _try_to_convert(int)
 convertStrToFloat = _try_to_convert(float)
