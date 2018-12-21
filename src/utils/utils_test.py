@@ -37,7 +37,7 @@ def test_strcat():
     assert strcat("a", "b") == "ab"
     assert strcat("a", "") == "a"
 
-    assert strcat("a", "b", "c", "d")
+    assert strcat("a", "b", "c", "d") == "abcd"
 
 def test_listToString():
     assert listToString([]) == ""
