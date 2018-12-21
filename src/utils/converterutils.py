@@ -1,16 +1,13 @@
 import json
 import pandas as pd
 from datetime import datetime as dt
-from _ast import Try
-
-
 
 CONFIG_SEPARATE =' ||'
-KV_SEPARATE = '== ' 
+KV_SEPARATE = '== '
 
 def convertStrToJson(content):
     return json.loads(content)
-    
+
 def convertArrayListToDataFrame(arrayList):
     i = 0
     ts =[]
@@ -19,18 +16,18 @@ def convertArrayListToDataFrame(arrayList):
         ts.append(dt.utcfromtimestamp(int(arrayList[i][0])))
         vals.append(float(arrayList[i][1]))
         i +=1
-    data_frame = addHeader(ts,vals) 
+    data_frame = addHeader(ts,vals)
     return data_frame
-  
-  
-# the purpose to convert dataframe with ds and y is to make fbprophet happy 
+
+
+# the purpose to convert dataframe with ds and y is to make fbprophet happy
 def addHeader(ts_idx, values, ts=[], isTSIndexOnly=True, tsname='ds', valname='y'):
     d = {valname:values}
     if isTSIndexOnly==False and len(ts) == len(ts_idx):
         d = { tsname:ts, valname:values}
     df = pd.DataFrame(data=d, index=ts_idx)
-    #sort by ts by default 
-    if isTSIndexOnly: 
+    #sort by ts by default
+    if isTSIndexOnly:
         df=df.sort_index()
     return df
 
@@ -55,7 +52,7 @@ def convertStrToInt(mystr, defaultInt):
     except ValueError:
         ret= defaultInt
     return ret
-    
+
 def convertStrToFloat(mystr, defaultInt):
     ret = defaultInt
     try:
