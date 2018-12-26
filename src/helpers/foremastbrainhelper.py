@@ -1,8 +1,7 @@
 import logging
 import json
 import time
-#import sys
-#sys.path.append('../')
+
 from scipy.stats import mannwhitneyu, wilcoxon,kruskal,friedmanchisquare
 
 from utils.timeutils import  canProcess, rateLimitCheck
@@ -147,27 +146,25 @@ def updateESDocStatus(url_update, url_search, uuid, status, info='', reason=''):
         updateDocStatus(url_update, uuid, status, info, reason)
         #leave this for test
         openRequest = retrieveRequestById(url_search, uuid)
-        if openRequest == None:
-            time.sleep(1)
-            logger.error("failed to find uuid "+uuid)
-            continue
-        new_status = openRequest['status']
-        if new_status == status:
-            return  True
-        else:
-            if i == 2 :
-               logger.error("failed to update uuid  "+uuid+" to "+status ) 
-            continue
+        if openRequest != None:
+            new_status = openRequest['status']
+            if new_status == status:
+                return  True
+        time.sleep(1)
+        logger.error("ElasticSearch failed "+uuid)
+        continue
     #one more last try
     for i in range(RETRY_COUNT):
         updateDocStatus(url_update, uuid, status)
         openRequest = retrieveRequestById(url_search, uuid)
-        if openRequest == None:
-            time.sleep(1)
-            continue
-        new_status = openRequest['status']
-        if new_status == status:
-            return  True
+        if openRequest != None:
+            new_status = openRequest['status']
+            if new_status == status:
+               return  True
+        time.sleep(1)
+        logger.error("ElasticSearch failed "+uuid)
+        continue
+
     return False
 
 def isCompletedStatus (status):

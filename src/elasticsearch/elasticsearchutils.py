@@ -147,7 +147,8 @@ def buildElasticSearchUrl(endpoint, indexname, isSearch=True):
     if isSearch==True:
         sb.append("/_search?pretty=true&size=1000")
     else:
-        sb.append("/_update_by_query?pretty")
+        #sb.append("/_update_by_query?pretty")
+        sb.append("/_update_by_query?refresh")
     return ''.join(sb)
 
 
