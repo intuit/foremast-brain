@@ -63,10 +63,12 @@ def detectBivariateAnomalies(series,  x_mean,x_deviation,y_mean,y_deviation,xy_c
     
     
     
-def calculateHistoricalParameters(series):    
-    mean = np.mean(series.iloc[:,0]) 
-    #median = np.median(series[-idx:])
-    deviation = np.std(series.iloc[:,0])
+def calculateHistoricalParameters(series): 
+    y_series = series.y
+    mean = np.mean(y_series)  
+    deviation = np.std(y_series)    
+#    mean = np.mean(series.iloc[:,0]) 
+#    deviation = np.std(series.iloc[:,0])
     return  mean, deviation
 
 
