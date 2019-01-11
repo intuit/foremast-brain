@@ -218,14 +218,25 @@ def computeHistoricalModel(historicalConfigMap, modelHolder, isProphet = False, 
     metricTypeCount = len(dataSet)
     if metricTypeCount == 0 :
         return modelHolder, msg
+
+    metricTypes, metricInfos = retrieveKVList(dataSet)
+    
+    for i in range (metricTypeCount):
+      modelHolder = calculateModel(metricInfos[i][0], modelHolder, metricType[i])
+
+
+    '''
+    ##TODO rollback
     if metricTypeCount == 1 :
         metricTypes, metricInfos = retrieveKVList(dataSet)
         #modelHolder  for historical metric there wil be only one
-        return calculateModel(metricInfos[0][0], modelHolder), msg
+        #TODO pzou
+        return calculateModel(metricInfos[0][0], modelHolder), msg    
     elif metricTypeCount == 2 :
         pass
     else:
         pass
+    '''
     return modelHolder,msg 
 
 
@@ -306,7 +317,7 @@ def computeAnomaly(metricInfoDataset, modelHolder):
     if (metricTypeSize==1):
         for metricType, metricInfoList in metricInfoDataset.items():
              for metricInfo in metricInfoList:
-                 ts,adata =  detectAnomalyData(metricInfo,  modelHolder)
+                 ts,adata =  detectAnomalyData(metricInfo,  modelHolder, metricType)
                  if (len(ts) > 0):
                      if isFirstTime:
                          anomalieDisplay.append("{'")
