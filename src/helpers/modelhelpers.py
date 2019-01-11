@@ -124,7 +124,10 @@ def calculateSingleMetricModel(metricInfo, modelHolder, metricType):
         modelHolder.setModelKV(metricType,MAE, mean)
         modelHolder.setModelKV(metricType,DEVIATION, deviation)
         threshold = modelHolder.getModelConfigByKey(THRESHOLD)
-        modelHolder.setModelKV(metricType,LOWER_BOUND,  -deviation*threshold + mean)
+        lowerboundvalue = -deviation*threshold + mean
+        if (lowerboundvalue < 0 and mean >= 0):
+                lowerboundvalue = 0
+        modelHolder.setModelKV(metricType,LOWER_BOUND, lowerboundvalue )
         modelHolder.setModelKV(metricType,UPPER_BOUND, deviation*threshold + mean)
     triggerModelMetric(metricInfo, modelHolder.getModelByKey(metricType,LOWER_BOUND), modelHolder.getModelByKey(metricType,UPPER_BOUND))
 
