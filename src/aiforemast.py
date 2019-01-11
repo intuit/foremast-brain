@@ -128,7 +128,7 @@ def main():
     #Default Parameters can be overwrite by environments
     config =  globalconfig()
     max_cache = convertStrToInt(os.environ.get("MAX_CACHE_SIZE", str(MAX_CACHE_SIZE)), MAX_CACHE_SIZE) 
-    ES_ENDPOINT = os.environ.get('ES_ENDPOINT', 'http://aa2a309a40f8a11e9bbe3068a40c8b40-1207106830.us-west-2.elb.amazonaws.com:9200')
+    ES_ENDPOINT = os.environ.get('ES_ENDPOINT', 'http://ace26cb17152911e9b3ee067481c81ce-156838986.us-west-2.elb.amazonaws.com:9200')
     #cache= os.environ.get('ENABLE_CACHE', DEFAULT_ENABLE_CACHE)
     #enableCache = False
     #if cache=='':
@@ -201,12 +201,12 @@ def main():
                 if openRequest == None :
                     logger.warning("No long running preprocess job found .....")
                     
-                    time.sleep(2)
+                    time.sleep(1)
                     continue
                 
                     #Test Start########################
                     '''
-                    id ='716d7a094b1cebdbb2a956c480bf5ccab41bcbabad7755ac842e45e55d18b0ca'
+                    id ='451ad9dd7053d8577418588290f36e28733bbe542c9086a90dca9395a16e8568'
                     openRequest = retrieveRequestById(es_url_status_search, id)
                     if (openRequest==None):
                         print("es is down, will sleep and retry")

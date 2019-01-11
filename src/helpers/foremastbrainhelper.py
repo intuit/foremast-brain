@@ -222,7 +222,7 @@ def computeHistoricalModel(historicalConfigMap, modelHolder, isProphet = False, 
     metricTypes, metricInfos = retrieveKVList(dataSet)
     
     for i in range (metricTypeCount):
-      modelHolder = calculateModel(metricInfos[i][0], modelHolder, metricType[i])
+      modelHolder = calculateModel(metricInfos[i][0], modelHolder, metricTypes[i])
 
 
     '''
