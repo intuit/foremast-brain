@@ -32,16 +32,26 @@ from mlalgms.statsmodel import IS_UPPER_BOUND, IS_UPPER_O_LOWER_BOUND, IS_LOWER_
 from mlalgms.fbprophet import PROPHET_PERIOD, PROPHET_FREQ, DEFAULT_PROPHET_PERIOD, DEFAULT_PROPHET_FREQ
 from metadata.globalconfig import globalconfig
 from mlalgms.pairwisemodel import MANN_WHITE_MIN_DATA_POINT,WILCOXON_MIN_DATA_POINTS,KRUSKAL_MIN_DATA_POINTS 
+
+from prometheus_client import start_http_server
+from prometheus.monitoringmetrics import measurementmetrics
+from utils.timeutils import calculateDuration
+
+
+
+
+
 # logging
 logging.basicConfig(format='%(asctime)s %(message)s')
 logger = logging.getLogger('aiformast')
+
 
 
 #ES indexs and retry count
 ES_INDEX = 'documents'
 
 MAX_CACHE_SIZE = 2000
-DEFAULT_MAX_STUCK_IN_SECONDS=50
+DEFAULT_MAX_STUCK_IN_SECONDS=90
 DEFAULT_AGGREGATED_METRIC_SECOND = 60
 DEFAULT_MIN_HISTORICAL_DATA_POINT_TO_MEASURE = 1
 #DEFAULT_ENABLE_CACHE = '0'
@@ -118,7 +128,7 @@ def main():
     #Default Parameters can be overwrite by environments
     config =  globalconfig()
     max_cache = convertStrToInt(os.environ.get("MAX_CACHE_SIZE", str(MAX_CACHE_SIZE)), MAX_CACHE_SIZE) 
-    ES_ENDPOINT = os.environ.get('ES_ENDPOINT', 'http://a31008275fcf911e8bde30674acac93e-885155939.us-west-2.elb.amazonaws.com:9200')
+    ES_ENDPOINT = os.environ.get('ES_ENDPOINT', 'http://aa2a309a40f8a11e9bbe3068a40c8b40-1207106830.us-west-2.elb.amazonaws.com:9200')
     #cache= os.environ.get('ENABLE_CACHE', DEFAULT_ENABLE_CACHE)
     #enableCache = False
     #if cache=='':
@@ -159,7 +169,13 @@ def main():
 
     es_url_status_search=buildElasticSearchUrl(ES_ENDPOINT, ES_INDEX)
     es_url_status_update=buildElasticSearchUrl(ES_ENDPOINT, ES_INDEX, isSearch=False)
-
+    
+    # Start up the server to expose the metrics.
+    start_http_server(8000)
+    measurementMetric=  measurementmetrics()
+    label_info = {'jobId':'','calcuHistorical':'False','hasCurrent':'True'}
+    MONITORING_REQUEST_TIME = "foremastbrain:request_process_time"
+    
     while True:
         resp=''
         modelHolder = None
@@ -190,7 +206,7 @@ def main():
                 
                     #Test Start########################
                     '''
-                    id ='ebfc2cfd5fae051a7b9fb1dacdddc9d5a31b40f5a6bcb326a767a1774f942147'
+                    id ='716d7a094b1cebdbb2a956c480bf5ccab41bcbabad7755ac842e45e55d18b0ca'
                     openRequest = retrieveRequestById(es_url_status_search, id)
                     if (openRequest==None):
                         print("es is down, will sleep and retry")
@@ -217,8 +233,13 @@ def main():
         baselineConfig = openRequest['baselineConfig']
         startTime = openRequest['startTime']
         endTime = openRequest['endTime']
+        strategy = openRequest['strategy']
         skipHistorical =( historicalConfig=='')
         skipBaseline = (baselineConfig=='')
+        label_info['jobId']= uuid
+        label_info['calcuHistorical']='False'
+        label_info['hasCurrent']='False'
+        start = time.time()
         
         #Need to be removed below line due to baseline is enabled at upstream
         #skipBaseline = True
@@ -229,6 +250,7 @@ def main():
                 ret = updateESDocStatus(es_url_status_update, es_url_status_search, uuid, REQUEST_STATE.COMPLETED_UNKNOWN.value, "Error: no current config")
                 logger.warning("request error : jobid  "+uuid+" updateESDocStatus  is :"+ str(ret)+ " current config is empty. make status unknown")
                 #print(getNowStr(), " : jobid  ",uuid, " current config is empty. make status unknown")
+                measurementmetrics.sendMetric(MONITORING_REQUEST_TIME, label_info, calculateDuration(start))
                 continue
 
 
@@ -240,7 +262,7 @@ def main():
                 modelHolder = ModelHolder(ML_ALGORITHM,modelConfig,{}, METRIC_PERIOD.HISTORICAL.value, uuid)
 
                 
-            if  (not (modelHolder.hasModel or skipHistorical) ):
+            if  (not (modelHolder.hasModels or skipHistorical) ):
                 configMapHistorical = convertStringToMap(historicalConfig)
                 isProphet = False
                 if (ML_ALGORITHM==AI_MODEL.PROPHET.value):
@@ -248,13 +270,14 @@ def main():
                     modelConfig.setdefault(PROPHET_PERIOD, ML_PROPHET_PERIOD )
                     modelConfig.setdefault(PROPHET_FREQ,ML_PROPHET_FREQ )
                 modelHolder, msg = computeHistoricalModel(configMapHistorical, modelHolder, isProphet)
+                label_info['calcuHistorical'] ='True' 
                 if (msg!=''):
                     outputMsg.append(msg)
-                if (not modelHolder.hasModel):
+                if (not modelHolder.hasModels):
                     outputMsg.append("No historical Data and model ")
                     #print(getNowStr(), ": Warning: No historical: "+str(modelHolder))
                                 
-            hasHistorical =  modelHolder.hasModel
+            hasHistorical =  modelHolder.hasModels
             
             #start baseline             
             to_do = []
@@ -287,6 +310,8 @@ def main():
             currentLen = len(currentDataSet)
             baselineLen= len(baselineDataSet)
             hasCurrent = currentLen>0
+            label_info['hasCurrent'] =hasCurrent 
+            
             hasBaseline = baselineLen>0
             logger.warning("jobid:"+ uuid +" hasCurrent "+ str(hasCurrent)+", hasBaseline "+ str(hasBaseline) )
             #print(getNowStr(), ": hasCurrent, hasBaseline ", str(hasCurrent), str(hasBaseline)," id ",uuid , " skip bseline is ", skipBaseline)
@@ -305,6 +330,7 @@ def main():
                 if not ret:
                     cacheModels( modelHolder,  max_cache)
                     logger.error("ES update failed: job ID: "+uuid) 
+                measurementMetric.sendMetric(MONITORING_REQUEST_TIME, label_info, calculateDuration(start))
                 continue
             
             if (hasBaseline):
@@ -346,7 +372,8 @@ def main():
                         logger.warning("job id :"+uuid+" will reprocess . current and base have same distribution but not past endTime yet, updateESDocStatus  is :"+ str(ret))
                 if not ret:
                     cacheModels( modelHolder,  max_cache)
-                    logger.error("ES update failed: job ID: "+uuid)     
+                    logger.error("ES update failed: job ID: "+uuid)  
+                measurementMetric.sendMetric(MONITORING_REQUEST_TIME, label_info, calculateDuration(start))   
                 continue
             else:
                 if not skipBaseline:
@@ -361,7 +388,8 @@ def main():
                         logger.warning("job ID : "+uuid+" continue . no baseline data yet. updateESDocStatus  is :"+ str(ret)) 
                     if not ret:
                         cacheModels( modelHolder,  max_cache)
-                        logger.error("ES update failed: job ID: "+uuid)                
+                        logger.error("ES update failed: job ID: "+uuid) 
+                    measurementMetric.sendMetric(MONITORING_REQUEST_TIME, label_info, calculateDuration(start))               
                     continue
                     
             
@@ -378,7 +406,9 @@ def main():
 
                     if not ret:
                         cacheModels( modelHolder,  max_cache)
-                        logger.error("ES update failed: job ID: "+uuid)    
+                        logger.error("ES update failed: job ID: "+uuid)  
+                        
+                    measurementMetric.sendMetric(MONITORING_REQUEST_TIME, label_info, calculateDuration(start))  
                     continue
                 
             hasAnomaly, anomaliesDataStr = computeAnomaly(currentDataSet,modelHolder)   
@@ -406,7 +436,9 @@ def main():
                     cacheModels( modelHolder,  max_cache)    
                     ret = updateESDocStatus(es_url_status_update, es_url_status_search, uuid, REQUEST_STATE.PREPROCESS_INPROGRESS.value, "Need to continuous to check untile reachs deployment endTime. ")
                     logger.warning("job ID : "+uuid+" health so far will reprocess  updateESDocStatus is :"+ str(ret))
-                    #print(getNowStr(),"job ID is ",uuid, " so far health, continue check ....")
+                    
+            measurementMetric.sendMetric(MONITORING_REQUEST_TIME, label_info, calculateDuration(start))
+
         except Exception as e:
             #print("uuid ",uuid, " error :",str(e))
             logger.error("uuid : "+ uuid+" failed because ",e )

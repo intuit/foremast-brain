@@ -1,6 +1,7 @@
 #import iso8601 
 from datetime import datetime, timezone
 from dateutil.parser import parse
+import time
 
 
 #def get_date_object(date_string):
@@ -46,6 +47,7 @@ def rateLimitCheck(lastModifiedTimeStr, past=5):
    return False
 
 
-
+def calculateDuration(startTime):
+    return time.time()-startTime
 
 
