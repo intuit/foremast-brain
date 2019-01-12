@@ -314,7 +314,7 @@ def computeAnomaly(metricInfoDataset, modelHolder):
     metricTypeSize = len(metricInfoDataset)
     anomalieDisplay =[]
     isFirstTime = True
-    if (metricTypeSize==1):
+    if (metricTypeSize>0):
         for metricType, metricInfoList in metricInfoDataset.items():
              for metricInfo in metricInfoList:
                  ts,adata =  detectAnomalyData(metricInfo,  modelHolder, metricType)

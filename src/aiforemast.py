@@ -169,7 +169,7 @@ def main():
 
     es_url_status_search=buildElasticSearchUrl(ES_ENDPOINT, ES_INDEX)
     es_url_status_update=buildElasticSearchUrl(ES_ENDPOINT, ES_INDEX, isSearch=False)
-    
+ 
     # Start up the server to expose the metrics.
     start_http_server(8000)
     measurementMetric=  measurementmetrics()
@@ -206,7 +206,7 @@ def main():
                 
                     #Test Start########################
                     '''
-                    id ='451ad9dd7053d8577418588290f36e28733bbe542c9086a90dca9395a16e8568'
+                    id ='236e3f5def3b05f3b394552ed76166e235dac4e201dddd71f69466b617ed525e'
                     openRequest = retrieveRequestById(es_url_status_search, id)
                     if (openRequest==None):
                         print("es is down, will sleep and retry")
@@ -235,7 +235,7 @@ def main():
         endTime = openRequest['endTime']
         strategy = openRequest['strategy']
         skipHistorical =( historicalConfig=='')
-        skipBaseline = (baselineConfig=='')
+        skipBaseline = (baselineConfig=='') or (strategy != 'canary')
         label_info['jobId']= uuid
         label_info['calcuHistorical']='False'
         label_info['hasCurrent']='False'
@@ -376,7 +376,7 @@ def main():
                 measurementMetric.sendMetric(MONITORING_REQUEST_TIME, label_info, calculateDuration(start))   
                 continue
             else:
-                if not skipBaseline:
+                if not skipBaseline and not hasHistorical:
                     ret = True
                     if isPast(endTime, 10):
                         ret =updateESDocStatus(es_url_status_update, es_url_status_search, uuid, REQUEST_STATE.COMPLETED_UNKNOWN.value, "baseline query is empty. ")
