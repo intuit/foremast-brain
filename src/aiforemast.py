@@ -376,7 +376,7 @@ def main():
                 measurementMetric.sendMetric(MONITORING_REQUEST_TIME, label_info, calculateDuration(start))   
                 continue
             else:
-                if not skipBaseline and not hasHistorical:
+                if not skipBaseline :
                     ret = True
                     if isPast(endTime, 10):
                         ret =updateESDocStatus(es_url_status_update, es_url_status_search, uuid, REQUEST_STATE.COMPLETED_UNKNOWN.value, "baseline query is empty. ")
