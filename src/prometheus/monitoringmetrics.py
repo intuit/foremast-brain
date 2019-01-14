@@ -1,6 +1,8 @@
 
 from prometheus_client import Gauge 
 
+metric_prefix = "foremastbrain:"
+
 class modelmetrics:
     class __modelmetrics:
         def __init__(self):
@@ -12,8 +14,8 @@ class modelmetrics:
         if not modelmetrics.instance:
             modelmetrics.instance = modelmetrics.__modelmetrics()
     def setMetricInfo(self, metricname, labels):
-        metricNameUpper = metricname+"_upper"
-        metricNameLower = metricname+"_lower"
+        metricNameUpper = metric_prefix+metricname+"_upper"
+        metricNameLower = metric_prefix+metricname+"_lower"
       
         if not (metricNameUpper in self.instance.metrics ):
             self.instance.metrics[metricNameUpper] = Gauge(metricNameUpper, metricNameUpper+" model upper bound",
@@ -23,7 +25,7 @@ class modelmetrics:
                                                            labelnames=labels.keys())                                      
                                                    
     def sendMetric(self,metricname, labeldata, value, isUpper = True):
-        newMetricName = metricname
+        newMetricName = metric_prefix+metricname
         if isUpper:
             newMetricName  += "_upper"
         else:
@@ -48,13 +50,15 @@ class measurementmetrics:
         if not measurementmetrics.instance:
             measurementmetrics.instance = measurementmetrics.__measurementmetrics()
     def setMetricInfo(self, metricname, labels):
-        if not (metricname in self.instance.metrics ):
-            self.instance.metrics[metricname] = Gauge(metricname, metricname+" measurement metric",
+        newMetricName = metric_prefix+metricname
+        if not (newMetricName in self.instance.metrics ):
+            self.instance.metrics[newMetricName] = Gauge(newMetricName, newMetricName+" measurement metric",
                                                            labelnames=labels.keys())                                                                                    
     def sendMetric(self,metricname, labeldata, value):
-        if not (metricname in self.instance.metrics) :
+        newMetricName = metric_prefix+metricname
+        if not (newMetricName in self.instance.metrics) :
             self.setMetricInfo(metricname, labeldata) 
-        self.instance.metrics[metricname].labels(**labeldata).set(value)
+        self.instance.metrics[newMetricName].labels(**labeldata).set(value)
 
 
 
@@ -71,13 +75,13 @@ class anomalymetrics:
         if not anomalymetrics.instance:
             anomalymetrics.instance = anomalymetrics.__anomalymetrics()
     def setMetricInfo(self, metricname, labels):
-        metricNameAnomaly = metricname+"_anomaly"
+        metricNameAnomaly = metric_prefix+metricname+"_anomaly"
         if not (metricNameAnomaly in self.instance.metrics ):
             self.instance.metrics[metricNameAnomaly] = Gauge(metricNameAnomaly, metricNameAnomaly+" anomaly timestamp",  
                     labelnames=labels.keys())                                                                                        
                                                    
     def sendMetric(self,metricname, labeldata, value):
-        newMetricName  = metricname+"_anomaly"
+        newMetricName  = metric_prefix+metricname+"_anomaly"
         if not (newMetricName in self.instance.metrics ):
             self.setMetricInfo(metricname, labeldata)            
         self.instance.metrics[newMetricName].labels(**labeldata).set(value)

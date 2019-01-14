@@ -174,7 +174,7 @@ def main():
     start_http_server(8000)
     measurementMetric=  measurementmetrics()
     label_info = {'jobId':'','calcuHistorical':'False','hasCurrent':'True'}
-    MONITORING_REQUEST_TIME = "foremastbrain:request_process_time"
+    MONITORING_REQUEST_TIME = "request_process_time"
     
     while True:
         resp=''
