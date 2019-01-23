@@ -1,6 +1,6 @@
 from models.modelclass import ModelHolder
-from metadata.metadata import AI_MODEL, MAE, DEVIATION, THRESHOLD, BOUND,LOWER_BOUND,UPPER_BOUND,LOWER_THRESHOLD, LLOWER_BOUND,LUPPER_BOUND
-from metadata.metadata import DEFAULT_THRESHOLD , DEFAULT_LOWER_THRESHOLD 
+from metadata.metadata import AI_MODEL, MAE, DEVIATION, THRESHOLD, BOUND,LOWER_BOUND,UPPER_BOUND,LOWER_THRESHOLD, MIN_LOWER_BOUND
+from metadata.metadata import DEFAULT_THRESHOLD , DEFAULT_LOWER_THRESHOLD
 from mlalgms.statsmodel import calculateHistoricalParameters,calculateMovingAverageParameters,calculateExponentialSmoothingParameters
 from mlalgms.statsmodel import calculateDoubleExponentialSmoothingParameters,createHoltWintersModel,retrieveSaveModelData
 from mlalgms.statsmodel import IS_UPPER_BOUND, IS_UPPER_O_LOWER_BOUND, IS_LOWER_BOUND
@@ -8,6 +8,7 @@ from mlalgms.statsmodel import detectAnomalies,detectLowerUpperAnomalies
 from mlalgms.statsmodel import detectDoubleExponentialSmoothingAnomalies,retrieveHW_Anomalies,detectBivariateAnomalies
 from mlalgms.fbprophet import predictNoneSeasonalityProphetLast,PROPHET_PERIOD, PROPHET_FREQ,DEFAULT_PROPHET_PERIOD, DEFAULT_PROPHET_FREQ
 from prometheus.monitoringmetrics import modelmetrics, anomalymetrics
+from metadata.globalconfig import globalconfig
 
 
 WINDOW = 'window'
@@ -17,6 +18,10 @@ BETA = 'beta'
 #prometheus metric Gauges 
 modelMetric=  modelmetrics()
 anomalymetrics = anomalymetrics() 
+globalConfig =  globalconfig()
+
+def getGlobalConfig():
+    return globalConfig
 
 ###################################################
 #
@@ -60,24 +65,24 @@ def triggerAnomalyMetric(metricInfo, ts):
 
 def calculateSingleMetricModel(metricInfo, modelHolder, metricType):
     series = metricInfo.metricDF
+    threshold = globalConfig.getThresholdByKey(metricType,THRESHOLD) 
+    minLowerBound = globalConfig.getThresholdByKey(metricType,MIN_LOWER_BOUND)
     if modelHolder.model_name == AI_MODEL.MOVING_AVERAGE.value:
         window = modelHolder.getModelConfigByKey(WINDOW)
         if window == None:
-            window = 0
-        threshold = modelHolder.getModelConfigByKey(THRESHOLD)
-        if threshold == None:
-            threshold=DEFAULT_THRESHOLD 
+            window = 0  
         lower_bound, upper_bound = calculateMovingAverageParameters(series, window, threshold)
+        if lower_bound<minLowerBound:
+            lower_bound = minLowerBound
         modelHolder.setModelKV(metricType,LOWER_BOUND,lower_bound)
         modelHolder.setModelKV(metricType,UPPER_BOUND,upper_bound)
     elif modelHolder.model_name == AI_MODEL.EXPONENTIAL_SMOOTHING.value:
         alpha = modelHolder.getModelConfigByKey(ALPHA)
         if alpha == None:
             alpha = 0.1
-        threshold = modelHolder.getModelConfigByKey(THRESHOLD)
-        if threshold == None:
-            threshold=DEFAULT_THRESHOLD 
         lower_bound, upper_bound= calculateExponentialSmoothingParameters(series, alpha, threshold)
+        if lower_bound<minLowerBound:
+            lower_bound = minLowerBound
         modelHolder.setModelKV(metricType,LOWER_BOUND, lower_bound)
         modelHolder.setModelKV(metricType,UPPER_BOUND, upper_bound)
 
@@ -88,24 +93,22 @@ def calculateSingleMetricModel(metricInfo, modelHolder, metricType):
         beta = modelHolder.getModelConfigByKey(BETA)
         if beta == None:
             beta = 0.05
-        threshold = modelHolder.getModelConfigByKey(THRESHOLD)
-        if threshold == None:
-            threshold=DEFAULT_THRESHOLD 
         lower_bound, upper_bound= calculateDoubleExponentialSmoothingParameters(series, alpha, beta, threshold)
+        if lower_bound<minLowerBound:
+            lower_bound = minLowerBound
         modelHolder.setModelKV(metricType,LOWER_BOUND, lower_bound)
         modelHolder.setModelKV(metricType,UPPER_BOUND, upper_bound)
     elif modelHolder.model_name == AI_MODEL.HOLT_WINDER.value:
         nextPredictHours = modelHolder.getModelConfigByKey('nextPredictHours')
         if nextPredictHours == None:
-            nextPredictHours = 1
-        threshold = modelHolder.getModelConfigByKey(THRESHOLD)
-        if threshold == None:
-            threshold=DEFAULT_THRESHOLD 
+            nextPredictHours = 1 
         slen = modelHolder.getModelConfigByKey('slen')
         if slen == None:
              slen = 1                   
         lmodel = createHoltWintersModel(series, nextPredictHours, threshold, slen)
         lower_bound, upper_bound = retrieveSaveModelData(series, lmodel)
+        if lower_bound<minLowerBound:
+            lower_bound = minLowerBound
         modelHolder.setModelKV(metricType,UPPER_BOUND,upper_bound)
         modelHolder.setModelKV(metricType,LOWER_BOUND,lower_bound)
     elif modelHolder.model_name == AI_MODEL.PROPHET.value:
@@ -116,6 +119,8 @@ def calculateSingleMetricModel(metricInfo, modelHolder, metricType):
         if freq== None:
             freq=DEFAULT_PROPHET_FREQ           
         lower_bound, upper_bound = predictNoneSeasonalityProphetLast(series, period,freq) 
+        if lower_bound<minLowerBound:
+            lower_bound = minLowerBound
         modelHolder.setModelKV(metricType,LOWER_BOUND,lower_bound)
         modelHolder.setModelKV(metricType,UPPER_BOUND,upper_bound)
     else:
@@ -123,14 +128,12 @@ def calculateSingleMetricModel(metricInfo, modelHolder, metricType):
         mean, deviation = calculateHistoricalParameters(series)
         modelHolder.setModelKV(metricType,MAE, mean)
         modelHolder.setModelKV(metricType,DEVIATION, deviation)
-        threshold = modelHolder.getModelConfigByKey(THRESHOLD)
         lowerboundvalue = -deviation*threshold + mean
-        if (lowerboundvalue < 0 and mean >= 0):
-                lowerboundvalue = 0
+        if lowerboundvalue <minLowerBound:
+            lowerboundvalue = minLowerBound
         modelHolder.setModelKV(metricType,LOWER_BOUND, lowerboundvalue )
         modelHolder.setModelKV(metricType,UPPER_BOUND, deviation*threshold + mean)
     triggerModelMetric(metricInfo, modelHolder.getModelByKey(metricType,LOWER_BOUND), modelHolder.getModelByKey(metricType,UPPER_BOUND))
-
     return modelHolder
 
 

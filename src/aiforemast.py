@@ -16,10 +16,12 @@ from utils.timeutils import isPast, getNowStr
 
 
 from elasticsearch.elasticsearchutils import searchByStatus, parseResult,buildElasticSearchUrl,searchByStatuslist,searchByID
-
-from metadata.metadata import REQUEST_STATE,AI_MODEL, MAE, DEVIATION, THRESHOLD, LOWER_THRESHOLD, BOUND,METRIC_PERIOD, MIN_DATA_POINTS
-from metadata.metadata import DEFAULT_THRESHOLD , DEFAULT_LOWER_THRESHOLD ,PAIRWISE_ALGORITHM,PAIRWISE_THRESHOLD
+from metadata.globalconfig import globalconfig
+from metadata.metadata import REQUEST_STATE,AI_MODEL, MAE, DEVIATION,METRIC_PERIOD, MIN_DATA_POINTS
+from metadata.metadata import THRESHOLD, LOWER_THRESHOLD, BOUND,MIN_LOWER_BOUND
+from metadata.metadata import DEFAULT_THRESHOLD , DEFAULT_LOWER_THRESHOLD ,PAIRWISE_ALGORITHM,PAIRWISE_THRESHOLD,DEFAULT_MIN_LOWER_BOUND
 from models.modelclass import ModelHolder
+
 from helpers.modelhelpers import calculateModel,detectAnomalyData
 
 from helpers.foremastbrainhelper import selectRequestToProcess,canRequestProcess,reserveJob
@@ -30,7 +32,7 @@ from mlalgms.pairwisemodel import MANN_WHITE,WILCOXON,KRUSKAL,FRIED_MANCHI_SQUAR
 from mlalgms.statsmodel import IS_UPPER_BOUND, IS_UPPER_O_LOWER_BOUND, IS_LOWER_BOUND
 
 from mlalgms.fbprophet import PROPHET_PERIOD, PROPHET_FREQ, DEFAULT_PROPHET_PERIOD, DEFAULT_PROPHET_FREQ
-from metadata.globalconfig import globalconfig
+
 from mlalgms.pairwisemodel import MANN_WHITE_MIN_DATA_POINT,WILCOXON_MIN_DATA_POINTS,KRUSKAL_MIN_DATA_POINTS 
 
 from prometheus_client import start_http_server
@@ -45,10 +47,11 @@ from utils.timeutils import calculateDuration
 logging.basicConfig(format='%(asctime)s %(message)s')
 logger = logging.getLogger('aiformast')
 
-
+METRIC_TYPE_THRESHOLD_COUNT = "metric_type_threshold_count"
 
 #ES indexs and retry count
 ES_INDEX = 'documents'
+METRIC_TYPE = 'metrictype'
 
 MAX_CACHE_SIZE = 2000
 DEFAULT_MAX_STUCK_IN_SECONDS=90
@@ -61,6 +64,8 @@ cachedJobs = {}
 ### list will serve queue purposes 
 jobs=[]
             
+            
+config =  globalconfig()
 
 def cacheModels(modelHolder, max_cache_size = MAX_CACHE_SIZE):
     #if not enableCache:
@@ -126,9 +131,10 @@ def retrieveCachedRequest(es_url_status_search):
  
 def main():
     #Default Parameters can be overwrite by environments
-    config =  globalconfig()
     max_cache = convertStrToInt(os.environ.get("MAX_CACHE_SIZE", str(MAX_CACHE_SIZE)), MAX_CACHE_SIZE) 
+    #ES_ENDPOINT = os.environ.get('ES_ENDPOINT', 'http://elasticsearch-discovery-service.foremast.svc.cluster.local:9200')
     ES_ENDPOINT = os.environ.get('ES_ENDPOINT', 'http://ace26cb17152911e9b3ee067481c81ce-156838986.us-west-2.elb.amazonaws.com:9200')
+    
     #cache= os.environ.get('ENABLE_CACHE', DEFAULT_ENABLE_CACHE)
     #enableCache = False
     #if cache=='':
@@ -139,18 +145,46 @@ def main():
     #prophet algm parameters start
     #ML_ALGORITHM = AI_MODEL.PROPHET.value
 
-
+    
     
     MIN_MANN_WHITE_DATA_POINTS = convertStrToInt(os.environ.get("MIN_MANN_WHITE_DATA_POINTS", str(MANN_WHITE_MIN_DATA_POINT)), MANN_WHITE_MIN_DATA_POINT) 
 
     MIN_WILCOXON_DATA_POINTS = convertStrToInt(os.environ.get("MIN_WILCOXON_DATA_POINTS", str(WILCOXON_MIN_DATA_POINTS)), WILCOXON_MIN_DATA_POINTS) 
 
     MIN_KRUSKAL_DATA_POINTS=convertStrToInt(os.environ.get("MIN_KRUSKAL_DATA_POINTS", str(KRUSKAL_MIN_DATA_POINTS)), KRUSKAL_MIN_DATA_POINTS) 
-
+    
+    ML_THRESHOLD = convertStrToFloat(os.environ.get(THRESHOLD, str(DEFAULT_THRESHOLD)), DEFAULT_THRESHOLD)
+    #lower threshold is for warning.
+    ML_LOWER_THRESHOLD = convertStrToFloat(os.environ.get(LOWER_THRESHOLD, str(DEFAULT_LOWER_THRESHOLD)), DEFAULT_LOWER_THRESHOLD)
+    ML_BOUND = convertStrToInt(os.environ.get(BOUND, str(IS_UPPER_BOUND)), IS_UPPER_BOUND)
+    ML_MIN_LOWER_BOUND = convertStrToFloat(os.environ.get(MIN_LOWER_BOUND, str(DEFAULT_MIN_LOWER_BOUND)), DEFAULT_MIN_LOWER_BOUND)
+    
+    
+    # this is for pairwise algorithem which is used for canary deployment anomaly detetion.
     config.setKV("MIN_MANN_WHITE_DATA_POINTS",MIN_MANN_WHITE_DATA_POINTS)
     config.setKV("MIN_WILCOXON_DATA_POINTS",MIN_WILCOXON_DATA_POINTS)
     config.setKV("MIN_KRUSKAL_DATA_POINTS",MIN_KRUSKAL_DATA_POINTS)
-    
+    config.setKV(THRESHOLD, ML_THRESHOLD )
+    config.setKV(BOUND, ML_BOUND)
+    config.setKV(MIN_LOWER_BOUND, ML_MIN_LOWER_BOUND)
+    #os.environ[METRIC_TYPE_THRESHOLD_COUNT]='1'
+    #os.environ[THRESHOLD+'0']='3'
+    #os.environ[BOUND+'0']=str(IS_UPPER_BOUND)
+    #os.environ[MIN_LOWER_BOUND+'0']=str(DEFAULT_MIN_LOWER_BOUND)
+    #os.environ[METRIC_TYPE+'0']='error5xx'
+    metric_threshold_count = convertStrToInt(os.environ.get(METRIC_TYPE_THRESHOLD_COUNT, -1), METRIC_TYPE_THRESHOLD_COUNT)
+    if metric_threshold_count >= 0:
+        for i in range(metric_threshold_count):
+            istr = str(i)
+            mtype = os.environ.get(METRIC_TYPE+istr,'')
+            if mtype!='':
+                mthreshold = convertStrToFloat(os.environ.get(THRESHOLD+istr, str(ML_THRESHOLD)), ML_THRESHOLD)
+                mbound = convertStrToInt(os.environ.get(BOUND+istr, str(ML_BOUND )), ML_BOUND )
+                mminlowerbound  = convertStrToInt(os.environ.get(MIN_LOWER_BOUND+istr, str(ML_MIN_LOWER_BOUND)), ML_MIN_LOWER_BOUND)
+                config.setThresholdKV(mtype,THRESHOLD,mthreshold)
+                config.setThresholdKV(mtype,BOUND, mbound)
+                config.setThresholdKV(mtype,MIN_LOWER_BOUND, mminlowerbound)
+
 
     ML_PROPHET_PERIOD = convertStrToInt(os.environ.get(PROPHET_PERIOD, str(DEFAULT_PROPHET_PERIOD)),DEFAULT_PROPHET_PERIOD) 
     ML_PROPHET_FREQ = os.environ.get(PROPHET_FREQ, DEFAULT_PROPHET_FREQ)
@@ -159,10 +193,8 @@ def main():
     ML_PAIRWISE_ALGORITHM =os.environ.get(PAIRWISE_ALGORITHM, ALL)
     ML_PAIRWISE_THRESHOLD = convertStrToFloat(os.environ.get(PAIRWISE_THRESHOLD, str(DEFAULT_PAIRWISE_THRESHOLD)), DEFAULT_PAIRWISE_THRESHOLD)
     
-    ML_THRESHOLD = convertStrToFloat(os.environ.get(THRESHOLD, str(DEFAULT_THRESHOLD)), DEFAULT_THRESHOLD)
-    ML_LOWER_THRESHOLD = convertStrToFloat(os.environ.get(LOWER_THRESHOLD, str(DEFAULT_LOWER_THRESHOLD)), DEFAULT_LOWER_THRESHOLD)
     
-    ML_BOUND = convertStrToInt(os.environ.get(BOUND, str(IS_UPPER_BOUND)), IS_UPPER_BOUND)
+
 
     MAX_STUCK_IN_SECONDS = convertStrToInt(os.environ.get('MAX_STUCK_IN_SECONDS', str(DEFAULT_MAX_STUCK_IN_SECONDS)), DEFAULT_MAX_STUCK_IN_SECONDS)
     min_historical_data_points = convertStrToInt(os.environ.get('MIN_HISTORICAL_DATA_POINT_TO_MEASURE', str(DEFAULT_MIN_HISTORICAL_DATA_POINT_TO_MEASURE)), DEFAULT_MIN_HISTORICAL_DATA_POINT_TO_MEASURE)
@@ -191,7 +223,7 @@ def main():
         openRequest =selectRequestToProcess(openRequestlist)
         if openRequest == None :
             #process stucked preprogress_inprogress event.
-            resp = searchByStatus(es_url_status_search, REQUEST_STATE.PREPROCESS_INPROGRESS.value,MAX_STUCK_IN_SECONDS)
+            resp = searchByStatus(es_url_status_search, REQUEST_STATE.PREPROCESS_INPROGRESS.value, MAX_STUCK_IN_SECONDS)
             openRequestlist=parseResult(resp)
             openRequest = selectRequestToProcess(openRequestlist)
             if openRequest == None:
@@ -206,7 +238,7 @@ def main():
                 
                     #Test Start########################
                     '''
-                    id ='236e3f5def3b05f3b394552ed76166e235dac4e201dddd71f69466b617ed525e'
+                    id ='a528597244ef27beaacc6e2796e1e47133cb924d7dc4246aae104ab6a3e7eb80'
                     openRequest = retrieveRequestById(es_url_status_search, id)
                     if (openRequest==None):
                         print("es is down, will sleep and retry")
