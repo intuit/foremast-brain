@@ -20,8 +20,6 @@ modelMetric=  modelmetrics()
 anomalymetrics = anomalymetrics() 
 globalConfig =  globalconfig()
 
-def getGlobalConfig():
-    return globalConfig
 
 ###################################################
 #
