@@ -328,9 +328,11 @@ def computeAnomaly(metricInfoDataset, modelHolder):
                          anomalieDisplay.append(",")
                      anomalieDisplay.append("{'metric':")
                      anomalieDisplay.append(str(metricInfo.columnmap['y']))
-                     anomalieDisplay.append(",'value':[")
+                     anomalieDisplay.append(",'value':{ 'ts' : [")
                      anomalieDisplay.append(str(ts))
-                     anomalieDisplay.append("]}")
+                     anomalieDisplay.append("], 'value'  : [")
+                     anomalieDisplay.append(str(adata))
+                     anomalieDisplay.append("]}}")
         if (not isFirstTime):
             anomalieDisplay.append("]") 
             anomalieDisplay.append("}")                   
