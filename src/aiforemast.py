@@ -51,7 +51,7 @@ METRIC_TYPE_THRESHOLD_COUNT = "metric_type_threshold_count"
 
 #ES indexs and retry count
 ES_INDEX = 'documents'
-METRIC_TYPE = 'metrictype'
+METRIC_TYPE = 'metric_type'
 
 MAX_CACHE_SIZE = 2000
 DEFAULT_MAX_STUCK_IN_SECONDS=90
@@ -221,6 +221,7 @@ def main():
         #                         REQUEST_STATE.COMPLETED_UNKNOWN.value)
         openRequestlist=parseResult(resp)
         openRequest =selectRequestToProcess(openRequestlist)
+
         if openRequest == None :
             #process stucked preprogress_inprogress event.
             resp = searchByStatus(es_url_status_search, REQUEST_STATE.PREPROCESS_INPROGRESS.value, MAX_STUCK_IN_SECONDS)
@@ -238,7 +239,7 @@ def main():
                 
                     #Test Start########################
                     '''
-                    id ='a528597244ef27beaacc6e2796e1e47133cb924d7dc4246aae104ab6a3e7eb80'
+                    id ='35aa7789aa7e6176c975c7a3c1c51c1e7572ec7a2d83ee953f8306618949eb74'
                     openRequest = retrieveRequestById(es_url_status_search, id)
                     if (openRequest==None):
                         print("es is down, will sleep and retry")
@@ -249,6 +250,7 @@ def main():
             else:
                 uuid = openRequest['id']
                 openRequest_tmp, modelHolder = retrieveOneCachedRequest(es_url_status_search,uuid)
+      
 
         outputMsg = []
         uuid = openRequest['id']
@@ -451,7 +453,7 @@ def main():
                 anomalyInfo = escapeString(anomaliesDataStr)
                 ret = updateESDocStatus(es_url_status_update, es_url_status_search, uuid, REQUEST_STATE.COMPLETED_UNHEALTH.value , "Warning: anomaly detected between current and historical. ",anomalyInfo)
                 #print(getNowStr(),"job ID is ",uuid, " mark unhealth anomalies data is ", anomalyInfo)
-                logger.warning("job ID is unhealth  "+uuid+" updateESDocStatus  is :"+ str(ret))
+                logger.warning("job ID is unhealth  "+uuid+" updateESDocStatus  is :"+ str(ret)+ "  "+anomaliesDataStr)
                 if not ret:
                     cacheModels( modelHolder,  max_cache)
                     logger.error("ES update failed: job ID: "+uuid)

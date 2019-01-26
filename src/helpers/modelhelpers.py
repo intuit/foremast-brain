@@ -52,12 +52,12 @@ def detectAnomalyData(metricInfo,  modelHolder, metricType):
 
 
 def triggerModelMetric(metricInfo, lower, upper):
-    modelMetric.sendMetric(metricInfo.metricName, metricInfo. metricKeys, upper,True)
-    modelMetric.sendMetric(metricInfo.metricName, metricInfo. metricKeys, lower,False)
+    modelMetric.sendMetric(metricInfo.metricName, metricInfo.metricKeys, upper,True)
+    modelMetric.sendMetric(metricInfo.metricName, metricInfo.metricKeys, lower,False)
     
 def triggerAnomalyMetric(metricInfo, ts):
      for t in ts:
-         anomalymetrics.sendMetric(metricInfo.metricName, metricInfo. metricKeys, t)
+         anomalymetrics.sendMetric(metricInfo.metricName, metricInfo.metricKeys, t.item())
          
 
 
