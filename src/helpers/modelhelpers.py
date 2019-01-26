@@ -55,10 +55,12 @@ def triggerModelMetric(metricInfo, lower, upper):
     modelMetric.sendMetric(metricInfo.metricName, metricInfo.metricKeys, upper,True)
     modelMetric.sendMetric(metricInfo.metricName, metricInfo.metricKeys, lower,False)
     
-def triggerAnomalyMetric(metricInfo, ts):
-     for t in ts:
-         anomalymetrics.sendMetric(metricInfo.metricName, metricInfo.metricKeys, t.item())
-         
+def triggerAnomalyMetric(metricInfo, ts, flags):
+     i = 0
+     for f in flags:
+         if f:
+            anomalymetrics.sendMetric(metricInfo.metricName, metricInfo.metricKeys, ts[i].item())
+         i += 1
 
 
 def calculateSingleMetricModel(metricInfo, modelHolder, metricType):
@@ -154,7 +156,7 @@ def detectSignalAnomalyData( metricInfo, modelHolder, metricType):
             pass
             #TODO: raise error 
         ts,data,flags =detectLowerUpperAnomalies(series, lower_bound , upper_bound, bound)
-        triggerAnomalyMetric(metricInfo, ts)
+        triggerAnomalyMetric(metricInfo, ts, flags)
         return ts,data
     elif  modelHolder.model_name == AI_MODEL.PROPHET.value:        
         lower_bound = modelHolder.getModelByKey(metricType,LOWER_BOUND)
@@ -166,7 +168,7 @@ def detectSignalAnomalyData( metricInfo, modelHolder, metricType):
             pass
             #TODO: raise error 
         ts,data,flags =detectLowerUpperAnomalies(series, lower_bound , upper_bound, bound)
-        triggerAnomalyMetric(metricInfo, ts)
+        triggerAnomalyMetric(metricInfo, ts, flags)
         return ts,data
     elif modelHolder.model_name == AI_MODEL.HOLT_WINDER.value:
         upper_bound = modelHolder.getModelByKey(metricType,UPPER_BOUND)
@@ -177,7 +179,7 @@ def detectSignalAnomalyData( metricInfo, modelHolder, metricType):
         if lower_bound == None:
             pass      
         ts,adata,flags = retrieveHW_Anomalies( y, upper_bound, lower_bound, bound) 
-        triggerAnomalyMetric(metricInfo, ts)
+        triggerAnomalyMetric(metricInfo, ts, flags)
         return ts,data
     else:
         #default is modelHolder.model_name == AI_MODEL.MOVING_AVERAGE_ALL.value:
@@ -194,7 +196,7 @@ def detectSignalAnomalyData( metricInfo, modelHolder, metricType):
             threshold = DEFAULT_THRESHOLD
         #TODO:  need to make sure return all df
         ts,data,flags = detectAnomalies(series, mean, stdev, threshold , bound)
-        triggerAnomalyMetric(metricInfo, ts)
+        triggerAnomalyMetric(metricInfo, ts, flags)
         return ts, data
     
     
