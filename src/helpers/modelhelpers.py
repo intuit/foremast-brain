@@ -1,3 +1,4 @@
+import logging
 from models.modelclass import ModelHolder
 from metadata.metadata import AI_MODEL, MAE, DEVIATION, THRESHOLD, BOUND,LOWER_BOUND,UPPER_BOUND,LOWER_THRESHOLD, MIN_LOWER_BOUND
 from metadata.metadata import DEFAULT_THRESHOLD , DEFAULT_LOWER_THRESHOLD
@@ -14,6 +15,10 @@ from metadata.globalconfig import globalconfig
 WINDOW = 'window'
 ALPHA = 'alpha'
 BETA = 'beta'
+
+# logging
+logging.basicConfig(format='%(asctime)s %(message)s')
+logger = logging.getLogger('modelhelpers')
 
 #prometheus metric Gauges 
 modelMetric=  modelmetrics()
@@ -55,12 +60,11 @@ def triggerModelMetric(metricInfo, lower, upper):
     modelMetric.sendMetric(metricInfo.metricName, metricInfo.metricKeys, upper,True)
     modelMetric.sendMetric(metricInfo.metricName, metricInfo.metricKeys, lower,False)
     
-def triggerAnomalyMetric(metricInfo, ts, flags):
-     i = 0
-     for f in flags:
-         if f:
-            anomalymetrics.sendMetric(metricInfo.metricName, metricInfo.metricKeys, ts[i].item())
-         i += 1
+def triggerAnomalyMetric(metricInfo, ts):
+     for t in ts:
+         anomalymetrics.sendMetric(metricInfo.metricName, metricInfo.metricKeys, t.item())
+         break
+         
 
 
 def calculateSingleMetricModel(metricInfo, modelHolder, metricType):
@@ -128,11 +132,14 @@ def calculateSingleMetricModel(metricInfo, modelHolder, metricType):
         mean, deviation = calculateHistoricalParameters(series)
         modelHolder.setModelKV(metricType,MAE, mean)
         modelHolder.setModelKV(metricType,DEVIATION, deviation)
+
         lowerboundvalue = -deviation*threshold + mean
         if lowerboundvalue <minLowerBound:
             lowerboundvalue = minLowerBound
+        upperboundvalue = deviation*threshold + mean
+        #print("####",metricType," mean ",mean,"  stdev ",deviation, " upperboundvalue  ",upperboundvalue, " lowerbound ", lowerboundvalue)
         modelHolder.setModelKV(metricType,LOWER_BOUND, lowerboundvalue )
-        modelHolder.setModelKV(metricType,UPPER_BOUND, deviation*threshold + mean)
+        modelHolder.setModelKV(metricType,UPPER_BOUND, upperboundvalue)
     triggerModelMetric(metricInfo, modelHolder.getModelByKey(metricType,LOWER_BOUND), modelHolder.getModelByKey(metricType,UPPER_BOUND))
     return modelHolder
 
@@ -156,7 +163,7 @@ def detectSignalAnomalyData( metricInfo, modelHolder, metricType):
             pass
             #TODO: raise error 
         ts,data,flags =detectLowerUpperAnomalies(series, lower_bound , upper_bound, bound)
-        triggerAnomalyMetric(metricInfo, ts, flags)
+        triggerAnomalyMetric(metricInfo, ts)
         return ts,data
     elif  modelHolder.model_name == AI_MODEL.PROPHET.value:        
         lower_bound = modelHolder.getModelByKey(metricType,LOWER_BOUND)
@@ -168,7 +175,7 @@ def detectSignalAnomalyData( metricInfo, modelHolder, metricType):
             pass
             #TODO: raise error 
         ts,data,flags =detectLowerUpperAnomalies(series, lower_bound , upper_bound, bound)
-        triggerAnomalyMetric(metricInfo, ts, flags)
+        triggerAnomalyMetric(metricInfo, ts)
         return ts,data
     elif modelHolder.model_name == AI_MODEL.HOLT_WINDER.value:
         upper_bound = modelHolder.getModelByKey(metricType,UPPER_BOUND)
@@ -179,7 +186,7 @@ def detectSignalAnomalyData( metricInfo, modelHolder, metricType):
         if lower_bound == None:
             pass      
         ts,adata,flags = retrieveHW_Anomalies( y, upper_bound, lower_bound, bound) 
-        triggerAnomalyMetric(metricInfo, ts, flags)
+        triggerAnomalyMetric(metricInfo, ts)
         return ts,data
     else:
         #default is modelHolder.model_name == AI_MODEL.MOVING_AVERAGE_ALL.value:
@@ -191,12 +198,16 @@ def detectSignalAnomalyData( metricInfo, modelHolder, metricType):
         if stdev == None:
             pass
             #TODO: raise error
-        threshold = modelHolder.getModelConfigByKey(THRESHOLD)
+        #threshold = modelHolder.getModelConfigByKey(THRESHOLD)
+        threshold = globalConfig.getThresholdByKey(metricType,THRESHOLD) 
         if threshold == None:
             threshold = DEFAULT_THRESHOLD
         #TODO:  need to make sure return all df
         ts,data,flags = detectAnomalies(series, mean, stdev, threshold , bound)
-        triggerAnomalyMetric(metricInfo, ts, flags)
+        if len(ts)>0:
+            logger.warning("## metricType "+metricType+" ->" +str(series))
+        #print(metricType, "threshold  -----", threshold)
+        triggerAnomalyMetric(metricInfo, ts)
         return ts, data
     
     
