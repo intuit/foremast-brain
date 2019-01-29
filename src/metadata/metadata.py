@@ -4,12 +4,19 @@ from enum import Enum
 
 MAE = "mae"
 DEVIATION = "deviation"
+
 THRESHOLD = "threshold"
 BOUND = "bound"
+MIN_LOWER_BOUND = "min_lower_bound"
+
 LOWER_BOUND = "lower_bound"
 UPPER_BOUND = "upper_bound"
 MIN_DATA_POINTS = "min_data_points"
 LOWER_THRESHOLD = "lower_threshold"
+
+
+
+DEFAULT_MIN_LOWER_BOUND = 0
 
 LLOWER_BOUND = "llower_bound"
 LUPPER_BOUND = "lupper_bound"

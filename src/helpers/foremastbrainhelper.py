@@ -218,14 +218,25 @@ def computeHistoricalModel(historicalConfigMap, modelHolder, isProphet = False, 
     metricTypeCount = len(dataSet)
     if metricTypeCount == 0 :
         return modelHolder, msg
+
+    metricTypes, metricInfos = retrieveKVList(dataSet)
+    
+    for i in range (metricTypeCount):
+      modelHolder = calculateModel(metricInfos[i][0], modelHolder, metricTypes[i])
+
+
+    '''
+    ##TODO rollback
     if metricTypeCount == 1 :
         metricTypes, metricInfos = retrieveKVList(dataSet)
         #modelHolder  for historical metric there wil be only one
-        return calculateModel(metricInfos[0][0], modelHolder), msg
+        #TODO pzou
+        return calculateModel(metricInfos[0][0], modelHolder), msg    
     elif metricTypeCount == 2 :
         pass
     else:
         pass
+    '''
     return modelHolder,msg 
 
 
@@ -303,10 +314,10 @@ def computeAnomaly(metricInfoDataset, modelHolder):
     metricTypeSize = len(metricInfoDataset)
     anomalieDisplay =[]
     isFirstTime = True
-    if (metricTypeSize==1):
+    if (metricTypeSize>0):
         for metricType, metricInfoList in metricInfoDataset.items():
-             for metricInfo in metricInfoList:
-                 ts,adata =  detectAnomalyData(metricInfo,  modelHolder)
+             for metricInfo in metricInfoList:        
+                 ts,adata =  detectAnomalyData(metricInfo,  modelHolder, metricType)
                  if (len(ts) > 0):
                      if isFirstTime:
                          anomalieDisplay.append("{'")
@@ -317,9 +328,11 @@ def computeAnomaly(metricInfoDataset, modelHolder):
                          anomalieDisplay.append(",")
                      anomalieDisplay.append("{'metric':")
                      anomalieDisplay.append(str(metricInfo.columnmap['y']))
-                     anomalieDisplay.append(",'value':[")
+                     anomalieDisplay.append(",'value':{ 'ts' : ")
                      anomalieDisplay.append(str(ts))
-                     anomalieDisplay.append("]}")
+                     anomalieDisplay.append(", 'value'  : ")
+                     anomalieDisplay.append(str(adata))
+                     anomalieDisplay.append("}}")
         if (not isFirstTime):
             anomalieDisplay.append("]") 
             anomalieDisplay.append("}")                   

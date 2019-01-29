@@ -4,6 +4,7 @@ from metadata.metadata import METRIC_PERIOD
 
 class ModelHolder:
     def __init__(self, model_name, model_config=None, model_data=None, period=METRIC_PERIOD.HISTORICAL.value, id=''):
+        #nest dict
         if model_config is None:
             model_config = {}
         if model_data is None:
@@ -14,11 +15,20 @@ class ModelHolder:
         self._model_config = model_config
         self._id = id
 
+    '''
     def getModelByKey(self, key):
         return self._model_data.get(key)
 
     def setModelKV(self, key, value):
         self._model_data.setdefault(key, value)
+    '''        
+    def getModelByKey(self, metricType, key):
+        return self._model_data[metricType][key]
+
+    def setModelKV(self, metricType, key, value):
+        if not ( metricType in self._model_data ):
+            self._model_data[metricType]={}
+        self._model_data[metricType][key]=value
 
     def getModelConfigByKey(self, key):
         return self._model_config.get(key)
@@ -30,20 +40,29 @@ class ModelHolder:
     @property
     def model_name(self):
         return self._model_name
-
+    '''
     @property
     def hasModel(self):
         return len(self._model_data) > 0
-
+    '''
+    @property
+    def hasModels(self):
+        return len(self._model_data) > 0
+    
+    @property
+    def hasModel(self, metricType):
+        return len(self._model_data[metricType]) > 0
+    
+    
     @property
     def id(self):
         return self._id
 
-    def __getitem__(self, item):
-        return self.getModelByKey(item)
+#    def __getitem__(self, metricType, item):
+#        return self.getModelByKey(metricType, item)
 
-    def __setitem__(self, key, value):
-        self.setModelKV(key, value)
+#   def __setitem__(self, metricType,key, value):
+#       self.setModelKV(metricType, key, value)
 
     def __str__(self):
         sb = []
