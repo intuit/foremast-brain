@@ -7,8 +7,8 @@ install:
   - pip install -r requirementstest.txt
 script:
   - cd $TRAVIS_BUILD_DIR
-  - docker build --no-cache -f Dockerfile -t foremast-brain:${TRAVIS_COMMIT} .
+  - docker build --no-cache -f Dockerfile -t foremast/foremast-brain:${TRAVIS_COMMIT:0:8} .
   # - python ./src/test_foremast_brain.py
 after_success:
-  - docker push foremast-brain:${TRAVIS_COMMIT}
+  - docker push foremast/foremast-brain:${TRAVIS_COMMIT:0:8}
   - coveralls
