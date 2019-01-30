@@ -1,9 +1,14 @@
 language: python
 python:
   - 3.6
+services:
+  - docker
 install:
   - pip install -r requirementstest.txt
 script:
-  - python ./src/test_foremast_brain.py
+  - cd $TRAVIS_BUILD_DIR
+  - docker build --no-cache -f Dockerfile -t foremast-brain:${TRAVIS_COMMIT} .
+  # - python ./src/test_foremast_brain.py
 after_success:
+  - docker push foremast-brain:${TRAVIS_COMMIT}
   - coveralls
