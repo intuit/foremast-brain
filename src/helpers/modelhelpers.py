@@ -56,12 +56,14 @@ def detectAnomalyData(metricInfo,  modelHolder, metricType):
 
 
 
-def triggerModelMetric(metricInfo, lower, upper):
+def triggerModelMetric(metricInfo, lower, upper):               
+    logger.warning("## emit upper and lower "+metricInfo.metricName+" ->" +str(metricInfo.metricKeys)+" ("+str(lower)+","+str(upper)+")")
     modelMetric.sendMetric(metricInfo.metricName, metricInfo.metricKeys, upper,True)
     modelMetric.sendMetric(metricInfo.metricName, metricInfo.metricKeys, lower,False)
     
 def triggerAnomalyMetric(metricInfo, ts):
      for t in ts:
+         logger.warning("## emit abonaluy "+metricInfo.metricName+" ->" +str(metricInfo.metricKeys)+" "+str(t))
          anomalymetrics.sendMetric(metricInfo.metricName, metricInfo.metricKeys, t.item())
          break
          
@@ -204,8 +206,7 @@ def detectSignalAnomalyData( metricInfo, modelHolder, metricType):
             threshold = DEFAULT_THRESHOLD
         #TODO:  need to make sure return all df
         ts,data,flags = detectAnomalies(series, mean, stdev, threshold , bound)
-        if len(ts)>0:
-            logger.warning("## metricType "+metricType+" ->" +str(series))
+
         #print(metricType, "threshold  -----", threshold)
         triggerAnomalyMetric(metricInfo, ts)
         return ts, data
