@@ -9,7 +9,7 @@ Foremast-brain makes health judgments of [Foremast](https://github.com/intuit/fo
 
 Foremast-brain will make a judgment, Healthy or Unhealthy, based on the evaluation result.
 
-Please check out the [architecture and design](https://github.com/intuit/foremast/blob/master/docs/design.md) for more details.
+Please check out the [architecture and design](https://github.com/intuit/foremast/blob/master/docs/guides/design.md) for more details.
 
 ## How to use
 
