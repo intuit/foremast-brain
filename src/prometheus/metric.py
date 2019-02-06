@@ -2,8 +2,8 @@ import json
 from datetime import datetime as dt
 import logging
 
-import sys
-sys.path.append('../')
+#import sys
+#sys.path.append('../')
 
 from utils.converterutils import addHeader
 from utils.strutils import strcat

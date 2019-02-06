@@ -79,26 +79,28 @@ def detectAnomalies(series, mean, deviation, threshold = 2 , bound=IS_UPPER_BOUN
     anomalies=[]
     nrow =  series.shape[0]
     i=0
+    upper = mean + threshold*deviation
+    lower = mean - threshold*deviation
     for i in range(nrow):
         isAnomaly = False
         if (not returnAnomaliesOnly):
             ts.append(series.index[i])
             adata.append(series.iloc[i,0])
         if bound==IS_UPPER_BOUND:
-            if series.iloc[i,0] > mean + threshold*deviation:
+            if series.iloc[i,0] > upper:
                 if returnAnomaliesOnly:
                     ts.append(series.index[i])
                     adata.append(series.iloc[i,0])
                 isAnomaly = True
 
         elif bound==IS_LOWER_BOUND:
-            if series.iloc[i,0] < mean - threshold*deviation:
+            if series.iloc[i,0] < lower:
                 if returnAnomaliesOnly:
                     ts.append(series.index[i])
                     adata.append(series.iloc[i,0])  
                 isAnomaly = True        
         else:
-            if series.iloc[i,0] > mean + threshold*deviation   or series.iloc[i,0] < mean - threshold*deviation:
+            if series.iloc[i,0] > upper   or series.iloc[i,0] < lower:
                 if returnAnomaliesOnly:
                     ts.append(series.index[i])
                     adata.append(series.iloc[i,0])

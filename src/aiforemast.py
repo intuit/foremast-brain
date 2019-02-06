@@ -16,10 +16,12 @@ from utils.timeutils import isPast, getNowStr
 
 
 from elasticsearch.elasticsearchutils import searchByStatus, parseResult,buildElasticSearchUrl,searchByStatuslist,searchByID
-
-from metadata.metadata import REQUEST_STATE,AI_MODEL, MAE, DEVIATION, THRESHOLD, LOWER_THRESHOLD, BOUND,METRIC_PERIOD, MIN_DATA_POINTS
-from metadata.metadata import DEFAULT_THRESHOLD , DEFAULT_LOWER_THRESHOLD ,PAIRWISE_ALGORITHM,PAIRWISE_THRESHOLD
+from metadata.globalconfig import globalconfig
+from metadata.metadata import REQUEST_STATE,AI_MODEL, MAE, DEVIATION,METRIC_PERIOD, MIN_DATA_POINTS
+from metadata.metadata import THRESHOLD, LOWER_THRESHOLD, BOUND,MIN_LOWER_BOUND
+from metadata.metadata import DEFAULT_THRESHOLD , DEFAULT_LOWER_THRESHOLD ,PAIRWISE_ALGORITHM,PAIRWISE_THRESHOLD,DEFAULT_MIN_LOWER_BOUND
 from models.modelclass import ModelHolder
+
 from helpers.modelhelpers import calculateModel,detectAnomalyData
 
 from helpers.foremastbrainhelper import selectRequestToProcess,canRequestProcess,reserveJob
@@ -30,18 +32,29 @@ from mlalgms.pairwisemodel import MANN_WHITE,WILCOXON,KRUSKAL,FRIED_MANCHI_SQUAR
 from mlalgms.statsmodel import IS_UPPER_BOUND, IS_UPPER_O_LOWER_BOUND, IS_LOWER_BOUND
 
 from mlalgms.fbprophet import PROPHET_PERIOD, PROPHET_FREQ, DEFAULT_PROPHET_PERIOD, DEFAULT_PROPHET_FREQ
-from metadata.globalconfig import globalconfig
+
 from mlalgms.pairwisemodel import MANN_WHITE_MIN_DATA_POINT,WILCOXON_MIN_DATA_POINTS,KRUSKAL_MIN_DATA_POINTS 
+
+from prometheus_client import start_http_server
+from prometheus.monitoringmetrics import measurementmetrics
+from utils.timeutils import calculateDuration
+
+
+
+
+
 # logging
 logging.basicConfig(format='%(asctime)s %(message)s')
 logger = logging.getLogger('aiformast')
 
+METRIC_TYPE_THRESHOLD_COUNT = "metric_type_threshold_count"
 
 #ES indexs and retry count
 ES_INDEX = 'documents'
+METRIC_TYPE = 'metric_type'
 
 MAX_CACHE_SIZE = 2000
-DEFAULT_MAX_STUCK_IN_SECONDS=50
+DEFAULT_MAX_STUCK_IN_SECONDS=90
 DEFAULT_AGGREGATED_METRIC_SECOND = 60
 DEFAULT_MIN_HISTORICAL_DATA_POINT_TO_MEASURE = 1
 #DEFAULT_ENABLE_CACHE = '0'
@@ -51,6 +64,8 @@ cachedJobs = {}
 ### list will serve queue purposes 
 jobs=[]
             
+            
+config =  globalconfig()
 
 def cacheModels(modelHolder, max_cache_size = MAX_CACHE_SIZE):
     #if not enableCache:
@@ -116,9 +131,9 @@ def retrieveCachedRequest(es_url_status_search):
  
 def main():
     #Default Parameters can be overwrite by environments
-    config =  globalconfig()
     max_cache = convertStrToInt(os.environ.get("MAX_CACHE_SIZE", str(MAX_CACHE_SIZE)), MAX_CACHE_SIZE) 
     ES_ENDPOINT = os.environ.get('ES_ENDPOINT', 'http://elasticsearch-discovery-service.foremast.svc.cluster.local:9200')
+    
     #cache= os.environ.get('ENABLE_CACHE', DEFAULT_ENABLE_CACHE)
     #enableCache = False
     #if cache=='':
@@ -129,18 +144,46 @@ def main():
     #prophet algm parameters start
     #ML_ALGORITHM = AI_MODEL.PROPHET.value
 
-
+    
     
     MIN_MANN_WHITE_DATA_POINTS = convertStrToInt(os.environ.get("MIN_MANN_WHITE_DATA_POINTS", str(MANN_WHITE_MIN_DATA_POINT)), MANN_WHITE_MIN_DATA_POINT) 
 
     MIN_WILCOXON_DATA_POINTS = convertStrToInt(os.environ.get("MIN_WILCOXON_DATA_POINTS", str(WILCOXON_MIN_DATA_POINTS)), WILCOXON_MIN_DATA_POINTS) 
 
     MIN_KRUSKAL_DATA_POINTS=convertStrToInt(os.environ.get("MIN_KRUSKAL_DATA_POINTS", str(KRUSKAL_MIN_DATA_POINTS)), KRUSKAL_MIN_DATA_POINTS) 
-
+    
+    ML_THRESHOLD = convertStrToFloat(os.environ.get(THRESHOLD, str(DEFAULT_THRESHOLD)), DEFAULT_THRESHOLD)
+    #lower threshold is for warning.
+    ML_LOWER_THRESHOLD = convertStrToFloat(os.environ.get(LOWER_THRESHOLD, str(DEFAULT_LOWER_THRESHOLD)), DEFAULT_LOWER_THRESHOLD)
+    ML_BOUND = convertStrToInt(os.environ.get(BOUND, str(IS_UPPER_BOUND)), IS_UPPER_BOUND)
+    ML_MIN_LOWER_BOUND = convertStrToFloat(os.environ.get(MIN_LOWER_BOUND, str(DEFAULT_MIN_LOWER_BOUND)), DEFAULT_MIN_LOWER_BOUND)
+    
+    
+    # this is for pairwise algorithem which is used for canary deployment anomaly detetion.
     config.setKV("MIN_MANN_WHITE_DATA_POINTS",MIN_MANN_WHITE_DATA_POINTS)
     config.setKV("MIN_WILCOXON_DATA_POINTS",MIN_WILCOXON_DATA_POINTS)
     config.setKV("MIN_KRUSKAL_DATA_POINTS",MIN_KRUSKAL_DATA_POINTS)
-    
+    config.setKV(THRESHOLD, ML_THRESHOLD )
+    config.setKV(BOUND, ML_BOUND)
+    config.setKV(MIN_LOWER_BOUND, ML_MIN_LOWER_BOUND)
+    #os.environ[METRIC_TYPE_THRESHOLD_COUNT]='1'
+    #os.environ[THRESHOLD+'0']='3'
+    #os.environ[BOUND+'0']=str(IS_UPPER_BOUND)
+    #os.environ[MIN_LOWER_BOUND+'0']=str(DEFAULT_MIN_LOWER_BOUND)
+    #os.environ[METRIC_TYPE+'0']='error5xx'
+    metric_threshold_count = convertStrToInt(os.environ.get(METRIC_TYPE_THRESHOLD_COUNT, -1), METRIC_TYPE_THRESHOLD_COUNT)
+    if metric_threshold_count >= 0:
+        for i in range(metric_threshold_count):
+            istr = str(i)
+            mtype = os.environ.get(METRIC_TYPE+istr,'')
+            if mtype!='':
+                mthreshold = convertStrToFloat(os.environ.get(THRESHOLD+istr, str(ML_THRESHOLD)), ML_THRESHOLD)
+                mbound = convertStrToInt(os.environ.get(BOUND+istr, str(ML_BOUND )), ML_BOUND )
+                mminlowerbound  = convertStrToInt(os.environ.get(MIN_LOWER_BOUND+istr, str(ML_MIN_LOWER_BOUND)), ML_MIN_LOWER_BOUND)
+                config.setThresholdKV(mtype,THRESHOLD,mthreshold)
+                config.setThresholdKV(mtype,BOUND, mbound)
+                config.setThresholdKV(mtype,MIN_LOWER_BOUND, mminlowerbound)
+
 
     ML_PROPHET_PERIOD = convertStrToInt(os.environ.get(PROPHET_PERIOD, str(DEFAULT_PROPHET_PERIOD)),DEFAULT_PROPHET_PERIOD) 
     ML_PROPHET_FREQ = os.environ.get(PROPHET_FREQ, DEFAULT_PROPHET_FREQ)
@@ -149,17 +192,21 @@ def main():
     ML_PAIRWISE_ALGORITHM =os.environ.get(PAIRWISE_ALGORITHM, ALL)
     ML_PAIRWISE_THRESHOLD = convertStrToFloat(os.environ.get(PAIRWISE_THRESHOLD, str(DEFAULT_PAIRWISE_THRESHOLD)), DEFAULT_PAIRWISE_THRESHOLD)
     
-    ML_THRESHOLD = convertStrToFloat(os.environ.get(THRESHOLD, str(DEFAULT_THRESHOLD)), DEFAULT_THRESHOLD)
-    ML_LOWER_THRESHOLD = convertStrToFloat(os.environ.get(LOWER_THRESHOLD, str(DEFAULT_LOWER_THRESHOLD)), DEFAULT_LOWER_THRESHOLD)
     
-    ML_BOUND = convertStrToInt(os.environ.get(BOUND, str(IS_UPPER_BOUND)), IS_UPPER_BOUND)
+
 
     MAX_STUCK_IN_SECONDS = convertStrToInt(os.environ.get('MAX_STUCK_IN_SECONDS', str(DEFAULT_MAX_STUCK_IN_SECONDS)), DEFAULT_MAX_STUCK_IN_SECONDS)
     min_historical_data_points = convertStrToInt(os.environ.get('MIN_HISTORICAL_DATA_POINT_TO_MEASURE', str(DEFAULT_MIN_HISTORICAL_DATA_POINT_TO_MEASURE)), DEFAULT_MIN_HISTORICAL_DATA_POINT_TO_MEASURE)
 
     es_url_status_search=buildElasticSearchUrl(ES_ENDPOINT, ES_INDEX)
     es_url_status_update=buildElasticSearchUrl(ES_ENDPOINT, ES_INDEX, isSearch=False)
-
+ 
+    # Start up the server to expose the metrics.
+    start_http_server(8000)
+    measurementMetric=  measurementmetrics()
+    label_info = {'jobId':'','calcuHistorical':'False','hasCurrent':'True'}
+    MONITORING_REQUEST_TIME = "request_process_time"
+    
     while True:
         resp=''
         modelHolder = None
@@ -173,9 +220,10 @@ def main():
         #                         REQUEST_STATE.COMPLETED_UNKNOWN.value)
         openRequestlist=parseResult(resp)
         openRequest =selectRequestToProcess(openRequestlist)
+
         if openRequest == None :
             #process stucked preprogress_inprogress event.
-            resp = searchByStatus(es_url_status_search, REQUEST_STATE.PREPROCESS_INPROGRESS.value,MAX_STUCK_IN_SECONDS)
+            resp = searchByStatus(es_url_status_search, REQUEST_STATE.PREPROCESS_INPROGRESS.value, MAX_STUCK_IN_SECONDS)
             openRequestlist=parseResult(resp)
             openRequest = selectRequestToProcess(openRequestlist)
             if openRequest == None:
@@ -185,12 +233,12 @@ def main():
                 if openRequest == None :
                     logger.warning("No long running preprocess job found .....")
                     
-                    time.sleep(2)
+                    time.sleep(1)
                     continue
                 
                     #Test Start########################
                     '''
-                    id ='ebfc2cfd5fae051a7b9fb1dacdddc9d5a31b40f5a6bcb326a767a1774f942147'
+                    id ='35aa7789aa7e6176c975c7a3c1c51c1e7572ec7a2d83ee953f8306618949eb74'
                     openRequest = retrieveRequestById(es_url_status_search, id)
                     if (openRequest==None):
                         print("es is down, will sleep and retry")
@@ -201,6 +249,7 @@ def main():
             else:
                 uuid = openRequest['id']
                 openRequest_tmp, modelHolder = retrieveOneCachedRequest(es_url_status_search,uuid)
+      
 
         outputMsg = []
         uuid = openRequest['id']
@@ -217,8 +266,13 @@ def main():
         baselineConfig = openRequest['baselineConfig']
         startTime = openRequest['startTime']
         endTime = openRequest['endTime']
+        strategy = openRequest['strategy']
         skipHistorical =( historicalConfig=='')
-        skipBaseline = (baselineConfig=='')
+        skipBaseline = (baselineConfig=='') or (strategy != 'canary')
+        label_info['jobId']= uuid
+        label_info['calcuHistorical']='False'
+        label_info['hasCurrent']='False'
+        start = time.time()
         
         #Need to be removed below line due to baseline is enabled at upstream
         #skipBaseline = True
@@ -229,6 +283,7 @@ def main():
                 ret = updateESDocStatus(es_url_status_update, es_url_status_search, uuid, REQUEST_STATE.COMPLETED_UNKNOWN.value, "Error: no current config")
                 logger.warning("request error : jobid  "+uuid+" updateESDocStatus  is :"+ str(ret)+ " current config is empty. make status unknown")
                 #print(getNowStr(), " : jobid  ",uuid, " current config is empty. make status unknown")
+                measurementmetrics.sendMetric(MONITORING_REQUEST_TIME, label_info, calculateDuration(start))
                 continue
 
 
@@ -240,7 +295,7 @@ def main():
                 modelHolder = ModelHolder(ML_ALGORITHM,modelConfig,{}, METRIC_PERIOD.HISTORICAL.value, uuid)
 
                 
-            if  (not (modelHolder.hasModel or skipHistorical) ):
+            if  (not (modelHolder.hasModels or skipHistorical) ):
                 configMapHistorical = convertStringToMap(historicalConfig)
                 isProphet = False
                 if (ML_ALGORITHM==AI_MODEL.PROPHET.value):
@@ -248,13 +303,14 @@ def main():
                     modelConfig.setdefault(PROPHET_PERIOD, ML_PROPHET_PERIOD )
                     modelConfig.setdefault(PROPHET_FREQ,ML_PROPHET_FREQ )
                 modelHolder, msg = computeHistoricalModel(configMapHistorical, modelHolder, isProphet)
+                label_info['calcuHistorical'] ='True' 
                 if (msg!=''):
                     outputMsg.append(msg)
-                if (not modelHolder.hasModel):
+                if (not modelHolder.hasModels):
                     outputMsg.append("No historical Data and model ")
                     #print(getNowStr(), ": Warning: No historical: "+str(modelHolder))
                                 
-            hasHistorical =  modelHolder.hasModel
+            hasHistorical =  modelHolder.hasModels
             
             #start baseline             
             to_do = []
@@ -287,6 +343,8 @@ def main():
             currentLen = len(currentDataSet)
             baselineLen= len(baselineDataSet)
             hasCurrent = currentLen>0
+            label_info['hasCurrent'] =hasCurrent 
+            
             hasBaseline = baselineLen>0
             logger.warning("jobid:"+ uuid +" hasCurrent "+ str(hasCurrent)+", hasBaseline "+ str(hasBaseline) )
             #print(getNowStr(), ": hasCurrent, hasBaseline ", str(hasCurrent), str(hasBaseline)," id ",uuid , " skip bseline is ", skipBaseline)
@@ -305,6 +363,7 @@ def main():
                 if not ret:
                     cacheModels( modelHolder,  max_cache)
                     logger.error("ES update failed: job ID: "+uuid) 
+                measurementMetric.sendMetric(MONITORING_REQUEST_TIME, label_info, calculateDuration(start))
                 continue
             
             if (hasBaseline):
@@ -346,10 +405,11 @@ def main():
                         logger.warning("job id :"+uuid+" will reprocess . current and base have same distribution but not past endTime yet, updateESDocStatus  is :"+ str(ret))
                 if not ret:
                     cacheModels( modelHolder,  max_cache)
-                    logger.error("ES update failed: job ID: "+uuid)     
+                    logger.error("ES update failed: job ID: "+uuid)  
+                measurementMetric.sendMetric(MONITORING_REQUEST_TIME, label_info, calculateDuration(start))   
                 continue
             else:
-                if not skipBaseline:
+                if not skipBaseline :
                     ret = True
                     if isPast(endTime, 10):
                         ret =updateESDocStatus(es_url_status_update, es_url_status_search, uuid, REQUEST_STATE.COMPLETED_UNKNOWN.value, "baseline query is empty. ")
@@ -361,7 +421,8 @@ def main():
                         logger.warning("job ID : "+uuid+" continue . no baseline data yet. updateESDocStatus  is :"+ str(ret)) 
                     if not ret:
                         cacheModels( modelHolder,  max_cache)
-                        logger.error("ES update failed: job ID: "+uuid)                
+                        logger.error("ES update failed: job ID: "+uuid) 
+                    measurementMetric.sendMetric(MONITORING_REQUEST_TIME, label_info, calculateDuration(start))               
                     continue
                     
             
@@ -378,7 +439,9 @@ def main():
 
                     if not ret:
                         cacheModels( modelHolder,  max_cache)
-                        logger.error("ES update failed: job ID: "+uuid)    
+                        logger.error("ES update failed: job ID: "+uuid)  
+                        
+                    measurementMetric.sendMetric(MONITORING_REQUEST_TIME, label_info, calculateDuration(start))  
                     continue
                 
             hasAnomaly, anomaliesDataStr = computeAnomaly(currentDataSet,modelHolder)   
@@ -389,7 +452,7 @@ def main():
                 anomalyInfo = escapeString(anomaliesDataStr)
                 ret = updateESDocStatus(es_url_status_update, es_url_status_search, uuid, REQUEST_STATE.COMPLETED_UNHEALTH.value , "Warning: anomaly detected between current and historical. ",anomalyInfo)
                 #print(getNowStr(),"job ID is ",uuid, " mark unhealth anomalies data is ", anomalyInfo)
-                logger.warning("job ID is unhealth  "+uuid+" updateESDocStatus  is :"+ str(ret))
+                logger.warning("**job ID is unhealth  "+uuid+" updateESDocStatus  is :"+ str(ret)+ "  "+anomaliesDataStr)
                 if not ret:
                     cacheModels( modelHolder,  max_cache)
                     logger.error("ES update failed: job ID: "+uuid)
@@ -406,7 +469,9 @@ def main():
                     cacheModels( modelHolder,  max_cache)    
                     ret = updateESDocStatus(es_url_status_update, es_url_status_search, uuid, REQUEST_STATE.PREPROCESS_INPROGRESS.value, "Need to continuous to check untile reachs deployment endTime. ")
                     logger.warning("job ID : "+uuid+" health so far will reprocess  updateESDocStatus is :"+ str(ret))
-                    #print(getNowStr(),"job ID is ",uuid, " so far health, continue check ....")
+                    
+            measurementMetric.sendMetric(MONITORING_REQUEST_TIME, label_info, calculateDuration(start))
+
         except Exception as e:
             #print("uuid ",uuid, " error :",str(e))
             logger.error("uuid : "+ uuid+" failed because ",e )
