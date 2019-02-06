@@ -14,10 +14,10 @@ ctx=mx.cpu()
 ############LSTM##################
 
 
-def createModel(ctx, features_size, window_size=1, learning_rate = 0.01):
+def createModel(ctx, features_size=1, window_size=1, learning_rate = 0.01, drop_out = 0.35):
     model = mx.gluon.nn.Sequential()
     with model.name_scope():
-        model.add(mx.gluon.rnn.LSTM(window_size, dropout=0.35))
+        model.add(mx.gluon.rnn.LSTM(window_size, dropout=drop_out))
         model.add(mx.gluon.rnn.LSTM(features_size))
     model.collect_params().initialize(mx.init.Xavier(), ctx=ctx)
     trainer = gluon.Trainer(model.collect_params(), 'adam', {'learning_rate': learning_rate})
@@ -36,7 +36,7 @@ def evaluate_accuracy(data_iterator, model, L, window =1, features =1):
 
 
 
-def trainModel(traindata, testdata, model, ctx, window=1, features=1, epochs = 25, batchsize=128):
+def trainModel(traindata, testdata, model, trainer, ctx, window=1, features=1, epochs = 25, batchsize=128):
     all_train_mse = []
     all_test_mse = []
     for e in range(epochs):
@@ -55,7 +55,7 @@ def trainModel(traindata, testdata, model, ctx, window=1, features=1, epochs = 2
     return all_train_mse , all_test_mse
 
 
-def predict(to_predict, L, features = 1):
+def predict(to_predict, L, model,features = 1):
     predictions = []
     for i, data in enumerate(to_predict):
         data = data.as_in_context(ctx).reshape((-1,features,1))
@@ -65,15 +65,18 @@ def predict(to_predict, L, features = 1):
         predictions = np.append(predictions, prediction)
     return predictions
 
-def load_and_predict(dataset,L,  batch_size=128, features =1):
+def load_and_predict(dataset,L, model, batch_size=128, features =1):
     dataset_data = mx.gluon.data.DataLoader(dataset, batch_size, shuffle=False)
-    dataset_predictions = predict(dataset_data, L, features)
+    dataset_predictions = predict(dataset_data, L,model, features)
     return dataset_predictions
 
 
-def calculateThreshold(predictions , teststatistic = 2):
-    threshold =  np.mean(train_predictions) + teststatistic*np.std(train_predictions)
-    return threshold
+def calculateUpperLowerBound(predictions , zvalue = 2):
+    mean =np.mean(predictions) 
+    std = np.std(predictions)
+    upper =  mean + zvalue*std
+    lower = mean - zvalue*std
+    return upper, lower
 
 def calculateAnomaly(predictions, threshold):
     anomaly = list(map(lambda v: v > threshold, predictions))
