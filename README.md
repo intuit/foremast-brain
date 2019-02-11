@@ -2,6 +2,8 @@
 [![Build Status](https://api.travis-ci.org/intuit/foremast-brain.svg?branch=master)](https://www.travis-ci.org/intuit/foremast-brain)
 [![Slack Chat](https://img.shields.io/badge/slack-live-orange.svg)](https://foremastio.slack.com/)
 
+![](https://github.com/intuit/foremast/blob/master/docs/assets/images/logos/Foremast/foremast-logo-blue.png)
+
 Foremast-brain makes health judgments of [Foremast](https://github.com/intuit/foremast), a service health detection and canary analysis system for Kubernetes. There are two main criteria that Foremast-brain evaluates:
 
 1. Check if the baseline and current health metric have the same distribution pattern.
@@ -9,7 +11,7 @@ Foremast-brain makes health judgments of [Foremast](https://github.com/intuit/fo
 
 Foremast-brain will make a judgment, Healthy or Unhealthy, based on the evaluation result.
 
-Please check out the [architecture and design](https://github.com/intuit/foremast/blob/master/docs/design.md) for more details.
+Please check out the [architecture and design](https://github.com/intuit/foremast/blob/master/docs/guides/design.md) for more details.
 
 ## How to use
 
