@@ -7,7 +7,7 @@ from mlalgms.statsmodel import calculateDoubleExponentialSmoothingParameters,cre
 from mlalgms.statsmodel import IS_UPPER_BOUND, IS_UPPER_O_LOWER_BOUND, IS_LOWER_BOUND
 from mlalgms.statsmodel import detectAnomalies,detectLowerUpperAnomalies
 from mlalgms.statsmodel import detectDoubleExponentialSmoothingAnomalies,retrieveHW_Anomalies,detectBivariateAnomalies
-from mlalgms.fbprophet import predictNoneSeasonalityProphetLast,PROPHET_PERIOD, PROPHET_FREQ,DEFAULT_PROPHET_PERIOD, DEFAULT_PROPHET_FREQ
+from mlalgms.fbprophet import prophetPredictUpperLower,PROPHET_PERIOD, PROPHET_FREQ,DEFAULT_PROPHET_PERIOD, DEFAULT_PROPHET_FREQ
 from prometheus.monitoringmetrics import modelmetrics, anomalymetrics
 from metadata.globalconfig import globalconfig
 
@@ -124,7 +124,7 @@ def calculateSingleMetricModel(metricInfo, modelHolder, metricType):
         freq = modelHolder.getModelConfigByKey(PROPHET_FREQ)
         if freq== None:
             freq=DEFAULT_PROPHET_FREQ           
-        lower_bound, upper_bound = predictNoneSeasonalityProphetLast(series, period,freq) 
+        lower_bound, upper_bound = prophetPredictUpperLower(series, period,freq) 
         if lower_bound<minLowerBound:
             lower_bound = minLowerBound
         modelHolder.setModelKV(metricType,LOWER_BOUND,lower_bound)
