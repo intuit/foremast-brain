@@ -8,10 +8,13 @@ from utils.timeutils import  canProcess, rateLimitCheck
 from elasticsearch.elasticsearchutils import updateDocStatus, searchByID , parseResult,RETRY_COUNT
 from metadata.metadata import REQUEST_STATE, METRIC_PERIOD, MIN_DATA_POINTS
 from prometheus.metric import convertPromesResponseToMetricInfos
+from wavefront.metric import convertResponseToMetricInfos
 from utils.urlutils import dorequest
 from metrics.metricclass import MetricInfo, SingleMetricInfo
 from utils.dictutils import retrieveKVList
 from helpers.modelhelpers import calculateModel,detectAnomalyData
+from wavefront.apis import executeQuery
+
 
 from mlalgms.pairwisemodel import TwoDataSetSameDistribution,MultipleDataSetSameDistribution
 
@@ -25,13 +28,20 @@ logger = logging.getLogger('foremastbrainhelper')
 
 
 
-def queryData(metricUrl, period, isProphet = False, datasource='PROMETHEUS'):
+def queryData(metricUrl, period, isProphet = False, datasource='prometheus'):
         djson = {}
-        
         for i in range(RETRY_COUNT):
             try:
-                respStr  = dorequest(metricUrl)
-                djson = json.loads(respStr)
+                if datasource == 'prometheus':
+                    respStr  = dorequest(metricUrl)
+                    djson = json.loads(respStr)
+                elif datasource == 'wavefront':
+                    datalist = metricUrl.split("&&")
+                    if len(datalist)<4:
+                        logger.error("missing wavefront query parameters : " +metricUrl)
+                        return []
+                    qresult  = executeQuery(datalist[0],datalist[1],datalist[2],datalist[3])
+                    return convertResponseToMetricInfos(qresult, period, isProphet ) 
                 break
             except Exception as e:
                 logger.error(e.__cause__)
@@ -47,7 +57,9 @@ def queryData(metricUrl, period, isProphet = False, datasource='PROMETHEUS'):
         else:
            djson= getBaselinejson()
         '''   
-        return convertPromesResponseToMetricInfos(djson, period, isProphet ) 
+        if datasource == 'prometheus':
+            return convertPromesResponseToMetricInfos(djson, period, isProphet ) 
+        return None
 
 def selectRequestToProcess(requests):
     if requests == None or len(requests) == 0:
@@ -199,12 +211,15 @@ def filterEmptyDF(metricInfoList, min_data_points = 0):
     return newList, msg
 
 
-def computeHistoricalModel(historicalConfigMap, modelHolder, isProphet = False, datasource='PROMETHEUS' ):
+def computeHistoricalModel(historicalConfigMap, modelHolder, isProphet = False, historicalMetricStores=None ):
     dataSet = {}
     msg = ''
     min_data_points = modelHolder.getModelConfigByKey(MIN_DATA_POINTS)
     for metricType, metricUrl in historicalConfigMap.items(): 
-        metricInfolist = queryData(metricUrl, METRIC_PERIOD.HISTORICAL.value, isProphet);
+        metricStore = 'prometheus'
+        if historicalMetricStores is not None:
+           metricStore = historicalMetricStores[metricType]
+        metricInfolist = queryData(metricUrl, METRIC_PERIOD.HISTORICAL.value, isProphet, metricStore);
         if(len(metricInfolist)==0):
             continue
         filteredMetricInfoList, str =  filterEmptyDF(metricInfolist, min_data_points)
@@ -245,10 +260,13 @@ def computeHistoricalModel(historicalConfigMap, modelHolder, isProphet = False, 
     
     
 
-def computeNonHistoricalModel(configMap, period, datasource='PROMETHEUS'):
+def computeNonHistoricalModel(configMap, period, metricStores=None ):
     dataSet = {}
     for metricType, metricUrl in configMap.items(): 
-        metricInfolist = queryData(metricUrl, period);
+        metricStore = 'prometheus'
+        if metricStores is not None:
+           metricStore = metricStores[metricType]
+        metricInfolist = queryData(metricUrl, period, False, metricStore);
         if(len(metricInfolist)==0):
             continue
         filteredMetricInfoList =  filterEmptyDF(metricInfolist)
