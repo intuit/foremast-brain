@@ -2,6 +2,7 @@ import numpy as np
 
 
 
+
 """
 #moving avg 
 #Parameters
