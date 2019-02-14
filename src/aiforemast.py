@@ -166,6 +166,10 @@ def main():
     config.setKV(THRESHOLD, ML_THRESHOLD )
     config.setKV(BOUND, ML_BOUND)
     config.setKV(MIN_LOWER_BOUND, ML_MIN_LOWER_BOUND)
+    wavefrontEndpoint = os.environ.get('WAVEFRONT_ENDPOINT')
+    wavefrontToken = os.environ.get('WAVEFRONT_TOKEN')
+    config.setKV('WAVEFRONT_ENDPOINT',wavefrontEndpoint)
+    config.setKV('WAVEFRONT_TOKEN',wavefrontToken)
     #os.environ[METRIC_TYPE_THRESHOLD_COUNT]='1'
     #os.environ[THRESHOLD+'0']='3'
     #os.environ[BOUND+'0']=str(IS_UPPER_BOUND)
@@ -200,6 +204,7 @@ def main():
 
     es_url_status_search=buildElasticSearchUrl(ES_ENDPOINT, ES_INDEX)
     es_url_status_update=buildElasticSearchUrl(ES_ENDPOINT, ES_INDEX, isSearch=False)
+    
  
     # Start up the server to expose the metrics.
     start_http_server(8000)
@@ -264,10 +269,14 @@ def main():
         historicalConfig =openRequest['historicalConfig']
         currentConfig = openRequest['currentConfig']
         baselineConfig = openRequest['baselineConfig']
+        
+        historicalMetricStore =openRequest['historicalMetricStore']
+        currentMetricStore = openRequest['currentMetricStore']
+        baselineMetricStore = openRequest['baselineMetricStore']
         startTime = openRequest['startTime']
         endTime = openRequest['endTime']
         strategy = openRequest['strategy']
-        skipHistorical =( historicalConfig=='')
+        skipHistorical =( historicalConfig=='') or (strategy == 'canary')
         skipBaseline = (baselineConfig=='') or (strategy != 'canary')
         label_info['jobId']= uuid
         label_info['calcuHistorical']='False'
@@ -297,12 +306,13 @@ def main():
                 
             if  (not (modelHolder.hasModels or skipHistorical) ):
                 configMapHistorical = convertStringToMap(historicalConfig)
+                storeMapHistorical = convertStringToMap(historicalMetricStore)
                 isProphet = False
                 if (ML_ALGORITHM==AI_MODEL.PROPHET.value):
                     isProphet=True
                     modelConfig.setdefault(PROPHET_PERIOD, ML_PROPHET_PERIOD )
                     modelConfig.setdefault(PROPHET_FREQ,ML_PROPHET_FREQ )
-                modelHolder, msg = computeHistoricalModel(configMapHistorical, modelHolder, isProphet)
+                modelHolder, msg = computeHistoricalModel(configMapHistorical, modelHolder, isProphet,storeMapHistorical)
                 label_info['calcuHistorical'] ='True' 
                 if (msg!=''):
                     outputMsg.append(msg)
@@ -320,11 +330,11 @@ def main():
             
 
             if skipBaseline :
-                currentDataSet, p = computeNonHistoricalModel(convertStringToMap(currentConfig), METRIC_PERIOD.CURRENT.value)
+                currentDataSet, p = computeNonHistoricalModel(convertStringToMap(currentConfig), METRIC_PERIOD.CURRENT.value,convertStringToMap(currentMetricStore));
             else:                
                 with ProcessPoolExecutor(max_workers=2) as executor:
-                    currentjob = executor.submit(computeNonHistoricalModel, convertStringToMap(currentConfig),METRIC_PERIOD.CURRENT.value);
-                    baselinejob = executor.submit(computeNonHistoricalModel, convertStringToMap(baselineConfig), METRIC_PERIOD.BASELINE.value);
+                    currentjob = executor.submit(computeNonHistoricalModel, convertStringToMap(currentConfig),METRIC_PERIOD.CURRENT.value,convertStringToMap(currentMetricStore));
+                    baselinejob = executor.submit(computeNonHistoricalModel, convertStringToMap(baselineConfig), METRIC_PERIOD.BASELINE.value,convertStringToMap(baselineMetricStore));
                     to_do.append(currentjob)
                     to_do.append(baselinejob)
                     for future in futures.as_completed(to_do):
