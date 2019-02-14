@@ -12,7 +12,6 @@ class mongoStore:
         if isModel:
             key = key+'_model'
         result = self.collection.find_one({ '_id':key})
-        print(result)
         if result==None:
             result= self.collection.insert_one(appConfig)
         return result    
