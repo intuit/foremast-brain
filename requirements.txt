@@ -17,4 +17,6 @@ urllib3==1.24.1
 #pyside2==5.11.2
 #PyQt5-sip==4.19.13
 #pyqt5==5.11.3
+pymongo==3.7.2
 wavefront-api-client==2.3.2
+
