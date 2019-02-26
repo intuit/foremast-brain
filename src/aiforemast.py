@@ -166,10 +166,19 @@ def main():
     config.setKV(THRESHOLD, ML_THRESHOLD )
     config.setKV(BOUND, ML_BOUND)
     config.setKV(MIN_LOWER_BOUND, ML_MIN_LOWER_BOUND)
-    wavefrontEndpoint = os.environ.get('WAVEFRONT_ENDPOINT')
-    wavefrontToken = os.environ.get('WAVEFRONT_TOKEN')
+    if wavefrontEndpoint is not None:
+        config.setKV('WAVEFRONT_ENDPOINT',wavefrontEndpoint)
+    else:
+        logger.error("WAVEFRONT_ENDPOINT is null!!!")
+    if wavefrontToken is not None:
+        config.setKV('WAVEFRONT_TOKEN',wavefrontToken)
+    else:
+        logger.error("WAVEFRONT_TOKEN is null!!!")
     config.setKV('WAVEFRONT_ENDPOINT',wavefrontEndpoint)
     config.setKV('WAVEFRONT_TOKEN',wavefrontToken)
+    
+    
+    
     #os.environ[METRIC_TYPE_THRESHOLD_COUNT]='1'
     #os.environ[THRESHOLD+'0']='3'
     #os.environ[BOUND+'0']=str(IS_UPPER_BOUND)
@@ -187,6 +196,20 @@ def main():
                 config.setThresholdKV(mtype,THRESHOLD,mthreshold)
                 config.setThresholdKV(mtype,BOUND, mbound)
                 config.setThresholdKV(mtype,MIN_LOWER_BOUND, mminlowerbound)
+    #hpa config            
+    #hpa_metric_count= convertStrToInt(os.environ.get("hpa_metric_count", -1), 1)
+    #if hpa_metric_count >=0:
+    #    for i in range(hpa_metric_count):
+    #        istr = str(i)
+    #        htype = os.environ.get("hpa_metric_type"+istr,'')
+    #        if htype!='':
+    #            hthreshold = convertStrToFloat(os.environ.get("hpa_threshold"+istr, "3"),3)
+    #            hbound = convertStrToInt(os.environ.get("hpa_bound"+istr, str(ML_BOUND )), ML_BOUND )
+    #            hminlowerbound  = convertStrToInt(os.environ.get("hpa_min_lower_bound"+istr, str('0')), 0)
+    #            hweight = convertStrToFloat(os.environ.get("hpa_weight"+istr, "1"),1)
+    #             config.setThresholdKV(mtype,THRESHOLD,mthreshold)
+    #            config.setThresholdKV(mtype,BOUND, mbound)
+    #            config.setThresholdKV(mtype,MIN_LOWER_BOUND, mminlowerbound)        
 
 
     ML_PROPHET_PERIOD = convertStrToInt(os.environ.get(PROPHET_PERIOD, str(DEFAULT_PROPHET_PERIOD)),DEFAULT_PROPHET_PERIOD) 
@@ -269,10 +292,15 @@ def main():
         historicalConfig =openRequest['historicalConfig']
         currentConfig = openRequest['currentConfig']
         baselineConfig = openRequest['baselineConfig']
-        
-        historicalMetricStore =openRequest['historicalMetricStore']
-        currentMetricStore = openRequest['currentMetricStore']
-        baselineMetricStore = openRequest['baselineMetricStore']
+        historicalMetricStore= None
+        if  ('historicalMetricStore' in openRequest):    
+            historicalMetricStore =openRequest['historicalMetricStore']
+        currentMetricStore = None
+        if ('currentMetricStore' in openRequest):     
+            currentMetricStore = openRequest['currentMetricStore']
+        baselineMetricStore = None    
+        if 'baselineMetricStore' in openRequest: 
+            baselineMetricStore = openRequest['baselineMetricStore']
         startTime = openRequest['startTime']
         endTime = openRequest['endTime']
         strategy = openRequest['strategy']
