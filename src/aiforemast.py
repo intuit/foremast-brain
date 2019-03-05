@@ -166,6 +166,8 @@ def main():
     config.setKV(THRESHOLD, ML_THRESHOLD )
     config.setKV(BOUND, ML_BOUND)
     config.setKV(MIN_LOWER_BOUND, ML_MIN_LOWER_BOUND)
+    wavefrontEndpoint = os.environ.get('WAVEFRONT_ENDPOINT')
+    wavefrontToken = os.environ.get('WAVEFRONT_TOKEN')
     if wavefrontEndpoint is not None:
         config.setKV('WAVEFRONT_ENDPOINT',wavefrontEndpoint)
     else:
@@ -173,12 +175,7 @@ def main():
     if wavefrontToken is not None:
         config.setKV('WAVEFRONT_TOKEN',wavefrontToken)
     else:
-        logger.error("WAVEFRONT_TOKEN is null!!!")
-    config.setKV('WAVEFRONT_ENDPOINT',wavefrontEndpoint)
-    config.setKV('WAVEFRONT_TOKEN',wavefrontToken)
-    
-    
-    
+        logger.error("WAVEFRONT_TOKEN is null!!!") 
     #os.environ[METRIC_TYPE_THRESHOLD_COUNT]='1'
     #os.environ[THRESHOLD+'0']='3'
     #os.environ[BOUND+'0']=str(IS_UPPER_BOUND)
