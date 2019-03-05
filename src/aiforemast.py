@@ -166,6 +166,16 @@ def main():
     config.setKV(THRESHOLD, ML_THRESHOLD )
     config.setKV(BOUND, ML_BOUND)
     config.setKV(MIN_LOWER_BOUND, ML_MIN_LOWER_BOUND)
+    wavefrontEndpoint = os.environ.get('WAVEFRONT_ENDPOINT')
+    wavefrontToken = os.environ.get('WAVEFRONT_TOKEN')
+    if wavefrontEndpoint is not None:
+        config.setKV('WAVEFRONT_ENDPOINT',wavefrontEndpoint)
+    else:
+        logger.error("WAVEFRONT_ENDPOINT is null!!!")
+    if wavefrontToken is not None:
+        config.setKV('WAVEFRONT_TOKEN',wavefrontToken)
+    else:
+        logger.error("WAVEFRONT_TOKEN is null!!!") 
     #os.environ[METRIC_TYPE_THRESHOLD_COUNT]='1'
     #os.environ[THRESHOLD+'0']='3'
     #os.environ[BOUND+'0']=str(IS_UPPER_BOUND)
@@ -183,6 +193,20 @@ def main():
                 config.setThresholdKV(mtype,THRESHOLD,mthreshold)
                 config.setThresholdKV(mtype,BOUND, mbound)
                 config.setThresholdKV(mtype,MIN_LOWER_BOUND, mminlowerbound)
+    #hpa config            
+    #hpa_metric_count= convertStrToInt(os.environ.get("hpa_metric_count", -1), 1)
+    #if hpa_metric_count >=0:
+    #    for i in range(hpa_metric_count):
+    #        istr = str(i)
+    #        htype = os.environ.get("hpa_metric_type"+istr,'')
+    #        if htype!='':
+    #            hthreshold = convertStrToFloat(os.environ.get("hpa_threshold"+istr, "3"),3)
+    #            hbound = convertStrToInt(os.environ.get("hpa_bound"+istr, str(ML_BOUND )), ML_BOUND )
+    #            hminlowerbound  = convertStrToInt(os.environ.get("hpa_min_lower_bound"+istr, str('0')), 0)
+    #            hweight = convertStrToFloat(os.environ.get("hpa_weight"+istr, "1"),1)
+    #             config.setThresholdKV(mtype,THRESHOLD,mthreshold)
+    #            config.setThresholdKV(mtype,BOUND, mbound)
+    #            config.setThresholdKV(mtype,MIN_LOWER_BOUND, mminlowerbound)        
 
 
     ML_PROPHET_PERIOD = convertStrToInt(os.environ.get(PROPHET_PERIOD, str(DEFAULT_PROPHET_PERIOD)),DEFAULT_PROPHET_PERIOD) 
@@ -200,6 +224,7 @@ def main():
 
     es_url_status_search=buildElasticSearchUrl(ES_ENDPOINT, ES_INDEX)
     es_url_status_update=buildElasticSearchUrl(ES_ENDPOINT, ES_INDEX, isSearch=False)
+    
  
     # Start up the server to expose the metrics.
     start_http_server(8000)
@@ -264,10 +289,19 @@ def main():
         historicalConfig =openRequest['historicalConfig']
         currentConfig = openRequest['currentConfig']
         baselineConfig = openRequest['baselineConfig']
+        historicalMetricStore= None
+        if  ('historicalMetricStore' in openRequest):    
+            historicalMetricStore =openRequest['historicalMetricStore']
+        currentMetricStore = None
+        if ('currentMetricStore' in openRequest):     
+            currentMetricStore = openRequest['currentMetricStore']
+        baselineMetricStore = None    
+        if 'baselineMetricStore' in openRequest: 
+            baselineMetricStore = openRequest['baselineMetricStore']
         startTime = openRequest['startTime']
         endTime = openRequest['endTime']
         strategy = openRequest['strategy']
-        skipHistorical =( historicalConfig=='')
+        skipHistorical =( historicalConfig=='') or (strategy == 'canary')
         skipBaseline = (baselineConfig=='') or (strategy != 'canary')
         label_info['jobId']= uuid
         label_info['calcuHistorical']='False'
@@ -297,12 +331,13 @@ def main():
                 
             if  (not (modelHolder.hasModels or skipHistorical) ):
                 configMapHistorical = convertStringToMap(historicalConfig)
+                storeMapHistorical = convertStringToMap(historicalMetricStore)
                 isProphet = False
                 if (ML_ALGORITHM==AI_MODEL.PROPHET.value):
                     isProphet=True
                     modelConfig.setdefault(PROPHET_PERIOD, ML_PROPHET_PERIOD )
                     modelConfig.setdefault(PROPHET_FREQ,ML_PROPHET_FREQ )
-                modelHolder, msg = computeHistoricalModel(configMapHistorical, modelHolder, isProphet)
+                modelHolder, msg = computeHistoricalModel(configMapHistorical, modelHolder, isProphet,storeMapHistorical)
                 label_info['calcuHistorical'] ='True' 
                 if (msg!=''):
                     outputMsg.append(msg)
@@ -320,11 +355,11 @@ def main():
             
 
             if skipBaseline :
-                currentDataSet, p = computeNonHistoricalModel(convertStringToMap(currentConfig), METRIC_PERIOD.CURRENT.value)
+                currentDataSet, p = computeNonHistoricalModel(convertStringToMap(currentConfig), METRIC_PERIOD.CURRENT.value,convertStringToMap(currentMetricStore));
             else:                
                 with ProcessPoolExecutor(max_workers=2) as executor:
-                    currentjob = executor.submit(computeNonHistoricalModel, convertStringToMap(currentConfig),METRIC_PERIOD.CURRENT.value);
-                    baselinejob = executor.submit(computeNonHistoricalModel, convertStringToMap(baselineConfig), METRIC_PERIOD.BASELINE.value);
+                    currentjob = executor.submit(computeNonHistoricalModel, convertStringToMap(currentConfig),METRIC_PERIOD.CURRENT.value,convertStringToMap(currentMetricStore));
+                    baselinejob = executor.submit(computeNonHistoricalModel, convertStringToMap(baselineConfig), METRIC_PERIOD.BASELINE.value,convertStringToMap(baselineMetricStore));
                     to_do.append(currentjob)
                     to_do.append(baselinejob)
                     for future in futures.as_completed(to_do):
