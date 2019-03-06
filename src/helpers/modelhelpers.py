@@ -5,10 +5,10 @@ from metadata.metadata import DEFAULT_THRESHOLD , DEFAULT_LOWER_THRESHOLD
 from mlalgms.statsmodel import calculateHistoricalParameters,calculateMovingAverageParameters,calculateExponentialSmoothingParameters
 from mlalgms.statsmodel import calculateDoubleExponentialSmoothingParameters,createHoltWintersModel,retrieveSaveModelData
 from mlalgms.statsmodel import IS_UPPER_BOUND, IS_UPPER_O_LOWER_BOUND, IS_LOWER_BOUND
-from mlalgms.statsmodel import detectAnomalies,detectLowerUpperAnomalies
+from mlalgms.statsmodel import detectAnomalies,detectLowerUpperAnomalies,calculateBivariateParameters
 from mlalgms.statsmodel import detectDoubleExponentialSmoothingAnomalies,retrieveHW_Anomalies,detectBivariateAnomalies
 from mlalgms.fbprophet import prophetPredictUpperLower,PROPHET_PERIOD, PROPHET_FREQ,DEFAULT_PROPHET_PERIOD, DEFAULT_PROPHET_FREQ
-from prometheus.monitoringmetrics import modelmetrics, anomalymetrics
+from prometheus.monitoringmetrics import modelmetrics, anomalymetrics, hpascoremetrics
 from metadata.globalconfig import globalconfig
 
 
@@ -23,6 +23,7 @@ logger = logging.getLogger('modelhelpers')
 #prometheus metric Gauges 
 modelMetric=  modelmetrics()
 anomalymetrics = anomalymetrics() 
+hpascoremetrics = hpascoremetrics()
 globalConfig =  globalconfig()
 
 
@@ -39,16 +40,150 @@ globalConfig =  globalconfig()
 ##################################################
 
 
-def calculateModel(metricInfo, modelHolder, metricType):
+def calculateModel(metricInfo, modelHolder, metricType,strategy=None):
    if metricInfo.metricClass=='SingleMetricInfo' or  isinstance(metricInfo, SingleMetricInfo):
-       return calculateSingleMetricModel(metricInfo, modelHolder, metricType)
+       return calculateSingleMetricModel(metricInfo, modelHolder, metricType,strategy)
    else:
        pass
    
+def calculateModels(metricInfos, modelHolder, metricTypes, strategy=None): 
+    tpstag = 0
+    latencytag=0
+    errtag=0
+    for i in range (len(metricInfos)):
+      calculateModel(metricInfos[i][0], modelHolder, metricTypes[i],strategy)
+      if metricTypes[i] =='traffic':
+          tpstag = i
+      elif metricTypes[i] == 'latency':
+          latencytag = i
+      elif metricTypes[i] == 'error5xx':
+          errtag = i     
+    if (strategy == "hpa1"):
+        _,_,_,_,cov_tps_latency = calculateBivariateParameters(metricInfos[tpstag], metricInfos[latencytag])
+        _,_,_,_,cov_tps_error = calculateBivariateParameters(metricInfos[tpstag], metricInfos[errtag])
+    return modelHolder
 
-def detectAnomalyData(metricInfo,  modelHolder, metricType): 
+    
+def calculate_score(diff_list, size = 1,isUpper=True): 
+    dlength = len(diff_list)
+    avgsize = min(size, dlength)
+    diff = 0
+    if isUpper:
+        count = 0
+        for i in range(avgsize):
+            if (diff_list[i]>0):
+                diff += diff_list[i]
+                count += 1
+        if (count > 0):
+            diff = diff/count
+    else:
+        for i in range(avgsize):
+            diff = max(diff, diff_list[i])    
+    diff = abs(diff)
+    score = 0
+    if diff >= 10:
+        score = min(50,diff*5)
+    elif diff >=9:
+        score =  max(45, diff*5) 
+    elif diff >=8:
+        score =  max(40, diff*5) 
+    elif diff >=7:
+        score =  max(35, diff*5) 
+    elif diff >=6:
+        score =  max(30, diff*5) 
+    elif diff >=5:
+        score =  max(25, diff*5) 
+    elif diff >=4:
+        score =  max(20, diff*5) 
+    elif diff >=3:
+        score = max(15, diff*5) 
+    elif diff >= 2:
+        score =  max(10, diff*5) 
+    elif diff >= 1:
+        score =  max(5, diff*5) 
+    else:
+        score =  max(0, diff*5) 
+        
+    if (diff < 0):
+        return -score
+    return score
+    
+     
+        
+      
+#hpa only  
+def calculateScore( metricInfoDataset, modelHolder, strategy):      
+    #detect score
+    tps = 0
+    latency=0
+    err=0
+    tps_anomaly= False
+    latency_anomaly=False
+    err_anomaly=False
+    
+    tps_a=[]
+    latency_a=[]
+    err_a=[]
+    
+    
+    tps_zscore=[]
+    latency_zscore=[]
+    err_zscore=[]
+       
+    
+    #TODO: Only implemented one algm for score
+    #TODO: Need to aware prometheus bug
+    #TODO: Need to align with time
+    lmetricInfo = None
+    metricTypeSize = len(metricInfoDataset)
+    if (metricTypeSize>0):
+        for metricType, metricInfoList in metricInfoDataset.items():
+             for metricInfo in metricInfoList:        
+                ts,adata,anomalies,zscore = detectAnomalyData(metricInfo,  modelHolder, metricType, strategy)
+                if metricType =='traffic':
+                    lmetricInfo = metricInfo
+                    tps_a= anomalies
+                    tps_zscore = zscore
+                elif metricType == 'latency':
+                    latency_a= anomalies
+                    latency_zscore = zscore
+                elif metricType == 'error5xx':
+                    err_a= anomalies
+                    err_zscore = zscore
+
+    #logical added here
+    #let's define score 5 as normal unchanged.
+    score = 50  
+    ltps = len(tps_a)
+    llatency = len(latency_a)
+    lerr = len(err_a)
+    if tps_a[ltps-1] : 
+        if latency_a[llatency-1]:
+            if errt_a[lerr-1] :
+                score +=  (calculate_score(tps_zscore,3)+calculate_score(latency_zscore,3)+calculate_score(err_zscore,3))/3
+            else:
+                score +=  (calculate_score(tps_zscore,3)+calculate_score(latency_zscore,3))/2
+    else:
+        if not latency_a[llatency-1]:
+             score -= (calculate_score(tps_zscore,3,isUpper=False)+calculate_score(latency_zscore,3,isUpper=False))/2
+             if not err_a[lerr-1] :
+                 score -= (calculate_score(tps_zscore,3,isUpper=False)+calculate_score(latency_zscore,3,isUpper=False)+calculate_score(err_zscore,3,isUpper=False))/3
+    score =round(score, 2)
+    print(score)
+    triggerHPAScoreMetric(lmetricInfo, score)
+    
+    
+    
+def triggerHPAScoreMetric(metricInfo, score):
+    logger.warning("## emit score "+metricInfo.metricName+" ->" +str(metricInfo.metricKeys)+" "+str(score))
+    hpascoremetrics.sendMetric(metricInfo.metricName, metricInfo.metricKeys, score)
+
+
+
+
+def detectAnomalyData(metricInfo,  modelHolder, metricType, strategy): 
    if metricInfo.metricClass=='SingleMetricInfo' or  isinstance(metricInfo, SingleMetricInfo):
-       return detectSignalAnomalyData(metricInfo, modelHolder, metricType)
+       return detectSignalAnomalyData(metricInfo, modelHolder, metricType, strategy)
    else:
        #TODO:
        pass        
@@ -69,7 +204,7 @@ def triggerAnomalyMetric(metricInfo, ts):
          
 
 
-def calculateSingleMetricModel(metricInfo, modelHolder, metricType):
+def calculateSingleMetricModel(metricInfo, modelHolder, metricType, strategy=None):
     series = metricInfo.metricDF
     threshold = globalConfig.getThresholdByKey(metricType,THRESHOLD) 
     minLowerBound = globalConfig.getThresholdByKey(metricType,MIN_LOWER_BOUND)
@@ -150,7 +285,7 @@ def calculateSingleMetricModel(metricInfo, modelHolder, metricType):
 
 
 
-def detectSignalAnomalyData( metricInfo, modelHolder, metricType):
+def detectSignalAnomalyData( metricInfo, modelHolder, metricType, strategy=None):
     series = metricInfo.metricDF
     bound = modelHolder.getModelConfigByKey(BOUND)
     if bound == None:
@@ -205,10 +340,21 @@ def detectSignalAnomalyData( metricInfo, modelHolder, metricType):
         if threshold == None:
             threshold = DEFAULT_THRESHOLD
         #TODO:  need to make sure return all df
-        ts,data,flags = detectAnomalies(series, mean, stdev, threshold , bound)
-
-        #print(metricType, "threshold  -----", threshold)
+        if strategy== 'hpa':
+            ts,data,anomalies,zscore = detectAnomalies(series, mean, stdev, threshold , bound, minvalue=0, returnAnomaliesOnly= False) 
+            triggerAnomalyMetric(metricInfo, filterTS(ts,anomalies))
+            return ts, data, anomalies, zscore
+        ts,data,_ = detectAnomalies(series, mean, stdev, threshold , bound)   
         triggerAnomalyMetric(metricInfo, ts)
         return ts, data
+    
+def filterTS(ts, anomalies):
+    size = len(anomalies)
+    newts= []
+    for i in range(size):
+        if anomalies[i]:
+            newts.append(ts[i])
+    return newts
+            
     
     
