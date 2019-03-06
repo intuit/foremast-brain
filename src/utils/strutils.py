@@ -1,3 +1,4 @@
+from skimage.feature.orb_cy import POS1
 
 
 
@@ -27,5 +28,21 @@ def escapeString(list):
     output = queryEscape(list)
     return output
 
+
+def strReplace(origstr, startstr, endstr, replacestr):
+    if (origstr is None or origstr == ''):
+        return origstr
+    pos1 = origstr.find(startstr)
+    pos2 = origstr.find(endstr)
+    if pos1==-1 or pos2==-1 :
+       return origstr
+    if (pos1>=pos2):
+        return origstr
+    
+    newurl = origstr[:pos1]+startstr+str(replacestr)+origstr[pos2:]
+    return newurl
+    
+
+    
 
 
