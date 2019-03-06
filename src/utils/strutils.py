@@ -1,5 +1,3 @@
-from skimage.feature.orb_cy import POS1
-
 
 
 def strcat(str0,str1,str2=''):
