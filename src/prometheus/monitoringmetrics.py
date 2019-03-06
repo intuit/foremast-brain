@@ -37,8 +37,6 @@ class modelmetrics:
 
 
 
-
-
 class measurementmetrics:
     class __measurementmetrics:
         def __init__(self):
@@ -61,7 +59,6 @@ class measurementmetrics:
         self.instance.metrics[newMetricName].labels(**labeldata).set(value)
 
 
-
     
     
 class anomalymetrics:
@@ -82,6 +79,35 @@ class anomalymetrics:
                                                    
     def sendMetric(self,metricname, labeldata, value):
         newMetricName  = metric_prefix+metricname+"_anomaly"
+        if not (newMetricName in self.instance.metrics ):
+            self.setMetricInfo(metricname, labeldata)            
+        self.instance.metrics[newMetricName].labels(**labeldata).set(value)
+        
+        
+class hpascoremetrics:
+    class __hpascoremetrics:
+        def __init__(self):
+            self.metrics = {}
+        def __str__(self):
+            return repr(self) + self.configs
+    instance = None
+    def __init__(self):
+        if not hpascoremetrics.instance:
+           hpascoremetrics.instance = hpascoremetrics.__hpascoremetrics()
+    def setMetricInfo(self, metricname, labels):
+        mns =metricname.split(':')
+        metricHPA = metric_prefix+mns[0]+"_hpa_score"
+        if (len(mns)>1):
+            metricHPA = metric_prefix+mns[0]+":"+"hpa_score"
+        if not (metricHPA in self.instance.metrics ):
+            self.instance.metrics[metricHPA] = Gauge(metricHPA, metricHPA+" hpa score",  
+                    labelnames=labels.keys())                                                                                        
+                                                   
+    def sendMetric(self,metricname, labeldata, value):
+        mns =metricname.split(':')
+        newMetricName= metric_prefix+mns[0]+"_hpa_score"
+        if (len(mns)>1):
+            newMetricName = metric_prefix+mns[0]+":"+"hpa_score"
         if not (newMetricName in self.instance.metrics ):
             self.setMetricInfo(metricname, labeldata)            
         self.instance.metrics[newMetricName].labels(**labeldata).set(value)
