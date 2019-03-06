@@ -38,10 +38,6 @@ from mlalgms.pairwisemodel import MANN_WHITE_MIN_DATA_POINT,WILCOXON_MIN_DATA_PO
 from prometheus_client import start_http_server
 from prometheus.monitoringmetrics import measurementmetrics
 from utils.timeutils import calculateDuration
-from awscli.customizations.eks.exceptions import EKSError
-
-
-
 
 
 # logging
