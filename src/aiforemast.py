@@ -227,9 +227,7 @@ def main():
     min_historical_data_points = convertStrToInt(os.environ.get('MIN_HISTORICAL_DATA_POINT_TO_MEASURE', str(DEFAULT_MIN_HISTORICAL_DATA_POINT_TO_MEASURE)), DEFAULT_MIN_HISTORICAL_DATA_POINT_TO_MEASURE)
 
     es_url_status_search=buildElasticSearchUrl(ES_ENDPOINT, ES_INDEX)
-    print(es_url_status_search)
     es_url_status_update=buildElasticSearchUrl(ES_ENDPOINT, ES_INDEX, isSearch=False)
-    print(es_url_status_update)
  
     # Start up the server to expose the metrics.
     start_http_server(8000)
