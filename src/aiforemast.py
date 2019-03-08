@@ -36,8 +36,12 @@ from mlalgms.fbprophet import PROPHET_PERIOD, PROPHET_FREQ, DEFAULT_PROPHET_PERI
 from mlalgms.pairwisemodel import MANN_WHITE_MIN_DATA_POINT,WILCOXON_MIN_DATA_POINTS,KRUSKAL_MIN_DATA_POINTS 
 
 from prometheus_client import start_http_server
-from prometheus.monitoringmetrics import measurementmetrics
+#from prometheus.monitoringmetrics import measurementmetrics
 from utils.timeutils import calculateDuration
+
+
+
+
 
 
 # logging
@@ -132,6 +136,7 @@ def main():
     #Default Parameters can be overwrite by environments
     max_cache = convertStrToInt(os.environ.get("MAX_CACHE_SIZE", str(MAX_CACHE_SIZE)), MAX_CACHE_SIZE) 
     ES_ENDPOINT = os.environ.get('ES_ENDPOINT', 'http://elasticsearch-discovery-service.foremast.svc.cluster.local:9200')
+    ES_ENDPOINT = os.environ.get('ES_ENDPOINT', 'http://a61368e463fa011e98b8302f704af7a9-743286312.us-west-2.elb.amazonaws.com:9200')
 
     
     #cache= os.environ.get('ENABLE_CACHE', DEFAULT_ENABLE_CACHE)
@@ -227,7 +232,7 @@ def main():
  
     # Start up the server to expose the metrics.
     start_http_server(8000)
-    measurementMetric=  measurementmetrics()
+    #measurementMetric=  measurementmetrics()
     label_info = {'jobId':'','calcuHistorical':'False','hasCurrent':'True'}
     MONITORING_REQUEST_TIME = "request_process_time"
     
@@ -318,7 +323,7 @@ def main():
                 ret = updateESDocStatus(es_url_status_update, es_url_status_search, uuid, REQUEST_STATE.COMPLETED_UNKNOWN.value, "Error: no current config")
                 logger.warning("request error : jobid  "+uuid+" updateESDocStatus  is :"+ str(ret)+ " current config is empty. make status unknown")
                 #print(getNowStr(), " : jobid  ",uuid, " current config is empty. make status unknown")
-                measurementmetrics.sendMetric(MONITORING_REQUEST_TIME, label_info, calculateDuration(start))
+                #measurementmetrics.sendMetric(MONITORING_REQUEST_TIME, label_info, calculateDuration(start))
                 continue
 
 
@@ -400,7 +405,7 @@ def main():
                 if not ret:
                     cacheModels( modelHolder,  max_cache)
                     logger.error("ES update failed: job ID: "+uuid) 
-                measurementMetric.sendMetric(MONITORING_REQUEST_TIME, label_info, calculateDuration(start))
+                 #measurementMetric.sendMetric(MONITORING_REQUEST_TIME, label_info, calculateDuration(start))
                 continue
             
             if (hasBaseline):
@@ -443,7 +448,7 @@ def main():
                 if not ret:
                     cacheModels( modelHolder,  max_cache)
                     logger.error("ES update failed: job ID: "+uuid)  
-                measurementMetric.sendMetric(MONITORING_REQUEST_TIME, label_info, calculateDuration(start))   
+                #measurementMetric.sendMetric(MONITORING_REQUEST_TIME, label_info, calculateDuration(start))   
                 continue
             else:
                 #no baseline metric but require baseline then wait or reach end time to mark as unknown
@@ -460,7 +465,7 @@ def main():
                     if not ret:
                         cacheModels( modelHolder,  max_cache)
                         logger.error("ES update failed: job ID: "+uuid) 
-                    measurementMetric.sendMetric(MONITORING_REQUEST_TIME, label_info, calculateDuration(start))               
+                    #measurementMetric.sendMetric(MONITORING_REQUEST_TIME, label_info, calculateDuration(start))               
                     continue
                     
             
@@ -479,7 +484,7 @@ def main():
                 if not ret:
                     cacheModels( modelHolder,  max_cache)
                     logger.error("ES update failed: job ID: "+uuid)             
-                measurementMetric.sendMetric(MONITORING_REQUEST_TIME, label_info, calculateDuration(start))  
+                #measurementMetric.sendMetric(MONITORING_REQUEST_TIME, label_info, calculateDuration(start))  
                 continue
              
             if strategy ==HPA:
@@ -494,7 +499,7 @@ def main():
                         cacheModels( modelHolder,  max_cache)
                         logger.error("ES update failed: hpa job ID: "+uuid)       
 
-                    measurementMetric.sendMetric(MONITORING_REQUEST_TIME, label_info, calculateDuration(start))
+                    #measurementMetric.sendMetric(MONITORING_REQUEST_TIME, label_info, calculateDuration(start))
                     continue
             #add strategy    
             hasAnomaly, anomaliesDataStr = computeAnomaly(currentDataSet,modelHolder,strategy)   
@@ -523,7 +528,7 @@ def main():
                     ret = updateESDocStatus(es_url_status_update, es_url_status_search, uuid, REQUEST_STATE.PREPROCESS_INPROGRESS.value, "Need to continuous to check untile reachs deployment endTime. ")
                     logger.warning("job ID : "+uuid+" health so far will reprocess  updateESDocStatus is :"+ str(ret))
                     
-            measurementMetric.sendMetric(MONITORING_REQUEST_TIME, label_info, calculateDuration(start))
+            #measurementMetric.sendMetric(MONITORING_REQUEST_TIME, label_info, calculateDuration(start))
 
         except Exception as e:
             #print("uuid ",uuid, " error :",str(e))
