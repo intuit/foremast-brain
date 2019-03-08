@@ -136,7 +136,6 @@ def main():
     #Default Parameters can be overwrite by environments
     max_cache = convertStrToInt(os.environ.get("MAX_CACHE_SIZE", str(MAX_CACHE_SIZE)), MAX_CACHE_SIZE) 
     ES_ENDPOINT = os.environ.get('ES_ENDPOINT', 'http://elasticsearch-discovery-service.foremast.svc.cluster.local:9200')
-    ES_ENDPOINT = os.environ.get('ES_ENDPOINT', 'http://a61368e463fa011e98b8302f704af7a9-743286312.us-west-2.elb.amazonaws.com:9200')
 
     
     #cache= os.environ.get('ENABLE_CACHE', DEFAULT_ENABLE_CACHE)
