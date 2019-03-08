@@ -21,3 +21,17 @@ def mergeColumnmap(leftColumnmap, rightColumnmap, mergedColumnlist):
         count +=1  
     return columnmap
 
+
+
+# dataframe summary. Can be used on notebook
+def dataSummary(df):
+    for column in df.columns:
+        print(column)
+        if df.dtypes[column] == np.object: # Categorical data
+            print(df[column].value_counts())
+        else:
+            print(df[column].describe())
+        print('\n')
+
+
+

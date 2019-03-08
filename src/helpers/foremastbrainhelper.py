@@ -7,12 +7,12 @@ from scipy.stats import mannwhitneyu, wilcoxon,kruskal,friedmanchisquare
 from utils.timeutils import  canProcess, rateLimitCheck
 from elasticsearch.elasticsearchutils import updateDocStatus, searchByID , parseResult,RETRY_COUNT
 from metadata.metadata import REQUEST_STATE, METRIC_PERIOD, MIN_DATA_POINTS
-from prometheus.metric import convertPromesResponseToMetricInfos
+from prometheus.metric import convertPromesResponseToMetricInfos,urlEndNow
 from wavefront.metric import convertResponseToMetricInfos
 from utils.urlutils import dorequest
 from metrics.metricclass import MetricInfo, SingleMetricInfo
 from utils.dictutils import retrieveKVList
-from helpers.modelhelpers import calculateModel,detectAnomalyData
+from helpers.modelhelpers import calculateModel,detectAnomalyData, calculateScore,calculateModels
 from wavefront.apis import executeQuery
 
 
@@ -33,6 +33,8 @@ def queryData(metricUrl, period, isProphet = False, datasource='prometheus'):
         for i in range(RETRY_COUNT):
             try:
                 if datasource == 'prometheus':
+                    if (period != METRIC_PERIOD.HISTORICAL.value):
+                        metricUrl = urlEndNow(metricUrl)
                     respStr  = dorequest(metricUrl)
                     djson = json.loads(respStr)
                 elif datasource == 'wavefront':
@@ -211,7 +213,7 @@ def filterEmptyDF(metricInfoList, min_data_points = 0):
     return newList, msg
 
 
-def computeHistoricalModel(historicalConfigMap, modelHolder, isProphet = False, historicalMetricStores=None ):
+def computeHistoricalModel(historicalConfigMap, modelHolder, isProphet = False, historicalMetricStores=None, strategy=None ):
     dataSet = {}
     msg = ''
     min_data_points = modelHolder.getModelConfigByKey(MIN_DATA_POINTS)
@@ -233,11 +235,13 @@ def computeHistoricalModel(historicalConfigMap, modelHolder, isProphet = False, 
     metricTypeCount = len(dataSet)
     if metricTypeCount == 0 :
         return modelHolder, msg
-
     metricTypes, metricInfos = retrieveKVList(dataSet)
-    
+
+    if strategy=='hpa': 
+        modelHolder = calculateModels(metricInfos, modelHolder, metricTypes,strategy)
+        return modelHolder,msg 
     for i in range (metricTypeCount):
-      modelHolder = calculateModel(metricInfos[i][0], modelHolder, metricTypes[i])
+        modelHolder = calculateModel(metricInfos[i][0], modelHolder, metricTypes[i], strategy)
 
 
     '''
@@ -259,8 +263,13 @@ def computeHistoricalModel(historicalConfigMap, modelHolder, isProphet = False, 
 
     
     
-
-def computeNonHistoricalModel(configMap, period, metricStores=None ):
+#####################################################
+#
+#
+#
+#
+#####################################################
+def computeNonHistoricalModel(configMap, period, metricStores=None, strategy=None):
     dataSet = {}
     for metricType, metricUrl in configMap.items(): 
         metricStore = 'prometheus'
@@ -328,14 +337,18 @@ def pairwiseMetricInfoListValidation(currentMetricInfoList, baselineMetricInfoLi
 
 
 
-def computeAnomaly(metricInfoDataset, modelHolder): 
+def computeAnomaly(metricInfoDataset, modelHolder, strategy = None): 
     metricTypeSize = len(metricInfoDataset)
+    if (strategy=='hpa'):
+        if metricTypeSize==0:
+            return
+        return calculateScore( metricInfoDataset, modelHolder, strategy)
     anomalieDisplay =[]
     isFirstTime = True
     if (metricTypeSize>0):
         for metricType, metricInfoList in metricInfoDataset.items():
              for metricInfo in metricInfoList:        
-                 ts,adata =  detectAnomalyData(metricInfo,  modelHolder, metricType)
+                 ts,adata =  detectAnomalyData(metricInfo,  modelHolder, metricType, strategy)
                  if (len(ts) > 0):
                      if isFirstTime:
                          anomalieDisplay.append("{'")

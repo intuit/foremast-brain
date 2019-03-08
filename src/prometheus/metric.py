@@ -7,6 +7,8 @@ import logging
 
 from utils.converterutils import addHeader
 from utils.strutils import strcat
+from utils.timeutils import getNowInSeconds
+from utils.strutils import strReplace
 from metrics.metricclass import MetricInfo, SingleMetricInfo,MultiKeyMetricInfo
 
 from metrics.metricmerges import SingleMergeSingle,MultiKeyMergeSingle,mergeMetrics
@@ -83,4 +85,7 @@ def convertTSToDataFrame(valuesList, convertTime = False,  metricName='y',isProp
        return  addHeader(ts_idx,vals,ts, False)
     return  addHeader(ts_idx,vals) 
 
+def urlEndNow(url):
+    return strReplace(url, '&end=', '&step=', str(getNowInSeconds()))
 
+    

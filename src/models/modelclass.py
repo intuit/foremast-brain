@@ -29,7 +29,11 @@ class ModelHolder:
         if not ( metricType in self._model_data ):
             self._model_data[metricType]={}
         self._model_data[metricType][key]=value
-
+        
+    def getMetricTypes(self):
+        return self._model_config.keys()
+    def getMapByMetricType(self, metricType):
+        return self._model_data[metricType]
     def getModelConfigByKey(self, key):
         return self._model_config.get(key)
 

@@ -6,6 +6,9 @@ from sklearn.metrics import median_absolute_error, mean_squared_error, mean_squa
 
 
 
+#from sklearn.metrics import accuracy_score
+#accuracy_score(y_test, y_pred)
+
 
 def mean_absolute_percentage_error(y, y_hat): 
     """
@@ -20,7 +23,9 @@ def mean_absolute_percentage_error(y, y_hat):
     """
     return np.mean(np.abs((y - y_hat) /y)) * 100
 
-
+# mean absolute error
+def mae(y_true, y_pred):
+    return np.mean(abs(y_true - y_pred))
 
 
 def tsCrossValidationScore(params, series,loss_function=mean_squared_error, nsplits=3, slen=1):
