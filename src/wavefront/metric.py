@@ -57,11 +57,32 @@ def convertResponseToMetricInfos(result, metricPeriod, isProphet=False):
 
 
 # wavefront query parse
-def parseQueryData(data):
+def parseQueryData1(data):
     data1 = data.split("(")
     if len(data1)<=2:
        return "",{}
     data2 = data1[2].split(",")
+    name = data2[0].replace(".","_")
+    if len(data2) == 1:
+        return name.replace(")","").strip(),{}
+    values = data2[1].replace(" and "," ").replace(" or "," ").replace(")","").split(" ")
+    size = len(values)
+    kvs={}
+    for i in  range(size):
+        kv=values[i].split("=")
+        if len(kv)==1:
+            continue
+        else:
+            kvs[kv[0].replace(".","_")]= kv[1]
+    return name, kvs
+
+
+# wavefront query parse
+def parseQueryData(data):
+    data1 = data.split("ts(")
+    if len(data1)<=1:
+       return "",{}
+    data2 = data1[1].split(",")
     name = data2[0].replace(".","_")
     if len(data2) == 1:
         return name.replace(")","").strip(),{}
