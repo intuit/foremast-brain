@@ -1,6 +1,7 @@
 from prometheus_client import Gauge 
 from wavefront.apis import sendMetric
 from metadata.globalconfig import globalconfig
+from utils.dictutils import convertDictKey
 
 
 metric_prefix = "foremastbrain:"
@@ -26,7 +27,8 @@ class modelmetrics:
             metricNameLower ='iks_' + metricNameLower
             return
         if not (metricNameUpper in self.instance.metrics ):
-            self.instance.metrics[metricNameUpper] = Gauge(metricNameUpper, metricNameUpper+" model upper bound",                                                    labelnames=labels.keys())
+            self.instance.metrics[metricNameUpper] = Gauge(metricNameUpper, metricNameUpper+" model upper bound",  
+                                                  labelnames=labels.keys())
         if not (metricNameLower in self.instance.metrics ):
             self.instance.metrics[metricNameLower] = Gauge(metricNameLower, metricNameLower+" model upper bound", 
                                                    labelnames=labels.keys())                                     
@@ -42,7 +44,8 @@ class modelmetrics:
         if not (newMetricName in self.instance.metrics) :
             self.setMetricInfo(metricname, labeldata) 
         if globalConfig.getValueByKey('METRIC_DESTINATION')=='wavefront':
-            return sendMetric(newMetricName, labeldata, source, value, time)
+            newlabeldata = convertDictKey(labels,"-", "_")
+            return sendMetric(newMetricName, newlabeldata, source, value, time)
         self.instance.metrics[newMetricName].labels(**labeldata).set(value)
 
 
@@ -73,7 +76,8 @@ class measurementmetrics:
         if not (newMetricName in self.instance.metrics) :
             self.setMetricInfo(metricname, labeldata) 
         if globalConfig.getValueByKey('METRIC_DESTINATION')=='wavefront':
-            return sendMetric(newMetricName, labeldata, source, value, time)
+            newlabeldata = convertDictKey(labels,"-", "_")
+            return sendMetric(newMetricName, newlabeldata, source, value, time)
         self.instance.metrics[newMetricName].labels(**labeldata).set(value)
 
 
@@ -105,7 +109,8 @@ class anomalymetrics:
         if not (newMetricName in self.instance.metrics ):
             self.setMetricInfo(metricname, labeldata)  
         if globalConfig.getValueByKey('METRIC_DESTINATION')=='wavefront':
-            return sendMetric(newMetricName, labeldata, source, value, time)          
+            newlabeldata = convertDictKey(labels,"-", "_")
+            return sendMetric(newMetricName, newlabeldata, source, value, time)          
         self.instance.metrics[newMetricName].labels(**labeldata).set(value)
         
         
@@ -141,5 +146,6 @@ class hpascoremetrics:
         if not (newMetricName in self.instance.metrics ):
             self.setMetricInfo(metricname, labeldata)          
         if globalConfig.getValueByKey('METRIC_DESTINATION')=='wavefront':
-            return sendMetric(newMetricName, labeldata, source, value, time) 
+            newlabeldata = convertDictKey(labels,"-", "_")
+            return sendMetric(newlabeldata, newlabeldata, source, value, time) 
         self.instance.metrics[newMetricName].labels(**labeldata).set(value)
