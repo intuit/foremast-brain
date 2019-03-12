@@ -8,7 +8,7 @@ from mlalgms.statsmodel import IS_UPPER_BOUND, IS_UPPER_O_LOWER_BOUND, IS_LOWER_
 from mlalgms.statsmodel import detectAnomalies,detectLowerUpperAnomalies,calculateBivariateParameters
 from mlalgms.statsmodel import detectDoubleExponentialSmoothingAnomalies,retrieveHW_Anomalies,detectBivariateAnomalies
 from mlalgms.fbprophet import prophetPredictUpperLower,PROPHET_PERIOD, PROPHET_FREQ,DEFAULT_PROPHET_PERIOD, DEFAULT_PROPHET_FREQ
-from prometheus.monitoringmetrics import modelmetrics, anomalymetrics, hpascoremetrics
+from metrics.monitoringmetrics import modelmetrics, anomalymetrics, hpascoremetrics
 from utils.timeutils import getNowStr
 from metadata.globalconfig import globalconfig
 
@@ -22,10 +22,11 @@ logging.basicConfig(format='%(asctime)s %(message)s')
 logger = logging.getLogger('modelhelpers')
 
 #prometheus metric Gauges 
+globalConfig =  globalconfig()
+
 modelMetric=  modelmetrics()
 anomalymetrics = anomalymetrics() 
 hpascoremetrics = hpascoremetrics()
-globalConfig =  globalconfig()
 
 
 ###################################################
@@ -170,8 +171,10 @@ def calculateScore( metricInfoDataset, modelHolder, strategy):
     
 def triggerHPAScoreMetric(metricInfo, score):
     logger.warning("## emit score hpa_score ->" +str(metricInfo.metricKeys)+" "+str(score))
-    hpascoremetrics.sendMetric(metricInfo.metricName, metricInfo.metricKeys, score)
-
+    try:
+        hpascoremetrics.sendMetric(metricInfo.metricName, metricInfo.metricKeys, score)
+    except Exception as e:
+        logger.error('triggerHPAScoreMetric '+metricInfo.metricName+' failed ',e )
 
 
 
@@ -187,14 +190,23 @@ def detectAnomalyData(metricInfo,  modelHolder, metricType, strategy):
 
 def triggerModelMetric(metricInfo, lower, upper):               
     logger.warning("## emit upper and lower "+metricInfo.metricName+" ->" +str(metricInfo.metricKeys)+" ("+str(lower)+","+str(upper)+")")
-    modelMetric.sendMetric(metricInfo.metricName, metricInfo.metricKeys, upper,True)
-    modelMetric.sendMetric(metricInfo.metricName, metricInfo.metricKeys, lower,False)
+    try:
+        modelMetric.sendMetric(metricInfo.metricName, metricInfo.metricKeys, upper,True)
+    except Exception as e:
+        logger.error('triggerModelMetric upper_bound '+metricInfo.metricName+' failed ',e )
+    try:
+        modelMetric.sendMetric(metricInfo.metricName, metricInfo.metricKeys, lower,False)
+    except Exception as e:
+        logger.error('triggerModelMetric lower_bound '+metricInfo.metricName+' failed ',e )
     
 def triggerAnomalyMetric(metricInfo, ts):
+    try:
      for t in ts:
          logger.warning("## emit abonaluy "+metricInfo.metricName+" ->" +str(metricInfo.metricKeys)+" "+str(t))
          anomalymetrics.sendMetric(metricInfo.metricName, metricInfo.metricKeys, t.item())
          break
+    except Exception as e:
+        logger.error('triggerAnomalyMetric  '+metricInfo.metricName+' failed ',e )
          
 
 
