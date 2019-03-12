@@ -1,8 +1,10 @@
 import wavefront_api_client as wave_api
+from wavefront_sdk import WavefrontDirectClient
 import datetime as dt 
 import logging
 from metadata.globalconfig import globalconfig 
 import urllib.parse
+from utils.timeutils import getNowInSeconds
  
 # logging
 logging.basicConfig(format='%(asctime)s %(message)s')
@@ -13,6 +15,9 @@ globalConfig =  globalconfig()
 
 #set up python Wavefront client
 client  = None
+sendClient = None
+cacheCount = 0
+globalEnv =None
 
 def dequote(url):
     durl = urllib.parse.unquote(url)
@@ -34,6 +39,29 @@ def createWavefrontClient():
     except Exception as e:
         logger.error("wave_api.ApiClient call failed "+str(e))
     return None
+
+
+def createSendWavefrontClient():  
+    global globalEnv
+    globalEnv =globalConfig.getValueByKey('FOREMAST_ENV')
+    _server= globalConfig.getValueByKey('WAVEFRONT_ENDPOINT')
+    _token = globalConfig.getValueByKey('WAVEFRONT_TOKEN')
+    if (_server is None or _server == '' or _token is None or _token == '' ):
+        logger.error("wavefront endpoint or token is null")
+        return None
+    try:
+        global sendClient 
+        sendClient = wavefront_sender = WavefrontDirectClient(
+        server=_server,
+        token= _token,
+        max_queue_size=10,
+        batch_size=10,
+        flush_interval_seconds=1)
+        return sendClient
+    except Exception as e:
+        logger.error("WavefrontDirectClient failed "+str(e))
+    return None
+
     
 
 def executeQuery( query, start_time, query_granularity, end_time):
@@ -44,8 +72,41 @@ def executeQuery( query, start_time, query_granularity, end_time):
     result = query_api.query_api(dequote(query), str(start_time), query_granularity, e=str(end_time))
     return result
 
+def sendMetric(metricName, tages, value, source=None, timestamp=0):
+    ts = timestamp
+    if timestamp==0:
+        ts = getNowInSeconds()
+    if sendClient is None:
+        createSendWavefrontClient()
+    global cacheCount 
+    cache = cacheCount+ 1
+    if source is None:
+        source = globalEnv
+    sendClient.send_metric(metricName,value, time,source, tags)
+    if (cacheCount%10 == 0):
+        flucshNow()
+    
+def sendDeltaCounter(metricName, tags, value, source=None):
+    if sendClient is None:
+        createSendWavefrontClient()
+    global cacheCount 
+    cache = cacheCount+ 1
+    if source is None:
+        source = globalEnv
+    sendClient.send_delta_counter(name, value, source, tags)
+    if (cacheCount%10 == 0):
+        flucshNow()
+    
+    
+    
+def flushNow():
+    sendClient.flush_now()
+    
 
-   
+#def sendMetric():
+
+
+#def sendMetrics():
    
    
 ##############
