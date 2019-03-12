@@ -36,13 +36,7 @@ from mlalgms.fbprophet import PROPHET_PERIOD, PROPHET_FREQ, DEFAULT_PROPHET_PERI
 from mlalgms.pairwisemodel import MANN_WHITE_MIN_DATA_POINT,WILCOXON_MIN_DATA_POINTS,KRUSKAL_MIN_DATA_POINTS 
 
 from prometheus_client import start_http_server
-#from prometheus.monitoringmetrics import measurementmetrics
 from utils.timeutils import calculateDuration
-
-
-
-
-
 
 # logging
 logging.basicConfig(format='%(asctime)s %(message)s')
@@ -137,32 +131,20 @@ def main():
     max_cache = convertStrToInt(os.environ.get("MAX_CACHE_SIZE", str(MAX_CACHE_SIZE)), MAX_CACHE_SIZE) 
     ES_ENDPOINT = os.environ.get('ES_ENDPOINT', 'http://elasticsearch-discovery-service.foremast.svc.cluster.local:9200')
 
-    
-    #cache= os.environ.get('ENABLE_CACHE', DEFAULT_ENABLE_CACHE)
-    #enableCache = False
-    #if cache=='':
-    #    enableCache = True
     ML_ALGORITHM = os.environ.get('ML_ALGORITHM', AI_MODEL.MOVING_AVERAGE_ALL.value)
     #ML_ALGORITHM= AI_MODEL.EXPONENTIAL_SMOOTHING.value
     #ML_ALGORITHM= AI_MODEL.DOUBLE_EXPONENTIAL_SMOOTHING.value
     #prophet algm parameters start
     #ML_ALGORITHM = AI_MODEL.PROPHET.value
 
-    
-    
     MIN_MANN_WHITE_DATA_POINTS = convertStrToInt(os.environ.get("MIN_MANN_WHITE_DATA_POINTS", str(MANN_WHITE_MIN_DATA_POINT)), MANN_WHITE_MIN_DATA_POINT) 
-
     MIN_WILCOXON_DATA_POINTS = convertStrToInt(os.environ.get("MIN_WILCOXON_DATA_POINTS", str(WILCOXON_MIN_DATA_POINTS)), WILCOXON_MIN_DATA_POINTS) 
-
     MIN_KRUSKAL_DATA_POINTS=convertStrToInt(os.environ.get("MIN_KRUSKAL_DATA_POINTS", str(KRUSKAL_MIN_DATA_POINTS)), KRUSKAL_MIN_DATA_POINTS) 
-    
     ML_THRESHOLD = convertStrToFloat(os.environ.get(THRESHOLD, str(DEFAULT_THRESHOLD)), DEFAULT_THRESHOLD)
     #lower threshold is for warning.
     ML_LOWER_THRESHOLD = convertStrToFloat(os.environ.get(LOWER_THRESHOLD, str(DEFAULT_LOWER_THRESHOLD)), DEFAULT_LOWER_THRESHOLD)
     ML_BOUND = convertStrToInt(os.environ.get(BOUND, str(IS_UPPER_BOUND)), IS_UPPER_BOUND)
     ML_MIN_LOWER_BOUND = convertStrToFloat(os.environ.get(MIN_LOWER_BOUND, str(DEFAULT_MIN_LOWER_BOUND)), DEFAULT_MIN_LOWER_BOUND)
-    
-    
     # this is for pairwise algorithem which is used for canary deployment anomaly detetion.
     config.setKV("MIN_MANN_WHITE_DATA_POINTS",MIN_MANN_WHITE_DATA_POINTS)
     config.setKV("MIN_WILCOXON_DATA_POINTS",MIN_WILCOXON_DATA_POINTS)
@@ -172,19 +154,29 @@ def main():
     config.setKV(MIN_LOWER_BOUND, ML_MIN_LOWER_BOUND)
     wavefrontEndpoint = os.environ.get('WAVEFRONT_ENDPOINT')
     wavefrontToken = os.environ.get('WAVEFRONT_TOKEN')
+
+    foremastEnv = os.environ.get("FOREMAST_ENV",'')
+    metricDestation = os.environ.get('METRIC_DESTINATION',"prometheus")
     if wavefrontEndpoint is not None:
         config.setKV('WAVEFRONT_ENDPOINT',wavefrontEndpoint)
     else:
-        logger.error("WAVEFRONT_ENDPOINT is null!!!")
+        logger.error("WAVEFRONT_ENDPOINT is null!!! foremat-brain will throw exception is you consumer wavefront metric...")
     if wavefrontToken is not None:
         config.setKV('WAVEFRONT_TOKEN',wavefrontToken)
     else:
-        logger.error("WAVEFRONT_TOKEN is null!!!")
-    #os.environ[METRIC_TYPE_THRESHOLD_COUNT]='1'
-    #os.environ[THRESHOLD+'0']='3'
-    #os.environ[BOUND+'0']=str(IS_UPPER_BOUND)
-    #os.environ[MIN_LOWER_BOUND+'0']=str(DEFAULT_MIN_LOWER_BOUND)
-    #os.environ[METRIC_TYPE+'0']='error5xx'
+        logger.error("WAVEFRONT_TOKEN is null!!! foremat-brain will throw exception is you consumer wavefront metric...")
+    if metricDestation is not None:
+        config.setKV('METRIC_DESTINATION',metricDestation)
+    else:
+        config.setKV('METRIC_DESTINATION',"prometheus")
+        
+    print(config.getValueByKey('METRIC_DESTINATION'))
+        
+    if foremastEnv is  None or foremastEnv == '':
+        config.setKV("FOREMAST_ENV",'')
+    else:
+        confif.setKV("FOREMAST_ENV",foremastEnv)
+    
     metric_threshold_count = convertStrToInt(os.environ.get(METRIC_TYPE_THRESHOLD_COUNT, -1), METRIC_TYPE_THRESHOLD_COUNT)
     if metric_threshold_count >= 0:
         for i in range(metric_threshold_count):
@@ -197,22 +189,7 @@ def main():
                 config.setThresholdKV(mtype,THRESHOLD,mthreshold)
                 config.setThresholdKV(mtype,BOUND, mbound)
                 config.setThresholdKV(mtype,MIN_LOWER_BOUND, mminlowerbound)
-    #hpa config            
-    #hpa_metric_count= convertStrToInt(os.environ.get("hpa_metric_count", -1), 1)
-    #if hpa_metric_count >=0:
-    #    for i in range(hpa_metric_count):
-    #        istr = str(i)
-    #        htype = os.environ.get("hpa_metric_type"+istr,'')
-    #        if htype!='':
-    #            hthreshold = convertStrToFloat(os.environ.get("hpa_threshold"+istr, "3"),3)
-    #            hbound = convertStrToInt(os.environ.get("hpa_bound"+istr, str(ML_BOUND )), ML_BOUND )
-    #            hminlowerbound  = convertStrToInt(os.environ.get("hpa_min_lower_bound"+istr, str('0')), 0)
-    #            hweight = convertStrToFloat(os.environ.get("hpa_weight"+istr, "1"),1)
-    #             config.setThresholdKV(mtype,THRESHOLD,mthreshold)
-    #            config.setThresholdKV(mtype,BOUND, mbound)
-    #            config.setThresholdKV(mtype,MIN_LOWER_BOUND, mminlowerbound)        
-
-
+       
     ML_PROPHET_PERIOD = convertStrToInt(os.environ.get(PROPHET_PERIOD, str(DEFAULT_PROPHET_PERIOD)),DEFAULT_PROPHET_PERIOD) 
     ML_PROPHET_FREQ = os.environ.get(PROPHET_FREQ, DEFAULT_PROPHET_FREQ)
     #prophet algm parameters end
@@ -244,8 +221,6 @@ def main():
       
   
         resp = searchByStatuslist(es_url_status_search, REQUEST_STATE.INITIAL.value ,REQUEST_STATE.PREPROCESS_COMPLETED.value)
-        #resp = searchByStatuslist(es_url_status_search, REQUEST_STATE.COMPLETED_UNHEALTH.value, REQUEST_STATE.COMPLETED_HEALTH.value,
-        #                         REQUEST_STATE.COMPLETED_UNKNOWN.value)
         openRequestlist=parseResult(resp)
         openRequest =selectRequestToProcess(openRequestlist)
 
@@ -266,7 +241,7 @@ def main():
                 
                     #Test Start########################
                     '''
-                    id ='35aa7789aa7e6176c975c7a3c1c51c1e7572ec7a2d83ee953f8306618949eb74'
+                    id ='7e1b3f67248664c23bc48f2193357878e656b6de303a924f349804117df3bc08'
                     openRequest = retrieveRequestById(es_url_status_search, id)
                     if (openRequest==None):
                         print("es is down, will sleep and retry")
@@ -277,7 +252,7 @@ def main():
             else:
                 uuid = openRequest['id']
                 openRequest_tmp, modelHolder = retrieveOneCachedRequest(es_url_status_search,uuid)
-      
+          
 
         outputMsg = []
         uuid = openRequest['id']
@@ -286,8 +261,6 @@ def main():
         updatedStatus = reserveJob(es_url_status_update,es_url_status_search, uuid,status)
 
         logger.warning("Start to processing job id "+uuid+ " original status:"+ status)
-        
-        #print(getNowStr(), ": start to processing uuid ..... ",uuid," status:", status)
 
         historicalConfig =openRequest['historicalConfig']
         currentConfig = openRequest['currentConfig']
@@ -388,8 +361,6 @@ def main():
             
             hasBaseline = baselineLen>0
             logger.warning("jobid:"+ uuid +" hasCurrent "+ str(hasCurrent)+", hasBaseline "+ str(hasBaseline) )
-            #print(getNowStr(), ": hasCurrent, hasBaseline ", str(hasCurrent), str(hasBaseline)," id ",uuid , " skip bseline is ", skipBaseline)
-
             
             if hasCurrent == False:
                 ret = True
@@ -399,7 +370,6 @@ def main():
                 else:
                     cacheModels(modelHolder, max_cache) 
                     ret =updateESDocStatus(es_url_status_update, es_url_status_search, uuid, REQUEST_STATE.PREPROCESS_INPROGRESS.value, "Warning: there is no current Metric, Will keep try until reachs endTime. ")
-                    # print(getNowStr(), ":  no current metric is not ready, jobid ",uuid,"  ",  currentConfig)
                     logger.warning("Current metric is empty, jobid "+uuid+" updateESDocStatus  is :"+ str(ret)+ " end time is not reach, will cache and retry "+  currentConfig+" ".join(outputMsg))
                 if not ret:
                     cacheModels( modelHolder,  max_cache)
@@ -423,23 +393,19 @@ def main():
                     '''
                     if meetSize :
                         ret = updateESDocStatus(es_url_status_update, es_url_status_search, uuid, REQUEST_STATE.COMPLETED_UNHEALTH , "Warning:  baseline and current are different pattern. ")
-                        #print(getNowStr(),": id ",uuid, " completed_unhealth... bacause pairwise is not same" )
                         logger.warning("job id :"+uuid+"completed_unhealth, current and baseline has different distribution pattern,  updateESDocStatus  is :"+ str(ret))
                     else:
                         if isPast(endTime, 10):
                             ret = updateESDocStatus(es_url_status_update, es_url_status_search, uuid, REQUEST_STATE.COMPLETED_UNKNOWN.value, "Warning: baseline and current are different pattern but not meet min datapoints to determine . ")
-                            #print(getNowStr(),": id ",uuid, " completed_unknown... bacause pairwise is not same but not enough datapoints " )
                             logger.warning("job id :"+uuid+"completed_unknown...current or baseline is not same but not enough datapoints to confirm,  updateESDocStatus  is :"+ str(ret))
                         else: 
                             
                             ret = updateESDocStatus(es_url_status_update, es_url_status_search, uuid, REQUEST_STATE.PREPROCESS_COMPLETED.value, " pairwise not same so far and not meet min datapoints to determine.")
-                            #print(getNowStr(),": id ",uuid, "  bacause pairwise is not same and not enough datapoint " )
                             logger.warning("job id :"+uuid+" pairwise not same and not enough datapoints but not meet min datapoint to determine ,  updateESDocStatus  is :"+ str(ret))
                 else:
                     if isPast(endTime, 10):
                         ret = updateESDocStatus(es_url_status_update, es_url_status_search, uuid, REQUEST_STATE.COMPLETED_HEALTH.value, 'health')
                         logger.warning("job ID : "+uuid+" is health. updateESDocStatus  is :"+ str(ret))
-                        #print(getNowStr(),": id ",uuid, "mark as health....")
                     else:
                         ret = updateESDocStatus(es_url_status_update, es_url_status_search, uuid, REQUEST_STATE.PREPROCESS_COMPLETED.value , " current and baseline have same distribution but not past endtime yet. ")
                         # print(getNowStr(),": id ",uuid, " continue . bacause pairwise is not same but not past endTime yet " )                      
@@ -459,7 +425,6 @@ def main():
                     else:
                         # wait for baseline metric to generate
                         ret = updateESDocStatus(es_url_status_update, es_url_status_search, uuid, REQUEST_STATE.PREPROCESS_COMPLETED.value , " no baseline data yet, ")
-                        # print(getNowStr(),": id ",uuid, " continue . no baseline data yet. " )  
                         logger.warning("job ID : "+uuid+" continue . no baseline data yet. updateESDocStatus  is :"+ str(ret)) 
                     if not ret:
                         cacheModels( modelHolder,  max_cache)
@@ -477,7 +442,6 @@ def main():
                     logger.warning("job id: "+uuid+" completed unknown  no enough historical data and no baseline data , updateESDocStatus  is :"+ str(ret))
                 else:
                     ret = updateESDocStatus(es_url_status_update, es_url_status_search, uuid, REQUEST_STATE.PREPROCESS_COMPLETED.value, "Warning: not enough  historical data and no baseline data will retry until endtime reaches. ")
-                    #print(getNowStr(),": id ",uuid, "  will reprocess because no historical.. " )
                     logger.warning("job id: "+uuid+"  will cache and reprocess becasue no historical, updateESDocStatus  is :"+ str(ret))
 
                 if not ret:
@@ -508,7 +472,6 @@ def main():
                 #update ES to anomaly otherwise continue 
                 anomalyInfo = escapeString(anomaliesDataStr)
                 ret = updateESDocStatus(es_url_status_update, es_url_status_search, uuid, REQUEST_STATE.COMPLETED_UNHEALTH.value , "Warning: anomaly detected between current and historical. ",anomalyInfo)
-                #print(getNowStr(),"job ID is ",uuid, " mark unhealth anomalies data is ", anomalyInfo)
                 logger.warning("**job ID is unhealth  "+uuid+" updateESDocStatus  is :"+ str(ret)+ "  "+anomaliesDataStr)
                 if not ret:
                     cacheModels( modelHolder,  max_cache)
@@ -520,8 +483,6 @@ def main():
                     if not ret:
                         cacheModels( modelHolder,  max_cache)
                         logger.error("ES update failed: job ID: "+uuid)
-   
-                    #print(getNowStr(),"job ID is ",uuid, " mark as health....")
                 else:
                     cacheModels( modelHolder,  max_cache)    
                     ret = updateESDocStatus(es_url_status_update, es_url_status_search, uuid, REQUEST_STATE.PREPROCESS_INPROGRESS.value, "Need to continuous to check untile reachs deployment endTime. ")
@@ -530,9 +491,7 @@ def main():
             #measurementMetric.sendMetric(MONITORING_REQUEST_TIME, label_info, calculateDuration(start))
 
         except Exception as e:
-            #print("uuid ",uuid, " error :",str(e))
             logger.error("uuid : "+ uuid+" failed because ",e )
-            #print(getNowStr(),"job ID is ",uuid, " critical error encounted ", str(e))
             try:
                 if isPast(endTime, 5):
                     updateESDocStatus(es_url_status_update, es_url_status_search, uuid, REQUEST_STATE.PREPROCESS_FAILED.value,"Critical: encount code exception. "+escapeString(''.join(outputMsg)))
@@ -540,15 +499,9 @@ def main():
                     updateESDocStatus(es_url_status_update, es_url_status_search, uuid, REQUEST_STATE.PREPROCESS_COMPLETED.value,"Critical: encount code exception. "+escapeString(''.join(outputMsg)))
 
             except Exception as ee:
-                #print(getNowStr(),"job ID is ",uuid, " critical error encounted +str(ee) )
                 logger.error("uuid : "+ uuid+" failed because "+str(ee) )
             continue
      
-        
-
-
-
-
 
 if __name__ == '__main__':
     main()  
