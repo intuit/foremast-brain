@@ -72,19 +72,19 @@ def executeQuery( query, start_time, query_granularity, end_time):
     result = query_api.query_api(dequote(query), str(start_time), query_granularity, e=str(end_time))
     return result
 
-def sendMetric(metricName, tages, value, source=None, timestamp=0):
+def sendMetric(metricName, tags, value,  timestamp=0,source=None):
     ts = timestamp
     if timestamp==0:
         ts = getNowInSeconds()
     if sendClient is None:
         createSendWavefrontClient()
     global cacheCount 
-    cache = cacheCount+ 1
+    cacheCount  = cacheCount+ 1
     if source is None:
         source = globalEnv
-    sendClient.send_metric(metricName,value, time,source, tags)
-    if (cacheCount%10 == 0):
-        flucshNow()
+    sendClient.send_metric(metricName,value, ts,source, tags)
+    if (cacheCount %10 == 0):
+        flushNow()
     
 def sendDeltaCounter(metricName, tags, value, source=None):
     if sendClient is None:
