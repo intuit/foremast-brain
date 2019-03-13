@@ -27,7 +27,6 @@ PREDIT_LOWERS = 'predict_lower'
 
     
 def calculateBivariateParameters(x, y, isCovCorOnly=False):  
-    print(type(x))
     
     x_mean = np.mean(x[:])
     y_mean = np.mean(y[:])  

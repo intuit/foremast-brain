@@ -38,7 +38,7 @@ def prophetPredictUpperLower(timeseries, period=1,frequence ='T', zscore = 2,sea
     orig_len = len(timeseries)
     fc = predictProphet(df, period, frequence,seasonality_name, prior_scale,columnPosition)
     after_len = len(fc)
-    print(orig_len ,'  ', after_len)
+    #print(orig_len ,'  ', after_len)
     if seasonality_name=='':  
         mean = fc[orig_len:].yhat_lower.mean()
         std = fc[orig_len:].yhat_lower.std()
