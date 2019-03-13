@@ -22,16 +22,13 @@ class modelmetrics:
     def setMetricInfo(self, metricname, labels):
         metricNameUpper = metric_prefix+metricname+"_upper"
         metricNameLower = metric_prefix+metricname+"_lower"
-        if globalConfig.getValueByKey('METRIC_DESTINATION')=='wavefront':
-            metricNameUpper ='iks_' + metricNameUpper
-            metricNameLower ='iks_' + metricNameLower
-            return
+        newlabeldata= convertDictKey(labels,"-", "_")
         if not (metricNameUpper in self.instance.metrics ):
             self.instance.metrics[metricNameUpper] = Gauge(metricNameUpper, metricNameUpper+" model upper bound",  
-                                                  labelnames=labels.keys())
+                                                  labelnames=newlabeldata.keys())
         if not (metricNameLower in self.instance.metrics ):
             self.instance.metrics[metricNameLower] = Gauge(metricNameLower, metricNameLower+" model upper bound", 
-                                                   labelnames=labels.keys())                                     
+                                                   labelnames=newlabeldata.keys())                                     
                                                    
     def sendMetric(self,metricname, labeldata, value, isUpper = True, time=0):
         newMetricName = metric_prefix+metricname
@@ -41,12 +38,11 @@ class modelmetrics:
             newMetricName  += "_lower"
         if globalConfig.getValueByKey('METRIC_DESTINATION')=='wavefront':
             newMetricName  = "iks_"+ newMetricName
+            return sendMetric(newMetricName, labeldata, value, time)
         if not (newMetricName in self.instance.metrics) :
-            self.setMetricInfo(metricname, labeldata) 
-        if globalConfig.getValueByKey('METRIC_DESTINATION')=='wavefront':
-            newlabeldata = convertDictKey(labels,"-", "_")
-            return sendMetric(newMetricName, newlabeldata, source, value, time)
-        self.instance.metrics[newMetricName].labels(**labeldata).set(value)
+                self.setMetricInfo(metricname, labeldata) 
+        newlabeldata = convertDictKey(labeldata,"-", "_")
+        self.instance.metrics[newMetricName].labels(**newlabeldata).set(value)
 
 
 
@@ -63,22 +59,19 @@ class measurementmetrics:
             measurementmetrics.instance = measurementmetrics.__measurementmetrics()
     def setMetricInfo(self, metricname, labels):
         newMetricName = metric_prefix+metricname
-        if globalConfig.getValueByKey('METRIC_DESTINATION')=='wavefront':
-            newMetricName ='iks_' + newMetricName
-            return
+        newlabeldata= convertDictKey(labels,"-", "_")
         if not (newMetricName in self.instance.metrics ):
             self.instance.metrics[newMetricName] = Gauge(newMetricName, newMetricName+" measurement metric",
-                                                           labelnames=labels.keys())                                                                                    
+                                                           labelnames=newlabeldata.keys())                                                                                    
     def sendMetric(self,metricname, labeldata, value, time=0):
         newMetricName = metric_prefix+metricname
         if globalConfig.getValueByKey('METRIC_DESTINATION')=='wavefront':
             newMetricName ='iks_' + newMetricName
+            return sendMetric(newMetricName, labeldata, value, time)
         if not (newMetricName in self.instance.metrics) :
-            self.setMetricInfo(metricname, labeldata) 
-        if globalConfig.getValueByKey('METRIC_DESTINATION')=='wavefront':
-            newlabeldata = convertDictKey(labels,"-", "_")
-            return sendMetric(newMetricName, newlabeldata, source, value, time)
-        self.instance.metrics[newMetricName].labels(**labeldata).set(value)
+            self.setMetricInfo(metricname, labeldata)             
+        newlabeldata = convertDictKey(labeldata,"-", "_")
+        self.instance.metrics[newMetricName].labels(**newlabeldata).set(value)
 
 
     
@@ -95,23 +88,20 @@ class anomalymetrics:
             anomalymetrics.instance = anomalymetrics.__anomalymetrics()
     def setMetricInfo(self, metricname, labels):
         metricNameAnomaly = metric_prefix+metricname+"_anomaly"
-        if globalConfig.getValueByKey('METRIC_DESTINATION')=='wavefront':
-            metricNameAnomaly ='iks_' + metricNameAnomaly
-            return
+        newlabeldata= convertDictKey(labels,"-", "_")
         if not (metricNameAnomaly in self.instance.metrics ):
             self.instance.metrics[metricNameAnomaly] = Gauge(metricNameAnomaly, metricNameAnomaly+" anomaly timestamp",  
-                    labelnames=labels.keys())                                                                                        
+                    labelnames=newlabeldata.keys())                                                                                        
                                                    
     def sendMetric(self,metricname, labeldata, value, time=0):
         newMetricName  = metric_prefix+metricname+"_anomaly"
         if globalConfig.getValueByKey('METRIC_DESTINATION')=='wavefront':
             newMetricName ='iks_' + newMetricName
+            return sendMetric(newMetricName, labeldata, value, time) 
         if not (newMetricName in self.instance.metrics ):
             self.setMetricInfo(metricname, labeldata)  
-        if globalConfig.getValueByKey('METRIC_DESTINATION')=='wavefront':
-            newlabeldata = convertDictKey(labels,"-", "_")
-            return sendMetric(newMetricName, newlabeldata, source, value, time)          
-        self.instance.metrics[newMetricName].labels(**labeldata).set(value)
+        newlabeldata = convertDictKey(labeldata,"-", "_")         
+        self.instance.metrics[newMetricName].labels(**newlabeldata).set(value)
         
         
 class hpascoremetrics:
@@ -129,12 +119,10 @@ class hpascoremetrics:
         metricHPA = metric_prefix+mns[0]+"_hpa_score"
         if (len(mns)>1):
             metricHPA = metric_prefix+mns[0]+":"+"hpa_score"
-        if sglobalConfig.getValueByKey('METRIC_DESTINATION')=='wavefront':
-            metricHPA = 'iks_'+metricHPA
-            return
+        newlabeldata = convertDictKey(labels,"-", "_")
         if not (metricHPA in self.instance.metrics ):
             self.instance.metrics[metricHPA] = Gauge(metricHPA, metricHPA+" hpa score",  
-                    labelnames=labels.keys())                                                                                        
+                    labelnames=newlabeldata.keys())                                                                                        
                                                    
     def sendMetric(self,metricname, labeldata, value, time=0):
         mns =metricname.split(':')
@@ -143,9 +131,8 @@ class hpascoremetrics:
             newMetricName = metric_prefix+mns[0]+":"+"hpa_score"
         if globalConfig.getValueByKey('METRIC_DESTINATION')=='wavefront':
             newMetricName = 'iks_'+ newMetricName
+            return sendMetric(newMetricName, labeldata, value, time) 
         if not (newMetricName in self.instance.metrics ):
             self.setMetricInfo(metricname, labeldata)          
-        if globalConfig.getValueByKey('METRIC_DESTINATION')=='wavefront':
-            newlabeldata = convertDictKey(labels,"-", "_")
-            return sendMetric(newlabeldata, newlabeldata, source, value, time) 
-        self.instance.metrics[newMetricName].labels(**labeldata).set(value)
+        newlabeldata = convertDictKey(labeldata,"-", "_")
+        self.instance.metrics[newMetricName].labels(**newlabeldata).set(value)
