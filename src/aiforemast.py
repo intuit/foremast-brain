@@ -130,7 +130,6 @@ def main():
     #Default Parameters can be overwrite by environments
     max_cache = convertStrToInt(os.environ.get("MAX_CACHE_SIZE", str(MAX_CACHE_SIZE)), MAX_CACHE_SIZE) 
     ES_ENDPOINT = os.environ.get('ES_ENDPOINT', 'http://elasticsearch-discovery-service.foremast.svc.cluster.local:9200')
-
     ML_ALGORITHM = os.environ.get('ML_ALGORITHM', AI_MODEL.MOVING_AVERAGE_ALL.value)
     #ML_ALGORITHM= AI_MODEL.EXPONENTIAL_SMOOTHING.value
     #ML_ALGORITHM= AI_MODEL.DOUBLE_EXPONENTIAL_SMOOTHING.value
@@ -152,11 +151,13 @@ def main():
     config.setKV(THRESHOLD, ML_THRESHOLD )
     config.setKV(BOUND, ML_BOUND)
     config.setKV(MIN_LOWER_BOUND, ML_MIN_LOWER_BOUND)
+    
     wavefrontEndpoint = os.environ.get('WAVEFRONT_ENDPOINT')
     wavefrontToken = os.environ.get('WAVEFRONT_TOKEN')
 
-    foremastEnv = os.environ.get("FOREMAST_ENV",'')
+    foremastEnv = os.environ.get("FOREMAST_ENV",'qa')
     metricDestation = os.environ.get('METRIC_DESTINATION',"prometheus")
+    #metricDestation = os.environ.get('METRIC_DESTINATION',"wavefront")
     if wavefrontEndpoint is not None:
         config.setKV('WAVEFRONT_ENDPOINT',wavefrontEndpoint)
     else:
@@ -169,13 +170,10 @@ def main():
         config.setKV('METRIC_DESTINATION',metricDestation)
     else:
         config.setKV('METRIC_DESTINATION',"prometheus")
-        
-    print(config.getValueByKey('METRIC_DESTINATION'))
-        
     if foremastEnv is  None or foremastEnv == '':
-        config.setKV("FOREMAST_ENV",'')
+        config.setKV("FOREMAST_ENV",'qa')
     else:
-        confif.setKV("FOREMAST_ENV",foremastEnv)
+        config.setKV("FOREMAST_ENV",foremastEnv)
     
     metric_threshold_count = convertStrToInt(os.environ.get(METRIC_TYPE_THRESHOLD_COUNT, -1), METRIC_TYPE_THRESHOLD_COUNT)
     if metric_threshold_count >= 0:
@@ -241,7 +239,8 @@ def main():
                 
                     #Test Start########################
                     '''
-                    id ='7e1b3f67248664c23bc48f2193357878e656b6de303a924f349804117df3bc08'
+                    id ='fa850a993c8c29a752f21c99b35adf3b60c73ae7d7ca3bb57831e34e02e3cdda'
+                    id='98360249f4194966ec7f5801a85a948f68f6cee77108953a6fb51cce6ed04122'
                     openRequest = retrieveRequestById(es_url_status_search, id)
                     if (openRequest==None):
                         print("es is down, will sleep and retry")
