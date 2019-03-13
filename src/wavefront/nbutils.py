@@ -20,7 +20,7 @@ def retrieveQueryUrl(app, url):
 def executeQuery( appname, query, client, start_time, end_time, query_granularity):
     query_api = wave_api.QueryApi(client) 
     app_query = retrieveQueryUrl(appname, query)
-    print(app_query)
+    #print(app_query)
     result = query_api.query_api(query, str(start_time), query_granularity, e=str(end_time))
     return formatData(result)
 
