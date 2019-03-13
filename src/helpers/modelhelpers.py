@@ -191,11 +191,11 @@ def detectAnomalyData(metricInfo,  modelHolder, metricType, strategy):
 def triggerModelMetric(metricInfo, lower, upper):               
     logger.warning("## emit upper and lower "+metricInfo.metricName+" ->" +str(metricInfo.metricKeys)+" ("+str(lower)+","+str(upper)+")")
     try:
-        modelMetric.sendMetric(metricInfo.metricName, metricInfo.metricKeys, upper,True)
+        modelMetric.sendMetric(metricInfo.metricName, metricInfo.metricKeys, upper)
     except Exception as e:
         logger.error('triggerModelMetric upper_bound '+metricInfo.metricName+' failed ',e )
     try:
-        modelMetric.sendMetric(metricInfo.metricName, metricInfo.metricKeys, lower,False)
+        modelMetric.sendMetric(metricInfo.metricName, metricInfo.metricKeys, lower)
     except Exception as e:
         logger.error('triggerModelMetric lower_bound '+metricInfo.metricName+' failed ',e )
     
