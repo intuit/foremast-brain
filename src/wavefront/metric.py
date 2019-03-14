@@ -4,9 +4,12 @@ from utils.converterutils import addHeader
 from utils.strutils import strcat
 from metrics.metricclass import MetricInfo, SingleMetricInfo, MultiKeyMetricInfo
 from metrics.metricmerges import SingleMergeSingle, MultiKeyMergeSingle, mergeMetrics
+from metadata.globalconfig import globalconfig
 
 logging.basicConfig(format='%(asctime)s %(message)s')
 logger = logging.getLogger('wavefront.metric')
+
+globalConfig =  globalconfig()
 
 
 def processTextResponse(content):
@@ -64,7 +67,8 @@ def parseQueryData(data, isPrometheus=True):
     if len(data1) <= 1:
        return "", {}
     data2 = data1[1].split(",")
-    if isPrometheus:
+    #if isPrometheus:
+    if globalConfig.getValueByKey('METRIC_DESTINATION')=='prometheus':    
         name = data2[0].replace(".", "_")
     else:
         name = data2[0]
@@ -78,7 +82,8 @@ def parseQueryData(data, isPrometheus=True):
         if len(kv) == 1:
             continue
         else:
-            if isPrometheus :
+            #if isPrometheus :
+            if globalConfig.getValueByKey('METRIC_DESTINATION')=='prometheus':
                 kvs[kv[0].replace(".", "_")] = kv[1]
             else:
                 kvs[kv[0]] = kv[1] 

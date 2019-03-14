@@ -69,7 +69,8 @@ def executeQuery( query, start_time, query_granularity, end_time):
     if client == None:
         client = createWavefrontClient()
     query_api = wave_api.QueryApi(client)
-    result = query_api.query_api(dequote(query), str(start_time), query_granularity, e=str(end_time))
+    #replace endtime with current time
+    result = query_api.query_api(dequote(query), str(start_time), query_granularity, e=str(getNowInSeconds()))
     return result
 
 def sendMetric(metricName, tags, value,  timestamp=0,source=None):
