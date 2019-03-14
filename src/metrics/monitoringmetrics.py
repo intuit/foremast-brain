@@ -5,6 +5,7 @@ from utils.dictutils import convertDictKey
 
 
 metric_prefix = "foremastbrain:"
+wavefront_prefix='custom.iks.'
 
 globalConfig =  globalconfig()
 #globalConfig.getValueByKey('FOREMAST_ENV')
@@ -37,7 +38,7 @@ class modelmetrics:
         else:
             newMetricName  += "_lower"
         if globalConfig.getValueByKey('METRIC_DESTINATION')=='wavefront':
-            newMetricName  = "iks_"+ newMetricName
+            newMetricName  = wavefront_prefix+ newMetricName
             return sendMetric(newMetricName, labeldata, value, time)
         if not (newMetricName in self.instance.metrics) :
                 self.setMetricInfo(metricname, labeldata) 
@@ -66,7 +67,7 @@ class measurementmetrics:
     def sendMetric(self,metricname, labeldata, value, time=0):
         newMetricName = metric_prefix+metricname
         if globalConfig.getValueByKey('METRIC_DESTINATION')=='wavefront':
-            newMetricName ='iks_' + newMetricName
+            newMetricName =wavefront_prefix + newMetricName
             return sendMetric(newMetricName, labeldata, value, time)
         if not (newMetricName in self.instance.metrics) :
             self.setMetricInfo(metricname, labeldata)             
@@ -96,7 +97,7 @@ class anomalymetrics:
     def sendMetric(self,metricname, labeldata, value, time=0):
         newMetricName  = metric_prefix+metricname+"_anomaly"
         if globalConfig.getValueByKey('METRIC_DESTINATION')=='wavefront':
-            newMetricName ='iks_' + newMetricName
+            newMetricName =wavefront_prefix + newMetricName
             return sendMetric(newMetricName, labeldata, value, time) 
         if not (newMetricName in self.instance.metrics ):
             self.setMetricInfo(metricname, labeldata)  
@@ -130,7 +131,7 @@ class hpascoremetrics:
         if (len(mns)>1):
             newMetricName = metric_prefix+mns[0]+":"+"hpa_score"
         if globalConfig.getValueByKey('METRIC_DESTINATION')=='wavefront':
-            newMetricName = 'iks_'+ newMetricName
+            newMetricName = wavefront_prefix+ newMetricName
             return sendMetric(newMetricName, labeldata, value, time) 
         if not (newMetricName in self.instance.metrics ):
             self.setMetricInfo(metricname, labeldata)          
