@@ -4,7 +4,7 @@ from metadata.globalconfig import globalconfig
 from utils.dictutils import convertDictKey
 
 
-metric_prefix = "foremastbrain:"
+metric_prefix = "foremast:"
 wavefront_prefix='custom.iks.'
 
 globalConfig =  globalconfig()
