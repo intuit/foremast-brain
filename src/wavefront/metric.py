@@ -71,7 +71,7 @@ def parseQueryData(data, isPrometheus=True):
     if globalConfig.getValueByKey('METRIC_DESTINATION')=='prometheus':    
         name = data2[0].replace(".", "_")
     else:
-        name = data2[0]
+        name = data2[0].replace(":", ".")
     if len(data2) == 1:
         return name.replace(")", "").strip(), {}
     values = data2[1].replace(" and ", " ").replace(" or ", " ").replace(")", "").split(" ")
@@ -86,7 +86,7 @@ def parseQueryData(data, isPrometheus=True):
             if globalConfig.getValueByKey('METRIC_DESTINATION')=='prometheus':
                 kvs[kv[0].replace(".", "_")] = kv[1]
             else:
-                kvs[kv[0]] = kv[1] 
+                kvs[kv[0]] = kv[1]
     return name, kvs
     
 #############################################################
