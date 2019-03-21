@@ -274,6 +274,7 @@ def calculateSingleMetricModel(metricInfo, modelHolder, metricType, strategy=Non
         # default is  modelHolder.model_name == AI_MODEL.MOVING_AVERAGE_ALL.value:
         mean, deviation = calculateHistoricalParameters(series)
         modelHolder.setModelKV(metricType,MAE, mean)
+        logger.warning("BREAKPOINT"+ str(metricType) + str(MAE) + str(mean))
         modelHolder.setModelKV(metricType,DEVIATION, deviation)
 
         lowerboundvalue = -deviation*threshold + mean
@@ -335,11 +336,11 @@ def detectSignalAnomalyData( metricInfo, modelHolder, metricType, strategy=None)
         #default is modelHolder.model_name == AI_MODEL.MOVING_AVERAGE_ALL.value:
         mean = modelHolder.getModelByKey(metricType,MAE)
         if mean == None:
-            pass
+            return [],[]
             #TODO: raise error
         stdev = modelHolder.getModelByKey(metricType,DEVIATION)
         if stdev == None:
-            pass
+            return [],[]
             #TODO: raise error
         #threshold = modelHolder.getModelConfigByKey(THRESHOLD)
         threshold = globalConfig.getThresholdByKey(metricType,THRESHOLD)
