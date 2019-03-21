@@ -94,18 +94,7 @@ def sendMetric(metricName, tags, value,  timestamp=0,source=None):
         flushNow()
         print(metricName + " after flush send metric buffer " + str(sendClient._metrics_buffer.qsize()) + "failure " + str(sendClient.get_failure_count()))
         logger.warning(metricName + " after flush send metric buffer " + str(sendClient._metrics_buffer.qsize()) + "failure " + str(sendClient.get_failure_count()))
-    # connect_oim = wavefront_send.OimSend("ppd", "s3", "ihp", globalConfig.getValueByKey("OIM_BUCKET"))
-    # # print([k+"="+tags[k] for k in tags])
-    # stringtags = ",".join([k+"="+tags[k] for k in tags])
-    # stringtags = "app=" + tags["app"]
-    # global sendlist
-    # sendlist.append(metricName+" "+str(value)+" "+stringtags)
-    # print("sendlist", sendlist)
-    # if len(sendlist) > 5:
-    #     print("sending to oim s3")
-    #     result = connect_oim.send_wave(sendlist)
-    #     print("send_wave result:", result, connect_oim.wavefrontproxy, connect_oim.port, connect_oim.send_s3, connect_oim.s3_bucket, connect_oim.location)
-    #     sendlist = []
+
 
 
 
