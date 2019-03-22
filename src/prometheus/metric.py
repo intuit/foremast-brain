@@ -12,10 +12,12 @@ from utils.strutils import strReplace
 from metrics.metricclass import MetricInfo, SingleMetricInfo,MultiKeyMetricInfo
 
 from metrics.metricmerges import SingleMergeSingle,MultiKeyMergeSingle,mergeMetrics
-
+from metadata.globalconfig import globalconfig
 
 logging.basicConfig(format='%(asctime)s %(message)s')
 logger = logging.getLogger('prometheus.metric')
+
+globalConfig =  globalconfig()
 
 KEY_NAME = '__name__'
 
@@ -61,6 +63,8 @@ def convertPromesResponseToMetricInfos(json, metricPeriod, isProphet=False):
           df= convertTSToDataFrame(element['values'],True, 'y', isProphet) 
        else:
            df= convertTSToDataFrame(element['values'])
+       if globalConfig.getValueByKey('METRIC_DESTINATION')=='wavefront':
+           gMetric[KEY_NAME] = gMetric[KEY_NAME].replace(":", ".")
        metricInfo = SingleMetricInfo(str(gMetric[KEY_NAME]), jMetric,{'y':gMetric}, df, metricPeriod)
        metricInfos.append(metricInfo)
     return metricInfos
@@ -87,5 +91,3 @@ def convertTSToDataFrame(valuesList, convertTime = False,  metricName='y',isProp
 
 def urlEndNow(url):
     return strReplace(url, '&end=', '&step=', str(getNowInSeconds()))
-
-    

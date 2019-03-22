@@ -39,8 +39,8 @@ def strReplace(origstr, startstr, endstr, replacestr):
     
     newurl = origstr[:pos1]+startstr+str(replacestr)+origstr[pos2:]
     return newurl
-    
 
-    
+
+
 
 

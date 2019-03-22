@@ -54,7 +54,6 @@ def rollingshift(df, shiftCount=1):
         else:
             x_cols.append('y_t-'+str(shiftCount-t))
     y_col='y_t+1'
-    print(x_cols)
     df_shifted.columns = ['y_original']+[y_col]+x_cols
     df_shifted= df_shifted.dropna(how='any')
     return df_shifted, y_col, x_cols

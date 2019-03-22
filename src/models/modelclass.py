@@ -21,18 +21,22 @@ class ModelHolder:
 
     def setModelKV(self, key, value):
         self._model_data.setdefault(key, value)
-    '''        
+    '''
     def getModelByKey(self, metricType, key):
+        if not metricType in self._model_data:
+            return None
         return self._model_data[metricType][key]
 
     def setModelKV(self, metricType, key, value):
         if not ( metricType in self._model_data ):
             self._model_data[metricType]={}
         self._model_data[metricType][key]=value
-        
+
     def getMetricTypes(self):
         return self._model_config.keys()
     def getMapByMetricType(self, metricType):
+        if not metricType in self._model_data:
+            return None
         return self._model_data[metricType]
     def getModelConfigByKey(self, key):
         return self._model_config.get(key)
@@ -52,12 +56,12 @@ class ModelHolder:
     @property
     def hasModels(self):
         return len(self._model_data) > 0
-    
+
     @property
     def hasModel(self, metricType):
         return len(self._model_data[metricType]) > 0
-    
-    
+
+
     @property
     def id(self):
         return self._id
