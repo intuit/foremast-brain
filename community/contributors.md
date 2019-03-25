@@ -13,4 +13,4 @@ Foremast was created at Intuit by this team:
 - [Kian Jones](https://github.com/kianjones4), Intuit
 
 
-# Please refer to https://github.com/intuit/foremast/blob/master/community/contributors.md for foremast Contributors
+## Please refer to https://github.com/intuit/foremast/blob/master/community/contributors.md for foremast Contributors
