@@ -72,7 +72,7 @@ def calculate_score(diff):
 
 def calculate_lowscore(diff, mean, stdev):
     score = ((diff*stdev)/mean)*50
-    print('*******************',score, diff, mean,stdev)
+    logger.warning('*******************',score, diff, mean,stdev)
     return score
 
 
@@ -145,9 +145,9 @@ def calculateScore( metricInfoDataset, modelHolder, strategy):
 
     lerr = len(err_a)
     zlerr = len( err_zscore)
-    print("***tps ",tps_zscore[len(tps_zscore)-1])
+    logger.warning("***tps ",tps_zscore[len(tps_zscore)-1])
     #print("***err ",err_zscore[len(err_zscore)-1])
-    print("***latency ", latency_zscore[len(latency_zscore)-1])
+    logger.warning("***latency ", latency_zscore[len(latency_zscore)-1])
     if tps_a[len(tps_a)-1] :
         if latency_a[len(latency_a)-1]:
             if err_a[len(err_a)-1] :
@@ -164,7 +164,7 @@ def calculateScore( metricInfoDataset, modelHolder, strategy):
                 #else:
                 #   score += calculate_score(tps_zscore,1,isUpper=False)*0.8
     score =round(score, 2)
-    print(getNowStr(),"###calculated score is ",score )
+    logger.warning(getNowStr(),"###calculated score is ",score )
     triggerHPAScoreMetric(lmetricInfo, score)
 
 
@@ -287,11 +287,6 @@ def calculateSingleMetricModel(metricInfo, modelHolder, metricType, strategy=Non
     triggerModelMetric(metricInfo, modelHolder.getModelByKey(metricType,LOWER_BOUND), modelHolder.getModelByKey(metricType,UPPER_BOUND))
     return modelHolder
 
-
-
-
-
-
 def detectSignalAnomalyData( metricInfo, modelHolder, metricType, strategy=None):
     series = metricInfo.metricDF
     bound = modelHolder.getModelConfigByKey(BOUND)
@@ -348,7 +343,6 @@ def detectSignalAnomalyData( metricInfo, modelHolder, metricType, strategy=None)
             threshold = DEFAULT_THRESHOLD
         #TODO:  need to make sure return all df
         if strategy== 'hpa':
-
             print("~~~~~~~~~~~~~~~~~~",metricInfo.metricName, mean,stdev, threshold)
             ts,data,anomalies,zscore = detectAnomalies(series, mean, stdev, threshold , bound, minvalue=0, returnAnomaliesOnly= False)
             triggerAnomalyMetric(metricInfo, filterTS(ts,anomalies))

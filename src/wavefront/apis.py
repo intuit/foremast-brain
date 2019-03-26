@@ -93,6 +93,10 @@ def sendMetric(metricName, tags, value,  timestamp=0,source=None):
         flushNow()
         print(metricName + " after flush send metric buffer " + str(sendClient._metrics_buffer.qsize()) + "failure " + str(sendClient.get_failure_count()))
         logger.warning(metricName + " after flush send metric buffer " + str(sendClient._metrics_buffer.qsize()) + "failure " + str(sendClient.get_failure_count()))
+<<<<<<< HEAD
+=======
+
+>>>>>>> 40649d94dee851fa6da6e220c326468677959345
 
 
 
