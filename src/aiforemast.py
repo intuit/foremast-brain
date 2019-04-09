@@ -155,6 +155,7 @@ def main():
     config.setKV(MIN_LOWER_BOUND, ML_MIN_LOWER_BOUND)
     config.setKV("FLUSH_FREQUENCY", int(FLUSH_FREQUENCY))
     config.setKV("OIM_BUCKET", OIM_BUCKET)
+    config.setKV("SOURCE_ENV", "ppd")
 
     wavefrontEndpoint = os.environ.get('WAVEFRONT_ENDPOINT')
     wavefrontToken = os.environ.get('WAVEFRONT_TOKEN')
@@ -267,7 +268,9 @@ def main():
 
         historicalConfig =openRequest['historicalConfig']
         currentConfig = openRequest['currentConfig']
-        baselineConfig = openRequest['baselineConfig']
+        baselineConfig = None
+        if 'baselineConfig' in openRequest:
+            baselineConfig = openRequest['baselineConfig']
         historicalMetricStore= None
         if  ('historicalMetricStore' in openRequest):
             historicalMetricStore =openRequest['historicalMetricStore']
