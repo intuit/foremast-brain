@@ -1,11 +1,12 @@
 import wavefront_api_client as wave_api
+import wavefront_send
 from wavefront_sdk import WavefrontDirectClient
-import datetime as dt 
+import datetime as dt
 import logging
-from metadata.globalconfig import globalconfig 
+from metadata.globalconfig import globalconfig
 import urllib.parse
 from utils.timeutils import getNowInSeconds
- 
+
 # logging
 logging.basicConfig(format='%(asctime)s %(message)s')
 logger = logging.getLogger('apis')
@@ -17,7 +18,8 @@ globalConfig =  globalconfig()
 client  = None
 sendClient = None
 cacheCount = 0
-globalEnv =None
+globalEnv = None
+sendlist = []
 
 def dequote(url):
     durl = urllib.parse.unquote(url)
@@ -26,14 +28,14 @@ def dequote(url):
 
 
 def createWavefrontClient():
-    config = wave_api.Configuration()    
+    config = wave_api.Configuration()
     config.host = globalConfig.getValueByKey('WAVEFRONT_ENDPOINT')
     token = globalConfig.getValueByKey('WAVEFRONT_TOKEN')
     if (config.host=='' or token==''):
         logger.error("wavefront endpoint or token is null")
         return None
     try:
-        global client 
+        global client
         client = wave_api.ApiClient(configuration=config, header_name='Authorization', header_value='Bearer ' + token)
         return client
     except Exception as e:
@@ -41,7 +43,7 @@ def createWavefrontClient():
     return None
 
 
-def createSendWavefrontClient():  
+def createSendWavefrontClient():
     global globalEnv
     globalEnv =globalConfig.getValueByKey('FOREMAST_ENV')
     _server= globalConfig.getValueByKey('WAVEFRONT_ENDPOINT')
@@ -50,7 +52,7 @@ def createSendWavefrontClient():
         logger.error("wavefront endpoint or token is null")
         return None
     try:
-        global sendClient 
+        global sendClient
         sendClient = wavefront_sender = WavefrontDirectClient(
         server=_server,
         token= _token,
@@ -62,7 +64,7 @@ def createSendWavefrontClient():
         logger.error("WavefrontDirectClient failed "+str(e))
     return None
 
-    
+
 
 def executeQuery( query, start_time, query_granularity, end_time):
     global client
@@ -74,44 +76,59 @@ def executeQuery( query, start_time, query_granularity, end_time):
     return result
 
 def sendMetric(metricName, tags, value,  timestamp=0,source=None):
+    flushFrequency = globalConfig.getValueByKey("FLUSH_FREQUENCY")
     ts = timestamp
     if timestamp==0:
         ts = getNowInSeconds()
     if sendClient is None:
         createSendWavefrontClient()
-    global cacheCount 
+    global cacheCount
     cacheCount  = cacheCount+ 1
     if source is None:
         source = globalEnv
     sendClient.send_metric(metricName,value, ts,source, tags)
-    if (cacheCount %10 == 0):
+    print(metricName, " send metric buffer ", sendClient._metrics_buffer.qsize(), "failure ", sendClient.get_failure_count())
+    logger.warning(metricName + " send metric buffer " + str(sendClient._metrics_buffer.qsize()) + "failure " + str(sendClient.get_failure_count()))
+    # print("metricName", metricName, "tags", tags, "value", value, "timestamp", timestamp)
+    if (cacheCount %flushFrequency == 0):
         flushNow()
-    
+        print(metricName + " after flush send metric buffer " + str(sendClient._metrics_buffer.qsize()) + "failure " + str(sendClient.get_failure_count()))
+        logger.warning(metricName + " after flush send metric buffer " + str(sendClient._metrics_buffer.qsize()) + "failure " + str(sendClient.get_failure_count()))
+
+
+
+
 def sendDeltaCounter(metricName, tags, value, source=None):
+    flushFrequency = globalConfig.getValueByKey("FLUSH_FREQUENCY")
     if sendClient is None:
         createSendWavefrontClient()
-    global cacheCount 
-    cache = cacheCount+ 1
+    global cacheCount
+    cacheCount = cacheCount+ 1
     if source is None:
         source = globalEnv
     sendClient.send_delta_counter(name, value, source, tags)
-    if (cacheCount%10 == 0):
-        flucshNow()
-    
-    
-    
+    print("send delta buffer ", sendClient._metrics_buffer.qsize(), "failure ", sendClient.get_failure_count())
+
+    if (cacheCount%flushFrequency == 0):
+        flushNow()
+        print("after flush send delta buffer ", sendClient._metrics_buffer.qsize(), "failure ", sendClient.get_failure_count())
+
+    # print("send delta buffer ", sendClient._metrics_buffer)
+
+
+
 def flushNow():
     sendClient.flush_now()
-    
+
 
 #def sendMetric():
 
 
 #def sendMetrics():
-   
-   
+
+
 ##############
-#test 
+#test
 #endpoint ="http://localhost:9090/api/v1/query_range"
 #filterStr = "namespace_pod:http_server_requests_latency"
 #start=1540245142.746
