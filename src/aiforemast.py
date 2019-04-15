@@ -151,7 +151,8 @@ def main():
     config.setKV(MIN_LOWER_BOUND, ML_MIN_LOWER_BOUND)
     config.setKV("FLUSH_FREQUENCY", int(FLUSH_FREQUENCY))
     config.setKV("OIM_BUCKET", OIM_BUCKET)
-    
+    #Add Metric source env
+    config.setKV("SOURCE_ENV", "ppd")
     MODE_DROP_ANOMALY = os.environ.get('MODE_DROP_ANOMALY', 'y')
     config.setKV('MODE_DROP_ANOMALY', MODE_DROP_ANOMALY)
     wavefrontEndpoint = os.environ.get('WAVEFRONT_ENDPOINT')
@@ -263,7 +264,9 @@ def main():
 
         historicalConfig =openRequest['historicalConfig']
         currentConfig = openRequest['currentConfig']
-        baselineConfig = openRequest['baselineConfig']
+        baselineConfig = None
+        if 'baselineConfig' in openRequest:
+            baselineConfig = openRequest['baselineConfig']
         historicalMetricStore= None
         if  ('historicalMetricStore' in openRequest):    
             historicalMetricStore =openRequest['historicalMetricStore']

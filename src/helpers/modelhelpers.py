@@ -199,11 +199,12 @@ def triggerModelMetric(metricInfo, lower, upper):
     except Exception as e:
         logger.error('triggerModelMetric lower_bound '+metricInfo.metricName+' failed ',e )
 
-def triggerAnomalyMetric(metricInfo, ts):
+def triggerAnomalyMetric(metricInfo, ts, data):
     try:
-     for t in ts:
-         logger.warning("## emit abonaluy "+metricInfo.metricName+" ->" +str(metricInfo.metricKeys)+" "+str(t))
-         anomalymetrics.sendMetric(metricInfo.metricName, metricInfo.metricKeys, t.item())
+     # for t in ts:
+     for i in range(len(ts)):
+         logger.warning("## emit anomaly "+metricInfo.metricName+" ->" +str(metricInfo.metricKeys)+" "+str(ts[i])+" "+str(data[i]))
+         anomalymetrics.sendMetric(metricInfo.metricName, metricInfo.metricKeys,data[i], ts[i].item())
          break
     except Exception as e:
         logger.error('triggerAnomalyMetric  '+metricInfo.metricName+' failed ',e )
@@ -302,7 +303,8 @@ def detectSignalAnomalyData( metricInfo, modelHolder, metricType, strategy=None)
             pass
             #TODO: raise error
         ts,data,flags =detectLowerUpperAnomalies(series, lower_bound , upper_bound, bound)
-        triggerAnomalyMetric(metricInfo, ts)
+        print("Anomaly data: %s" % data)
+        triggerAnomalyMetric(metricInfo, ts, data)
         return ts,data
     elif  modelHolder.model_name == AI_MODEL.PROPHET.value:
         lower_bound = modelHolder.getModelByKey(metricType,LOWER_BOUND)
@@ -314,7 +316,8 @@ def detectSignalAnomalyData( metricInfo, modelHolder, metricType, strategy=None)
             pass
             #TODO: raise error
         ts,data,flags =detectLowerUpperAnomalies(series, lower_bound , upper_bound, bound)
-        triggerAnomalyMetric(metricInfo, ts)
+        print("Anomaly data: %s" % data)
+        triggerAnomalyMetric(metricInfo, ts, data)
         return ts,data
     elif modelHolder.model_name == AI_MODEL.HOLT_WINDER.value:
         upper_bound = modelHolder.getModelByKey(metricType,UPPER_BOUND)
@@ -325,7 +328,8 @@ def detectSignalAnomalyData( metricInfo, modelHolder, metricType, strategy=None)
         if lower_bound == None:
             pass
         ts,adata,flags = retrieveHW_Anomalies( y, upper_bound, lower_bound, bound)
-        triggerAnomalyMetric(metricInfo, ts)
+        print("Anomaly data: %s" % adata)
+        triggerAnomalyMetric(metricInfo, ts, adata)
         return ts,data
     else:
         #default is modelHolder.model_name == AI_MODEL.MOVING_AVERAGE_ALL.value:
@@ -345,10 +349,12 @@ def detectSignalAnomalyData( metricInfo, modelHolder, metricType, strategy=None)
         if strategy== 'hpa':
             print("~~~~~~~~~~~~~~~~~~",metricInfo.metricName, mean,stdev, threshold)
             ts,data,anomalies,zscore = detectAnomalies(series, mean, stdev, threshold , bound, minvalue=0, returnAnomaliesOnly= False)
-            triggerAnomalyMetric(metricInfo, filterTS(ts,anomalies))
+            print("Anomaly data: %s\n anomalies: %s\n zscore: %s\n" % (data, anomalies, zscore))
+            triggerAnomalyMetric(metricInfo, filterTS(ts,anomalies), data)
             return ts, data, anomalies, zscore,mean,stdev
         ts,data,_ = detectAnomalies(series, mean, stdev, threshold , bound)
-        triggerAnomalyMetric(metricInfo, ts)
+        print("Anomaly data: %s" % data)
+        triggerAnomalyMetric(metricInfo, ts, data)
         return ts, data
 
 def filterTS(ts, anomalies):

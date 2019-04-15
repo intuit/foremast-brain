@@ -80,18 +80,19 @@ def queryData(metricUrl, period, isProphet = False, datasource='prometheus'):
                 if i==2:
                     logger.warning("Failed to query  metricUrl: " +metricUrl)
                     return []
-        ###### TODO remove 
+        ###### TODO remove
         '''
         if period ==  METRIC_PERIOD.HISTORICAL.value :
            djson= getHistoricaljson()
         elif period ==  METRIC_PERIOD.CURRENT.value :
-           djson= getCurrentjson()  
+           djson= getCurrentjson()
         else:
            djson= getBaselinejson()
-        '''   
+        '''
         if datasource == 'prometheus':
             return convertPromesResponseToMetricInfos(djson, period, isProphet, ajson ) 
-        return None
+        return []
+
 
 def selectRequestToProcess(requests):
     if requests == None or len(requests) == 0:
@@ -119,7 +120,7 @@ def  canRequestProcess(request):
 def retrieveRequestById(es_url_status_search, id):
     resp = searchByID(es_url_status_search, id)
     openRequestlist=parseResult(resp)
-    
+
     if (len(openRequestlist) > 0):
         return  openRequestlist[0]
     return None
@@ -137,7 +138,7 @@ def preprocess(url_update, uuid):
 
 #############################################
 # Name : postprocess
-#        update post process request status 
+#        update post process request status
 # Parameters:
 # url_update -- elasticsearch updarte url
 # uuid --- requst uuid
@@ -147,7 +148,7 @@ def postprocess (url_update, uuid):
 
 #############################################
 # Name : reserveJob
-#        update elastic search requst entries 
+#        update elastic search requst entries
 #        to reserve the request to process
 # Parameters:
 # url_update -- elasticsearch updarte url
@@ -166,10 +167,10 @@ def reserveJob(url_update, url_search, uuid, status):
         elif status == REQUEST_STATE.PREPROCESS_INPROGRESS.value:
             updatedStatus = REQUEST_STATE.PREPROCESS_INPROGRESS.value
             updateDocStatus(url_update, uuid, updatedStatus)
-        else:  
+        else:
             #leave this for test
             updatedStatus = status
-            updateDocStatus(url_update, uuid, updatedStatus) 
+            updateDocStatus(url_update, uuid, updatedStatus)
         openRequest = retrieveRequestById(url_search, uuid)
         if openRequest == None:
             logger.error("failed to find uuid "+uuid)
@@ -179,10 +180,10 @@ def reserveJob(url_update, url_search, uuid, status):
             return  updatedStatus
         else:
             if i == 2 :
-               logger.error("failed to update uuid  "+uuid+"  from "+status +" to "+updatedStatus) 
+               logger.error("failed to update uuid  "+uuid+"  from "+status +" to "+updatedStatus)
             continue
     return status
-    
+
 
 
 def updateESDocStatus(url_update, url_search, uuid, status, info='', reason=''):
@@ -217,7 +218,7 @@ def isCompletedStatus (status):
     elif  status == REQUEST_STATE.PREPROCESS_COMPLETED.value:
         return False
     elif status == REQUEST_STATE.PREPROCESS_INPROGRESS.value:
-        return False  
+        return False
     elif status == REQUEST_STATE.POSTPROCESS.value:
         return False
     return  True
@@ -247,7 +248,7 @@ def computeHistoricalModel(historicalConfigMap, modelHolder, isProphet = False, 
     dataSet = {}
     msg = ''
     min_data_points = modelHolder.getModelConfigByKey(MIN_DATA_POINTS)
-    for metricType, metricUrl in historicalConfigMap.items(): 
+    for metricType, metricUrl in historicalConfigMap.items():
         metricStore = 'prometheus'
         if historicalMetricStores is not None:
            metricStore = historicalMetricStores[metricType]
@@ -261,15 +262,15 @@ def computeHistoricalModel(historicalConfigMap, modelHolder, isProphet = False, 
             continue
         #TODO: can be further optimize
         dataSet.setdefault(metricType, metricInfolist)
-    #       
+    #
     metricTypeCount = len(dataSet)
     if metricTypeCount == 0 :
         return modelHolder, msg
     metricTypes, metricInfos = retrieveKVList(dataSet)
 
-    if strategy=='hpa': 
+    if strategy=='hpa':
         modelHolder = calculateModels(metricInfos, modelHolder, metricTypes,strategy)
-        return modelHolder,msg 
+        return modelHolder,msg
     for i in range (metricTypeCount):
         modelHolder = calculateModel(metricInfos[i][0], modelHolder, metricTypes[i], strategy)
 
@@ -280,19 +281,19 @@ def computeHistoricalModel(historicalConfigMap, modelHolder, isProphet = False, 
         metricTypes, metricInfos = retrieveKVList(dataSet)
         #modelHolder  for historical metric there wil be only one
         #TODO pzou
-        return calculateModel(metricInfos[0][0], modelHolder), msg    
+        return calculateModel(metricInfos[0][0], modelHolder), msg
     elif metricTypeCount == 2 :
         pass
     else:
         pass
     '''
-    return modelHolder,msg 
+    return modelHolder,msg
 
 
 
 
-    
-    
+
+
 #####################################################
 #
 #
@@ -301,7 +302,7 @@ def computeHistoricalModel(historicalConfigMap, modelHolder, isProphet = False, 
 #####################################################
 def computeNonHistoricalModel(configMap, period, metricStores=None, strategy=None):
     dataSet = {}
-    for metricType, metricUrl in configMap.items(): 
+    for metricType, metricUrl in configMap.items():
         metricStore = 'prometheus'
         if metricStores is not None:
            metricStore = metricStores[metricType]
@@ -313,7 +314,7 @@ def computeNonHistoricalModel(configMap, period, metricStores=None, strategy=Non
             continue
         #TODO: can be further optimize
         dataSet.setdefault(metricType, metricInfolist)
-    
+
     metricTypeCount = len(dataSet)
     if metricTypeCount == 0 :
         return dataSet, period
@@ -343,7 +344,7 @@ def pairWiseComparson(currentDataSet, baselineDataSet, model , threshold, bound 
                     gsimilar = False
                 if (not meetSize):
                     ifMeetSize = False
-                    
+
             else:
                 continue
     return gsimilar, checkResults, ifMeetSize
@@ -367,7 +368,7 @@ def pairwiseMetricInfoListValidation(currentMetricInfoList, baselineMetricInfoLi
 
 
 
-def computeAnomaly(metricInfoDataset, modelHolder, strategy = None): 
+def computeAnomaly(metricInfoDataset, modelHolder, strategy = None):
     metricTypeSize = len(metricInfoDataset)
     if (strategy=='hpa'):
         if metricTypeSize==0:
@@ -377,7 +378,7 @@ def computeAnomaly(metricInfoDataset, modelHolder, strategy = None):
     isFirstTime = True
     if (metricTypeSize>0):
         for metricType, metricInfoList in metricInfoDataset.items():
-             for metricInfo in metricInfoList:        
+             for metricInfo in metricInfoList:
                  ts,adata =  detectAnomalyData(metricInfo,  modelHolder, metricType, strategy)
                  if (len(ts) > 0):
                      if isFirstTime:
@@ -395,12 +396,8 @@ def computeAnomaly(metricInfoDataset, modelHolder, strategy = None):
                      anomalieDisplay.append(str(adata))
                      anomalieDisplay.append("}}")
         if (not isFirstTime):
-            anomalieDisplay.append("]") 
-            anomalieDisplay.append("}")                   
+            anomalieDisplay.append("]")
+            anomalieDisplay.append("}")
     else:
         pass
     return (not isFirstTime), ''.join(anomalieDisplay)
-
-
-
-
