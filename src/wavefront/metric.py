@@ -6,6 +6,7 @@ from metrics.metricclass import MetricInfo, SingleMetricInfo, MultiKeyMetricInfo
 from metrics.metricmerges import SingleMergeSingle, MultiKeyMergeSingle, mergeMetrics
 from metadata.globalconfig import globalconfig
 
+
 logging.basicConfig(format='%(asctime)s %(message)s')
 logger = logging.getLogger('wavefront.metric')
 
@@ -20,10 +21,10 @@ def formatData(result, isProphet):
     df = None
     for entry in result.timeseries:
             # server_name = entry.host
-            # label = entry.label
+            # label = entry.label            
             if isProphet:
                 if df is None:
-                    df = convertTSToDataFrame(entry.data, True, 'y', isProphet)
+                    df = convertTSToDataFrame(entry.data, True, 'y', isProphet) 
                 else:
                     df.append(convertTSToDataFrame(entry.data, True, 'y', isProphet))
             else:
@@ -34,17 +35,27 @@ def formatData(result, isProphet):
     return df
 
 
-def convertResponseToMetricInfos(result, metricPeriod, isProphet=False):
+def convertResponseToMetricInfos(result, metricPeriod,  isProphet=False, aresult=None):
     metricInfos = []
     if result.timeseries is None:
-        logger.error("error: wavefront response does not have timeseries");
+        logger.error("error: wavefront response does not have timeseries")
         return metricInfos
-    df = formatData(result, isProphet)
+    df = formatData(result, isProphet) 
     if df is None:
         logger.error("error: wavefront does not have value of timeseries");
         return metricInfos
+    #add anomaly metric here
+    if aresult is not None:
+        if aresult.timeseries  is not None:
+            # this is assume wavefront has timestampe as anomaly timestamp
+            df_a = formatData(aresult, isProphet) 
+            try:
 
-    name, kvs = parseQueryData(result.query)
+                df.drop(df_a.index, inplace=True, errors='ignore')
+
+            except Exception as e:
+                logger.error(e.__cause__)
+    name, kvs = parseQueryData(result.query)  
     jMetric = kvs
     kvs['name'] = name
     gMetric = kvs
@@ -55,24 +66,28 @@ def convertResponseToMetricInfos(result, metricPeriod, isProphet=False):
 
 
 ###########################################
-#
+# 
 #  Name : parseQueryData
 #
 #  input parameters:
 #    data is metric string
-#    isPrometheus:  if need to convert to
+#    isPrometheus:  if need to convert to 
 #                   prometheus supported name
+
+def urlclearup(data):
+    url = getdecoder(data)
+    return url.replace("+"," ")
+
 def parseQueryData(data, isPrometheus=True):
     data1 = data.split("ts(")
-    if len(data1) <= 1:
-       return "", {}
+    if len(data1) <= 1:   
+        return "", {}
     data2 = data1[1].split(",")
     #if isPrometheus:
-    if globalConfig.getValueByKey('METRIC_DESTINATION')=='prometheus':
+    if globalConfig.getValueByKey('METRIC_DESTINATION')=='prometheus':    
         name = data2[0].replace(".", "_")
     else:
         name = data2[0].replace(":", ".")
-        print(name)
     if len(data2) == 1:
         return name.replace(")", "").strip(), {}
     values = data2[1].replace(" and ", " ").replace(" or ", " ").replace(")", "").split(" ")
@@ -88,15 +103,19 @@ def parseQueryData(data, isPrometheus=True):
                 kvs[kv[0].replace(".", "_")] = kv[1]
             else:
                 kvs[kv[0]] = kv[1]
+    if name[0:1]=='"' :
+        name = name[1:]
+    if name[len(name)-1:]=='"':
+        name = name[0:len(name)-1]
     return name, kvs
-
+    
 #############################################################
 # Name :convertTSToDataFrame
 # Parameters:
-#   valuesList is like [[1,2],[3,4],...,]
-#    convertTime --- if need to convert time
+#   valuesList is like [[1,2],[3,4],...,]  
+#    convertTime --- if need to convert time 
 
-
+        
 def convertTSToDataFrame(valuesList, convertTime=False, metricName='y', isProphet=False):
     ts_idx = []
     ts = []
@@ -109,4 +128,5 @@ def convertTSToDataFrame(valuesList, convertTime=False, metricName='y', isProphe
         vals.append(float(valuesList[i][1]))
     if isProphet:
        return  addHeader(ts_idx, vals, ts, False)
-    return  addHeader(ts_idx, vals)
+    return  addHeader(ts_idx, vals) 
+

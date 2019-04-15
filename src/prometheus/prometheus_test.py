@@ -1,6 +1,52 @@
 from metric import convertPromesResponseToMetricInfos,mergeMetrics
 
 
+ 
+  
+prometheus_anomaly_result = {
+'status': 'success', 
+'data': {'resultType': 'matrix', 
+'result': [
+{'metric': {'__name__': 'foremast:namespace_app_pod_http_server_requests_errors_5xx_anomaly', 
+'app': 'demo', 
+'namespace': 'dev-containers-foremast-examples-usw2-dev-dev'}, 
+'values': [[1555013726.657, '1555013726.657'], [1555013740.657, '1555013740.657'], [1555013754.657, '1555013754.657'], [1555013768.657, '1555013768.657'], 
+[1555013782.657, '1555013782.657']
+]
+      }
+    ]
+  }
+}
+
+
+
+prometheus_result = {
+'status': 'success', 
+'data': {'resultType': 'matrix', 
+'result': [
+{'metric': {'__name__': 'namespace_app_pod_http_server_requests_errors_5xx', 
+'app': 'demo', 
+'namespace': 'dev-containers-foremast-examples-usw2-dev-dev'}, 
+'values': [[1555013726.657, '0.1'], [1555013740.657, '0.2'], [1555013754.657, '0.3'], [1555013768.657, '0.7'], 
+[1555013782.657, '0.8'],[1555013800.657, '0.8']
+]
+      }
+    ]
+  }
+}
+
+
+
+
+
+def getPrometheusResult(isAnomaly=False):
+    if isAnomaly:
+        return prometheus_anomaly_result
+    return prometheus_result   
+
+
+
+
 json1={
   "status": "success",
   "data": {
@@ -94,10 +140,9 @@ json3={
   }
 }
 
-
+'''
 a1, ret = convertPromesResponseToMetricInfos(json1)
 print(a1[0].metricDF)
-
 
 a2,ret = convertPromesResponseToMetricInfos(json2)
 print(a2[0].metricDF)
@@ -123,7 +168,7 @@ print(df1)
 s_copy = df1.copy()
 sc= s_copy.drop('ds', axis=1)
 print(sc.cov())
-
+'''
 #dddd = sc.ix[:,0].corr(sc.ix[:,1])
 
 #print(dddd)

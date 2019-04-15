@@ -91,10 +91,13 @@ def sendMetric(metricName, tags, value,  timestamp=0,source=None):
     print("metricName", metricName, "tags", tags, "value", value, "timestamp", timestamp)
     if (cacheCount %flushFrequency == 0):
         flushNow()
-        print(metricName + " after flush send metric buffer " + str(sendClient._metrics_buffer.qsize()) + "failure " + str(sendClient.get_failure_count()))
+        #print(metricName + " after flush send metric buffer " + str(sendClient._metrics_buffer.qsize()) + "failure " + str(sendClient.get_failure_count()))
         logger.warning(metricName + " after flush send metric buffer " + str(sendClient._metrics_buffer.qsize()) + "failure " + str(sendClient.get_failure_count()))
+<<<<<<< HEAD
 
 
+=======
+>>>>>>> a1b3816585775b2d1e2aa7bf7c20ddb353b09d0b
 
 
 
@@ -106,13 +109,16 @@ def sendDeltaCounter(metricName, tags, value, source=None):
     cacheCount = cacheCount+ 1
     if source is None:
         source = globalEnv
+<<<<<<< HEAD
     sendClient.send_delta_counter(metricName, value, source, tags)
     print("send delta buffer ", sendClient._metrics_buffer.qsize(), "failure ", sendClient.get_failure_count())
 
+=======
+    sendClient.send_delta_counter(name, value, source, tags)
+    #print("send delta buffer ", sendClient._metrics_buffer.qsize(), "failure ", sendClient.get_failure_count())
+>>>>>>> a1b3816585775b2d1e2aa7bf7c20ddb353b09d0b
     if (cacheCount%flushFrequency == 0):
         flushNow()
-        print("after flush send delta buffer ", sendClient._metrics_buffer.qsize(), "failure ", sendClient.get_failure_count())
-
     # print("send delta buffer ", sendClient._metrics_buffer)
 
 
@@ -120,11 +126,6 @@ def sendDeltaCounter(metricName, tags, value, source=None):
 def flushNow():
     sendClient.flush_now()
 
-
-#def sendMetric():
-
-
-#def sendMetrics():
 
 
 ##############
