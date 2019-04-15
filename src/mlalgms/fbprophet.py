@@ -11,20 +11,22 @@ DEFAULT_PROPHET_FREQ  ='T'
   
 
 
-def predictProphet(timeseries, period=1 ,frequence ='T', seasonality_name='', prior_scale=0.1, columnPosition=0):
+def predictProphet(timeseries, period=1 ,frequence ='T', seasonality_name='', pscale=0.1, columnPosition=0, interval_width=0.97 ):
     prophet = Prophet()
     if seasonality_name=='daily':
-        prophet.add_seasonality('daily', 1, fourier_order=1, prior_scale=prior_scale)
+        prophet = Prophet(daily_seasonality=True,interval_width=interval_width)
+        prophet.add_seasonality('daily', 1, fourier_order=1, prior_scale=pscale)
     elif seasonality_name=='weekly':
-        prophet.add_seasonality('weekly', 7, fourier_order=3, prior_scale=prior_scale)
+        prophet.add_seasonality('weekly', 7, fourier_order=3, prior_scale=pscale)
     elif seasonality_name=='monthly':
-        prophet = Prophet(weekly_seasonality=False)
-        prophet.add_seasonality('monthly', 30.5, fourier_order=5,prior_scale=prior_scale)
+        prophet = Prophet(weekly_seasonality=False,interval_width=interval_width)
+        prophet.add_seasonality('monthly', 30.5, fourier_order=5,prior_scale=pscale)
     elif seasonality_name=='yearly':
-        prophet.add_seasonality('yearly', 365, fourier_order=10,prior_scale=prior_scale)    
+        prophet.add_seasonality('yearly', 365, fourier_order=10,prior_scale=pscale)    
     prophet.fit(timeseries)
     future = prophet.make_future_dataframe(periods=period,freq=frequence)
     forecast = prophet.predict(future)
+    print(forecast.head()  )
     if columnPosition == 0 :
         return forecast[['ds', 'yhat', 'yhat_lower', 'yhat_upper']]
     else :
@@ -32,11 +34,12 @@ def predictProphet(timeseries, period=1 ,frequence ='T', seasonality_name='', pr
     
 
 
-def prophetPredictUpperLower(timeseries, period=1,frequence ='T', zscore = 2,seasonality_name='',prior_scale=0.1, columnPosition=0):
+def prophetPredictUpperLower(timeseries, period=1,frequence ='T', zscore = 2,seasonality_name='',prior_scale=0.1, columnPosition=0, interval_width=0.97):
     df = timeseries.copy()
     df.dropna()
     orig_len = len(timeseries)
-    fc = predictProphet(df, period, frequence,seasonality_name, prior_scale,columnPosition)
+    fc = predictProphet(df, period, frequence,seasonality_name, prior_scale,columnPosition,interval_width=interval_width)
+    print(fc)
     after_len = len(fc)
     #print(orig_len ,'  ', after_len)
     if seasonality_name=='':  

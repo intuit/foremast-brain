@@ -2,7 +2,8 @@ from sklearn.preprocessing import MinMaxScaler
 import statsmodels
 import statsmodels.api as sm
 from statsmodels.tsa.stattools import coint, adfuller
-from pands import pd 
+import pandas
+from pandas import Series
 import sklearn.preprocessing as preprocessing
 
 
@@ -21,20 +22,24 @@ def cn_encode_features(df):
 
 
 
+    
+
 def isStationary(ts, threshold = 0.01):
+  try:
     ts_measurement = adfuller(ts, autolag = 'AIC')
-    ts_measurement_output = pd.Series(ts_measurement[0:4], index=['Test Statistic','p-value','#Lags Used','Number of Observations Used'])
+    ts_measurement_output = pandas.Series(ts_measurement[0:4], index=['Test Statistic','p-value','#Lags Used','Number of Observations Used'])
     
     for key,value in ts_measurement[4].items():
         ts_measurement_output['Critical Value (%s)'%key] = value
-    print(ts_measurement_output)
-    
+    #print(ts_measurement_output)
     if ts_measurement[1] <= threshold:
         #Strong evidence against the null hypothesis, reject the null hypothesis. Data has no unit root, so it is stationary
         return True
     else:
         #Weak evidence against null hypothesis, time series has a unit root, indicating it is non-stationary.
         return False
+  except Exception as e:
+      return False
     
 def getScaler():
     return MinMaxScaler()

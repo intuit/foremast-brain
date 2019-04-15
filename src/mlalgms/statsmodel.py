@@ -104,9 +104,10 @@ def detectAnomalies(series, mean, deviation, threshold = 2 , bound=IS_UPPER_BOUN
         if (deviation !=0):
             z = (series.iloc[i,0] - mean)/deviation  
         else:
-            z=0    
+            z=0 
+        isAnomaly = False     
         if series.iloc[i,0]>minvalue:
-            isAnomaly = False     
+   
             if (not returnAnomaliesOnly):
                 ts.append(series.index[i])
                 adata.append(series.iloc[i,0])
@@ -139,11 +140,11 @@ def detectAnomalies(series, mean, deviation, threshold = 2 , bound=IS_UPPER_BOUN
                     if eries.iloc[i,0] < lower :
                         zscore_upper_diff.append(0)
                         zscore_lower_diff.append(-z+threshold) 
-            if returnAnomaliesOnly :
+        if returnAnomaliesOnly :
                 if isAnomaly:
                     anomalies.append(isAnomaly)
                     zscore.append(z)
-            else:
+        else:
                 anomalies.append(isAnomaly) 
                 zscore.append(z)
                 if not isAnomaly:

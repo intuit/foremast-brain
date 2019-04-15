@@ -8,12 +8,14 @@ from utils.timeutils import  canProcess, rateLimitCheck
 from elasticsearch.elasticsearchutils import updateDocStatus, searchByID , parseResult,RETRY_COUNT
 from metadata.metadata import REQUEST_STATE, METRIC_PERIOD, MIN_DATA_POINTS
 from prometheus.metric import convertPromesResponseToMetricInfos,urlEndNow
-from wavefront.metric import convertResponseToMetricInfos
+from wavefront.metric import convertResponseToMetricInfos,parseQueryData
 from utils.urlutils import dorequest
 from metrics.metricclass import MetricInfo, SingleMetricInfo
 from utils.dictutils import retrieveKVList
 from helpers.modelhelpers import calculateModel,detectAnomalyData, calculateScore,calculateModels
-from wavefront.apis import executeQuery
+from wavefront.apis import executeQuery,dequote
+from metrics.monitoringmetrics import getModelUrl
+from metadata.globalconfig import globalconfig
 
 
 from mlalgms.pairwisemodel import TwoDataSetSameDistribution,MultipleDataSetSameDistribution
@@ -25,11 +27,24 @@ from mlalgms.pairwisemodel import TwoDataSetSameDistribution,MultipleDataSetSame
 # logging
 logging.basicConfig(format='%(asctime)s %(message)s')
 logger = logging.getLogger('foremastbrainhelper')
+#global config
+config=  globalconfig()
 
 
 
+########################################################
+#  Name : queryData
+#  parameters : 
+#    metricUrl  --- RESTful url of metric store query
+#    period  --- histoical, current or baseline
+#    isProphet --- add this parameter because prophet use different format
+#    datasource --- prometheus or wavefront
+#
+#######################################################
 def queryData(metricUrl, period, isProphet = False, datasource='prometheus'):
         djson = {}
+        ajson = None
+        modeDropAnomaly =config.getValueByKey('MODE_DROP_ANOMALY')
         for i in range(RETRY_COUNT):
             try:
                 if datasource == 'prometheus':
@@ -37,13 +52,28 @@ def queryData(metricUrl, period, isProphet = False, datasource='prometheus'):
                         metricUrl = urlEndNow(metricUrl)
                     respStr  = dorequest(metricUrl)
                     djson = json.loads(respStr)
+                    if period == METRIC_PERIOD.HISTORICAL.value and (modeDropAnomaly is not None and modeDropAnomaly=='y'):
+                        try:
+                            modelUrl = getModelUrl(metricUrl)
+                            respStr = dorequest(modelUrl)
+                            ajson = json.loads(respStr)
+                        except Exception as e1:
+                            logger.error(e1.__cause__)
+                        
                 elif datasource == 'wavefront':
                     datalist = metricUrl.split("&&")
                     if len(datalist)<4:
                         logger.error("missing wavefront query parameters : " +metricUrl)
                         return []
                     qresult  = executeQuery(datalist[0],datalist[1],datalist[2],datalist[3])
-                    return convertResponseToMetricInfos(qresult, period, isProphet )
+                    if period == METRIC_PERIOD.HISTORICAL.value and (modeDropAnomaly is not None and modeDropAnomaly=='y'):
+                        #amonaly result 
+                        try:
+                            aresult = executeQuery(getModelUrl(dequote(datalist[0]),datasource) ,datalist[1],datalist[2],datalist[3])
+                            return convertResponseToMetricInfos(qresult, period, isProphet,aresult) 
+                        except Exception as e1:
+                            logger.error(e1.__cause__)
+                    return convertResponseToMetricInfos(qresult, period, isProphet) 
                 break
             except Exception as e:
                 logger.error(e.__cause__)
@@ -60,8 +90,9 @@ def queryData(metricUrl, period, isProphet = False, datasource='prometheus'):
            djson= getBaselinejson()
         '''
         if datasource == 'prometheus':
-            return convertPromesResponseToMetricInfos(djson, period, isProphet )
+            return convertPromesResponseToMetricInfos(djson, period, isProphet, ajson ) 
         return []
+
 
 def selectRequestToProcess(requests):
     if requests == None or len(requests) == 0:
