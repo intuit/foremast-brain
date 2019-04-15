@@ -5,7 +5,7 @@ import logging
 from metadata.globalconfig import globalconfig
 import urllib.parse
 from utils.timeutils import getNowInSeconds
-
+import os
 # logging
 logging.basicConfig(format='%(asctime)s %(message)s')
 logger = logging.getLogger('apis')
@@ -88,15 +88,13 @@ def sendMetric(metricName, tags, value,  timestamp=0,source=None):
     sendClient.send_metric(metricName,value, ts,source, tags)
     print(metricName, " send metric buffer ", sendClient._metrics_buffer.qsize(), "failure ", sendClient.get_failure_count())
     logger.warning(metricName + " send metric buffer " + str(sendClient._metrics_buffer.qsize()) + "failure " + str(sendClient.get_failure_count()))
-    # print("metricName", metricName, "tags", tags, "value", value, "timestamp", timestamp)
+    print("metricName", metricName, "tags", tags, "value", value, "timestamp", timestamp)
     if (cacheCount %flushFrequency == 0):
         flushNow()
         print(metricName + " after flush send metric buffer " + str(sendClient._metrics_buffer.qsize()) + "failure " + str(sendClient.get_failure_count()))
         logger.warning(metricName + " after flush send metric buffer " + str(sendClient._metrics_buffer.qsize()) + "failure " + str(sendClient.get_failure_count()))
-<<<<<<< HEAD
-=======
 
->>>>>>> 40649d94dee851fa6da6e220c326468677959345
+
 
 
 
@@ -108,7 +106,7 @@ def sendDeltaCounter(metricName, tags, value, source=None):
     cacheCount = cacheCount+ 1
     if source is None:
         source = globalEnv
-    sendClient.send_delta_counter(name, value, source, tags)
+    sendClient.send_delta_counter(metricName, value, source, tags)
     print("send delta buffer ", sendClient._metrics_buffer.qsize(), "failure ", sendClient.get_failure_count())
 
     if (cacheCount%flushFrequency == 0):
