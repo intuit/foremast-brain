@@ -13,7 +13,7 @@ from metrics.metricclass import MetricInfo, SingleMetricInfo,MultiKeyMetricInfo
 
 from metrics.metricmerges import SingleMergeSingle,MultiKeyMergeSingle,mergeMetrics
 from metadata.globalconfig import globalconfig
-from sqlalchemy.sql.expression import false
+
 
 logging.basicConfig(format='%(asctime)s %(message)s')
 logger = logging.getLogger('prometheus.metric')
