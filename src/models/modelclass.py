@@ -1,6 +1,6 @@
 
 from metadata.metadata import METRIC_PERIOD
-
+from datetime import datetime, timezone
 
 class ModelHolder:
     def __init__(self, model_name, model_config=None, model_data=None, period=METRIC_PERIOD.HISTORICAL.value, id=''):
@@ -14,6 +14,7 @@ class ModelHolder:
         self._period = period
         self._model_config = model_config
         self._id = id
+        self._timestamp = str(datetime.now(timezone.utc).astimezone())
 
     '''
     def getModelByKey(self, key):
@@ -65,6 +66,10 @@ class ModelHolder:
     @property
     def id(self):
         return self._id
+
+    @property
+    def timestamp(self):
+        return self._timestamp
 
 #    def __getitem__(self, metricType, item):
 #        return self.getModelByKey(metricType, item)

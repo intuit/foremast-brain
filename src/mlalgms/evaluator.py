@@ -3,7 +3,6 @@ from sklearn.model_selection import TimeSeriesSplit
 from mlalgms.holtwinters import HoltWinters 
 from sklearn.metrics import r2_score, median_absolute_error, mean_absolute_error
 from sklearn.metrics import median_absolute_error, mean_squared_error, mean_squared_log_error
-from bokeh.models.tickers import ONE_MONTH
 from utils.dfUtils import getStartTime, getLastTime, dataframe_substract, ts_filter
 from mlalgms.tsutils import isStationary
 import math

@@ -51,6 +51,7 @@ METRIC_TYPE = 'metric_type'
 HPA = 'hpa'
 
 MAX_CACHE_SIZE = 2000
+CACHE_EXPIRE_TIME = 30*60
 DEFAULT_MAX_STUCK_IN_SECONDS=90
 DEFAULT_AGGREGATED_METRIC_SECOND = 60
 DEFAULT_MIN_HISTORICAL_DATA_POINT_TO_MEASURE = 1
@@ -94,6 +95,12 @@ def precessCached(es_url_status_search, jobId):
                 #this should never happen
                 jobs.remove(jobId)
                 del cachedJobs[jobId]
+            else:
+                # remove model from cache if expired
+                if isPast(modelHolder.timestamp, config.getValueByKey("CACHE_EXPIRE_TIME")):
+                    jobs.remove(jobId)
+                    del cachedJobs[jobId]
+                    return None, None
             openRequest = retrieveRequestById(es_url_status_search, jobId)
             if openRequest== None:
                 jobs.remove(jobId)
@@ -125,6 +132,12 @@ def retrieveCachedRequest(es_url_status_search):
            return openRequest, modelHolder
     return None, None
 
+
+# not to update es doc status if strategy is HPA or continuous
+def update_es_doc(req_strategy, req_org_status, es_url_update, es_url_search, uuid, to_status, info='', reason=''):
+    if req_strategy in [HPA, 'continuous']:
+        to_status = req_org_status
+    return updateESDocStatus(es_url_update, es_url_search, uuid, to_status, info, reason)
  
 def main():
     #Default Parameters can be overwrite by environments
@@ -133,6 +146,10 @@ def main():
     ML_ALGORITHM = os.environ.get('ML_ALGORITHM', AI_MODEL.MOVING_AVERAGE_ALL.value)
     FLUSH_FREQUENCY = os.environ.get('FLUSH_FREQUENCY', 5)
     OIM_BUCKET = os.environ.get("OIM_BUCKET")
+
+    # get historical time window
+    HISTORICAL_CONF_TIME_WINDOW = os.environ.get('HISTORICAL_CONF_TIME_WINDOW', 7*24*60*60)
+    CURRENT_CONF_TIME_WINDOW = os.environ.get('CURRENT_CONF_TIME_WINDOW', 1.75)
     
     MIN_MANN_WHITE_DATA_POINTS = convertStrToInt(os.environ.get("MIN_MANN_WHITE_DATA_POINTS", str(MANN_WHITE_MIN_DATA_POINT)), MANN_WHITE_MIN_DATA_POINT) 
     MIN_WILCOXON_DATA_POINTS = convertStrToInt(os.environ.get("MIN_WILCOXON_DATA_POINTS", str(WILCOXON_MIN_DATA_POINTS)), WILCOXON_MIN_DATA_POINTS) 
@@ -151,6 +168,7 @@ def main():
     config.setKV(MIN_LOWER_BOUND, ML_MIN_LOWER_BOUND)
     config.setKV("FLUSH_FREQUENCY", int(FLUSH_FREQUENCY))
     config.setKV("OIM_BUCKET", OIM_BUCKET)
+    config.setKV("CACHE_EXPIRE_TIME", os.environ.get('CACHE_EXPIRE_TIME', 30*60))
     #Add Metric source env
     config.setKV("SOURCE_ENV", "ppd")
     MODE_DROP_ANOMALY = os.environ.get('MODE_DROP_ANOMALY', 'y')
@@ -251,7 +269,7 @@ def main():
                     #Test End##########################
             else:
                 uuid = openRequest['id']
-                openRequest_tmp, modelHolder = retrieveOneCachedRequest(es_url_status_search,uuid)
+                _, modelHolder = retrieveOneCachedRequest(es_url_status_search, uuid)
           
 
         outputMsg = []
@@ -262,8 +280,14 @@ def main():
 
         logger.warning("Start to processing job id "+uuid+ " original status:"+ status)
 
-        historicalConfig =openRequest['historicalConfig']
+        historicalConfig = openRequest['historicalConfig']
+        historicalConfigMap = None
+        if historicalConfig:
+            historicalConfigMap = convertStringToMap(historicalConfig)
         currentConfig = openRequest['currentConfig']
+        currentConfigMap = None
+        if currentConfig:
+            currentConfigMap = convertStringToMap(currentConfig)
         baselineConfig = None
         if 'baselineConfig' in openRequest:
             baselineConfig = openRequest['baselineConfig']
@@ -280,6 +304,30 @@ def main():
         endTime = openRequest['endTime']
         #strategy
         strategy = openRequest['strategy']
+        if strategy in [HPA, 'continuous']:
+            # replace start and end time for HPA and continuous strategy
+            start_history_str = 'start={}'.format(time.time() - float(HISTORICAL_CONF_TIME_WINDOW))
+            start_current_str = 'start={}'.format(time.time() - float(CURRENT_CONF_TIME_WINDOW))
+            end_str = 'end={}'.format(time.time())
+
+            if historicalConfigMap:
+                for metric_type, metric_url in historicalConfigMap.items():
+                    if historicalMetricStore and convertStringToMap(historicalMetricStore)[metric_type] == 'wavefront':
+                        start_history_str = str(time.time() - float(HISTORICAL_CONF_TIME_WINDOW))
+                        end_str = str(time.time())
+                    metric_url = metric_url.replace('START_TIME', start_history_str)
+                    metric_url = metric_url.replace('END_TIME', end_str)
+                    historicalConfigMap[metric_type] = metric_url
+
+            if currentConfigMap:
+                for metric_type, metric_url in currentConfigMap.items():
+                    if currentMetricStore and convertStringToMap(currentMetricStore)[metric_type] == 'wavefront':
+                        start_current_str = str(time.time() - float(CURRENT_CONF_TIME_WINDOW))
+                        end_str = str(time.time())
+                    metric_url = metric_url.replace('START_TIME', start_current_str)
+                    metric_url = metric_url.replace('END_TIME', end_str)
+                    currentConfigMap[metric_type] = metric_url
+
         skipHistorical =( historicalConfig=='') or (strategy == 'canary')
         # only canary deploymebnt requires baseline
         skipBaseline = strategy != 'canary'
@@ -294,7 +342,8 @@ def main():
         
         try:
             if (skipCurrent):
-                ret = updateESDocStatus(es_url_status_update, es_url_status_search, uuid, REQUEST_STATE.COMPLETED_UNKNOWN.value, "Error: no current config")
+                ret = update_es_doc(strategy, status, es_url_status_update, es_url_status_search, uuid,
+                                    REQUEST_STATE.COMPLETED_UNKNOWN.value, "Error: no current config")
                 logger.warning("request error : jobid  "+uuid+" updateESDocStatus  is :"+ str(ret)+ " current config is empty. make status unknown")
                 #print(getNowStr(), " : jobid  ",uuid, " current config is empty. make status unknown")
                 #measurementmetrics.sendMetric(MONITORING_REQUEST_TIME, label_info, calculateDuration(start))
@@ -310,7 +359,6 @@ def main():
 
                 
             if  (not (modelHolder.hasModels or skipHistorical) ):
-                configMapHistorical = convertStringToMap(historicalConfig)
                 storeMapHistorical = convertStringToMap(historicalMetricStore)
                 isProphet = False
                 if (ML_ALGORITHM==AI_MODEL.PROPHET.value):
@@ -318,7 +366,7 @@ def main():
                     modelConfig.setdefault(PROPHET_PERIOD, ML_PROPHET_PERIOD )
                     modelConfig.setdefault(PROPHET_FREQ,ML_PROPHET_FREQ )
                 # pass stragegy for hpa
-                modelHolder, msg = computeHistoricalModel(configMapHistorical, modelHolder, isProphet,storeMapHistorical, strategy)
+                modelHolder, msg = computeHistoricalModel(historicalConfigMap, modelHolder, isProphet,storeMapHistorical, strategy)
                 label_info['calcuHistorical'] ='True' 
                 if (msg!=''):
                     outputMsg.append(msg)
@@ -336,10 +384,10 @@ def main():
             
 
             if skipBaseline :
-                currentDataSet, p = computeNonHistoricalModel(convertStringToMap(currentConfig), METRIC_PERIOD.CURRENT.value,convertStringToMap(currentMetricStore), strategy);
+                currentDataSet, p = computeNonHistoricalModel(currentConfigMap, METRIC_PERIOD.CURRENT.value,convertStringToMap(currentMetricStore), strategy);
             else:                
                 with ProcessPoolExecutor(max_workers=2) as executor:
-                    currentjob = executor.submit(computeNonHistoricalModel, convertStringToMap(currentConfig),METRIC_PERIOD.CURRENT.value,convertStringToMap(currentMetricStore), strategy);
+                    currentjob = executor.submit(computeNonHistoricalModel, currentConfigMap,METRIC_PERIOD.CURRENT.value,convertStringToMap(currentMetricStore), strategy);
                     baselinejob = executor.submit(computeNonHistoricalModel, convertStringToMap(baselineConfig), METRIC_PERIOD.BASELINE.value,convertStringToMap(baselineMetricStore), strategy);
                     to_do.append(currentjob)
                     to_do.append(baselinejob)
@@ -367,11 +415,13 @@ def main():
             if hasCurrent == False:
                 ret = True
                 if isPast(endTime, 20):
-                    ret = updateESDocStatus(es_url_status_update, es_url_status_search, uuid, REQUEST_STATE.COMPLETED_UNKNOWN.value, "Error: there is no current Metric. ")
+                    ret = update_es_doc(strategy, status, es_url_status_update, es_url_status_search, uuid,
+                                        REQUEST_STATE.COMPLETED_UNKNOWN.value, "Error: there is no current Metric. ")
                     logger.warning("Current metric is empty, jobid "+uuid+" updateESDocStatus  is :"+ str(ret)+ "  time past mark job unknow "+  currentConfig+" ".join(outputMsg))
                 else:
-                    cacheModels(modelHolder, max_cache) 
-                    ret =updateESDocStatus(es_url_status_update, es_url_status_search, uuid, REQUEST_STATE.PREPROCESS_INPROGRESS.value, "Warning: there is no current Metric, Will keep try until reachs endTime. ")
+                    cacheModels(modelHolder, max_cache)
+                    ret = update_es_doc(strategy, status, es_url_status_update, es_url_status_search, uuid,
+                                        REQUEST_STATE.PREPROCESS_INPROGRESS.value, "Warning: there is no current Metric, Will keep try until reachs endTime. ")
                     logger.warning("Current metric is empty, jobid "+uuid+" updateESDocStatus  is :"+ str(ret)+ " end time is not reach, will cache and retry "+  currentConfig+" ".join(outputMsg))
                 if not ret:
                     cacheModels( modelHolder,  max_cache)
@@ -394,22 +444,31 @@ def main():
                     else:
                     '''
                     if meetSize :
-                        ret = updateESDocStatus(es_url_status_update, es_url_status_search, uuid, REQUEST_STATE.COMPLETED_UNHEALTH , "Warning:  baseline and current are different pattern. ")
+                        ret = update_es_doc(strategy, status, es_url_status_update, es_url_status_search, uuid,
+                                            REQUEST_STATE.COMPLETED_UNHEALTH.value, "Warning:  baseline and current are different pattern. ")
                         logger.warning("job id :"+uuid+"completed_unhealth, current and baseline has different distribution pattern,  updateESDocStatus  is :"+ str(ret))
                     else:
                         if isPast(endTime, 10):
-                            ret = updateESDocStatus(es_url_status_update, es_url_status_search, uuid, REQUEST_STATE.COMPLETED_UNKNOWN.value, "Warning: baseline and current are different pattern but not meet min datapoints to determine . ")
+                            ret = update_es_doc(strategy, status, es_url_status_update, es_url_status_search, uuid,
+                                                REQUEST_STATE.COMPLETED_UNKNOWN.value,
+                                                "Warning: baseline and current are different pattern but not meet min datapoints to determine.")
                             logger.warning("job id :"+uuid+"completed_unknown...current or baseline is not same but not enough datapoints to confirm,  updateESDocStatus  is :"+ str(ret))
-                        else: 
-                            
-                            ret = updateESDocStatus(es_url_status_update, es_url_status_search, uuid, REQUEST_STATE.PREPROCESS_COMPLETED.value, " pairwise not same so far and not meet min datapoints to determine.")
+                        else:
+
+                            ret = update_es_doc(strategy, status, es_url_status_update, es_url_status_search, uuid,
+                                                REQUEST_STATE.PREPROCESS_COMPLETED.value,
+                                                "pairwise not same so far and not meet min datapoints to determine.")
                             logger.warning("job id :"+uuid+" pairwise not same and not enough datapoints but not meet min datapoint to determine ,  updateESDocStatus  is :"+ str(ret))
                 else:
                     if isPast(endTime, 10):
-                        ret = updateESDocStatus(es_url_status_update, es_url_status_search, uuid, REQUEST_STATE.COMPLETED_HEALTH.value, 'health')
+                        ret = update_es_doc(strategy, status, es_url_status_update, es_url_status_search, uuid,
+                                            REQUEST_STATE.COMPLETED_HEALTH.value,
+                                            "health")
                         logger.warning("job ID : "+uuid+" is health. updateESDocStatus  is :"+ str(ret))
                     else:
-                        ret = updateESDocStatus(es_url_status_update, es_url_status_search, uuid, REQUEST_STATE.PREPROCESS_COMPLETED.value , " current and baseline have same distribution but not past endtime yet. ")
+                        ret = update_es_doc(strategy, status, es_url_status_update, es_url_status_search, uuid,
+                                            REQUEST_STATE.PREPROCESS_COMPLETED.value,
+                                            "current and baseline have same distribution but not past endtime yet.")
                         # print(getNowStr(),": id ",uuid, " continue . bacause pairwise is not same but not past endTime yet " )                      
                         logger.warning("job id :"+uuid+" will reprocess . current and base have same distribution but not past endTime yet, updateESDocStatus  is :"+ str(ret))
                 if not ret:
@@ -422,11 +481,15 @@ def main():
                 if not skipBaseline :
                     ret = True
                     if isPast(endTime, 10):
-                        ret =updateESDocStatus(es_url_status_update, es_url_status_search, uuid, REQUEST_STATE.COMPLETED_UNKNOWN.value, "baseline query is empty. ")
+                        ret = update_es_doc(strategy, status, es_url_status_update, es_url_status_search, uuid,
+                                            REQUEST_STATE.COMPLETED_UNKNOWN.value,
+                                            "baseline query is empty.")
                         logger.warning("job ID : "+uuid+" unknown because baseline no data, updateESDocStatus  is :"+ str(ret))
                     else:
                         # wait for baseline metric to generate
-                        ret = updateESDocStatus(es_url_status_update, es_url_status_search, uuid, REQUEST_STATE.PREPROCESS_COMPLETED.value , " no baseline data yet, ")
+                        ret = update_es_doc(strategy, status, es_url_status_update, es_url_status_search, uuid,
+                                            REQUEST_STATE.PREPROCESS_COMPLETED.value,
+                                            "no baseline data yet.")
                         logger.warning("job ID : "+uuid+" continue . no baseline data yet. updateESDocStatus  is :"+ str(ret)) 
                     if not ret:
                         cacheModels( modelHolder,  max_cache)
@@ -439,11 +502,15 @@ def main():
             #:TODO
             if hasHistorical == False :
                 ret = True
-                if isPast(endTime, 5):    
-                    ret = updateESDocStatus(es_url_status_update, es_url_status_search, uuid, REQUEST_STATE.COMPLETED_UNKNOWN.value, "Error: no enough historical data and no baseline data. ")
+                if isPast(endTime, 5):
+                    ret = update_es_doc(strategy, status, es_url_status_update, es_url_status_search, uuid,
+                                        REQUEST_STATE.COMPLETED_UNKNOWN.value,
+                                        "Error: no enough historical data and no baseline data.")
                     logger.warning("job id: "+uuid+" completed unknown  no enough historical data and no baseline data , updateESDocStatus  is :"+ str(ret))
                 else:
-                    ret = updateESDocStatus(es_url_status_update, es_url_status_search, uuid, REQUEST_STATE.PREPROCESS_COMPLETED.value, "Warning: not enough  historical data and no baseline data will retry until endtime reaches. ")
+                    ret = update_es_doc(strategy, status, es_url_status_update, es_url_status_search, uuid,
+                                        REQUEST_STATE.PREPROCESS_COMPLETED.value,
+                                        "Warning: not enough  historical data and no baseline data will retry until endtime reaches.")
                     logger.warning("job id: "+uuid+"  will cache and reprocess becasue no historical, updateESDocStatus  is :"+ str(ret))
 
                 if not ret:
@@ -451,18 +518,25 @@ def main():
                     logger.error("ES update failed: job ID: "+uuid)             
                 #measurementMetric.sendMetric(MONITORING_REQUEST_TIME, label_info, calculateDuration(start))  
                 continue
-             
-            if strategy ==HPA:
+
+            if strategy in [HPA, 'continuous']:
                     computeAnomaly(currentDataSet,modelHolder,strategy) 
-                    if isPast(endTime, 5): 
-                        ret = updateESDocStatus(es_url_status_update, es_url_status_search, uuid, REQUEST_STATE.COMPLETED_HEALTH.value, "")
+                    if isPast(endTime, 5):
+                        ret = update_es_doc(strategy, status, es_url_status_update, es_url_status_search, uuid,
+                                            REQUEST_STATE.COMPLETED_HEALTH.value,
+                                            "")
                         logger.warning("job id: "+uuid+"  hpa cycle completed.")
                     else:
-                        ret = updateESDocStatus(es_url_status_update, es_url_status_search, uuid, REQUEST_STATE.PREPROCESS_INPROGRESS.value, "")
+                        ret = update_es_doc(strategy, status, es_url_status_update, es_url_status_search, uuid,
+                                            REQUEST_STATE.PREPROCESS_INPROGRESS.value,
+                                            "")
                         logger.warning("job id: "+uuid+"  hpa in progress.")
-                    if not ret:
-                        cacheModels( modelHolder,  max_cache)
-                        logger.error("ES update failed: hpa job ID: "+uuid)       
+                    # if not ret:
+                    #     cacheModels( modelHolder,  max_cache)
+                    #     logger.error("ES update failed: hpa job ID: "+uuid)
+
+                    # always cache models
+                    cacheModels(modelHolder, max_cache)
 
                     #measurementMetric.sendMetric(MONITORING_REQUEST_TIME, label_info, calculateDuration(start))
                     continue
@@ -473,21 +547,27 @@ def main():
             if hasAnomaly:
                 #update ES to anomaly otherwise continue 
                 anomalyInfo = escapeString(anomaliesDataStr)
-                ret = updateESDocStatus(es_url_status_update, es_url_status_search, uuid, REQUEST_STATE.COMPLETED_UNHEALTH.value , "Warning: anomaly detected between current and historical. ",anomalyInfo)
+                ret = update_es_doc(strategy, status, es_url_status_update, es_url_status_search, uuid,
+                                    REQUEST_STATE.COMPLETED_UNHEALTH.value,
+                                    "Warning: anomaly detected between current and historical.", anomalyInfo)
                 logger.warning("**job ID is unhealth  "+uuid+" updateESDocStatus  is :"+ str(ret)+ "  "+anomaliesDataStr)
                 if not ret:
                     cacheModels( modelHolder,  max_cache)
                     logger.error("ES update failed: job ID: "+uuid)
             else:
                 if isPast(endTime, 10):
-                    ret = updateESDocStatus(es_url_status_update, es_url_status_search, uuid, REQUEST_STATE.COMPLETED_HEALTH.value,"current compare to histroical model is health")
+                    ret = update_es_doc(strategy, status, es_url_status_update, es_url_status_search, uuid,
+                                        REQUEST_STATE.COMPLETED_HEALTH.value,
+                                        "current compare to histroical model is health")
                     logger.warning("job ID: "+uuid+" is health, updateESDocStatus is :"+ str(ret))
                     if not ret:
                         cacheModels( modelHolder,  max_cache)
                         logger.error("ES update failed: job ID: "+uuid)
                 else:
-                    cacheModels( modelHolder,  max_cache)    
-                    ret = updateESDocStatus(es_url_status_update, es_url_status_search, uuid, REQUEST_STATE.PREPROCESS_INPROGRESS.value, "Need to continuous to check untile reachs deployment endTime. ")
+                    cacheModels( modelHolder,  max_cache)
+                    ret = update_es_doc(strategy, status, es_url_status_update, es_url_status_search, uuid,
+                                        REQUEST_STATE.PREPROCESS_INPROGRESS.value,
+                                        "Need to continuous to check untile reachs deployment endTime.")
                     logger.warning("job ID : "+uuid+" health so far will reprocess  updateESDocStatus is :"+ str(ret))
                     
             #measurementMetric.sendMetric(MONITORING_REQUEST_TIME, label_info, calculateDuration(start))
@@ -496,9 +576,13 @@ def main():
             logger.error("uuid : "+ uuid+" failed because ",e )
             try:
                 if isPast(endTime, 5):
-                    updateESDocStatus(es_url_status_update, es_url_status_search, uuid, REQUEST_STATE.PREPROCESS_FAILED.value,"Critical: encount code exception. "+escapeString(''.join(outputMsg)))
+                    update_es_doc(strategy, status, es_url_status_update, es_url_status_search, uuid,
+                                  REQUEST_STATE.PREPROCESS_FAILED.value,
+                                  "Critical: encount code exception. " + escapeString(''.join(outputMsg)))
                 else:
-                    updateESDocStatus(es_url_status_update, es_url_status_search, uuid, REQUEST_STATE.PREPROCESS_COMPLETED.value,"Critical: encount code exception. "+escapeString(''.join(outputMsg)))
+                    update_es_doc(strategy, status, es_url_status_update, es_url_status_search, uuid,
+                                  REQUEST_STATE.PREPROCESS_COMPLETED.value,
+                                  "Critical: encount code exception. " + escapeString(''.join(outputMsg)))
 
             except Exception as ee:
                 logger.error("uuid : "+ uuid+" failed because "+str(ee) )

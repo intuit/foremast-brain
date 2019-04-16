@@ -106,13 +106,18 @@ def selectRequestToProcess(requests):
 
 
 
-def  canRequestProcess(request):
+def canRequestProcess(request):
+    # find requests updated 30 mins ago for hpa and continuous strategy
+    strategy = request['strategy']
+    if strategy in ['hpa', 'continuous']:
+        if rateLimitCheck(request['modified_at'], 30*60):
+            return request
+        return None
+    # for other strategies
     startTime = request['startTime']
     endTime = request['endTime']
     if (canProcess(startTime, endTime)):
         if rateLimitCheck(request['modified_at']):
-            return request
-        else:
             return request
     return None
 

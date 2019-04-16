@@ -136,6 +136,10 @@ def calculateScore( metricInfoDataset, modelHolder, strategy):
     #logical added here
     #let's define score 5 as normal unchanged.
     score = 50
+    # TODO: dynamic handle metric
+    # temporary return for error5xx
+    if metricType == 'error5xx':
+        return score
 
     ltps = len(tps_a)
     zltps = len(tps_zscore)

@@ -4,7 +4,6 @@ from wavefront.metric import parseQueryData
 from prometheus.apis import retrieveMetricName
 from metadata.globalconfig import globalconfig
 from utils.dictutils import convertDictKey
-from asn1crypto._ffi import null
 
 
 metric_domain = "foremast:"
