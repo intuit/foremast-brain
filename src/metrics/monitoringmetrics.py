@@ -24,7 +24,7 @@ def getModelUrl(url,datasource='prometheus', isUpper=None):
     if datasource == 'prometheus':   
         origMetricName = retrieveMetricName(url)
     elif datasource == 'wavefront':
-        origMetricName, others = parseQueryData(url)
+        origMetricName, others = parseQueryData(url, False)
     newMetricName = getModelMetricName(origMetricName,datasource,isUpper)
     return url.replace(origMetricName, newMetricName)
 

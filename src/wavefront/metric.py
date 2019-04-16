@@ -55,7 +55,7 @@ def convertResponseToMetricInfos(result, metricPeriod,  isProphet=False, aresult
 
             except Exception as e:
                 logger.error(e.__cause__)
-    name, kvs = parseQueryData(result.query)  
+    name, kvs = parseQueryData(result.query, False)
     jMetric = kvs
     kvs['name'] = name
     gMetric = kvs
@@ -84,7 +84,7 @@ def parseQueryData(data, isPrometheus=True):
         return "", {}
     data2 = data1[1].split(",")
     #if isPrometheus:
-    if globalConfig.getValueByKey('METRIC_DESTINATION')=='prometheus':    
+    if isPrometheus:
         name = data2[0].replace(".", "_")
     else:
         name = data2[0].replace(":", ".")
@@ -99,7 +99,7 @@ def parseQueryData(data, isPrometheus=True):
             continue
         else:
             #if isPrometheus :
-            if globalConfig.getValueByKey('METRIC_DESTINATION')=='prometheus':
+            if isPrometheus:
                 kvs[kv[0].replace(".", "_")] = kv[1]
             else:
                 kvs[kv[0]] = kv[1]
