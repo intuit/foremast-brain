@@ -12,3 +12,11 @@ def showGraph(name,df):
     plt.xlabel('Time (minutes)')
     plt.ylabel('Metric Value')
     plt.show()
+    
+    
+    
+def showComparsionGraph(df):    
+    df.plot(x='timestamp', y=['prediction', 'actual'], style=['r', 'b'], figsize=(15, 8))
+    plt.xlabel('timestamp', fontsize=12)
+    plt.ylabel('y', fontsize=12)
+    plt.show()
