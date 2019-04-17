@@ -4,6 +4,7 @@ import statsmodels.api as sm
 from statsmodels.tsa.stattools import coint, adfuller
 import pandas
 from pandas import Series
+import numpy as np  
 import sklearn.preprocessing as preprocessing
 
 
@@ -74,3 +75,15 @@ def createMetric(df, y_col, x_cols):
 def createRollingMetric(df, shiftCount=1):
     df_shifted, y_col, x_cols = rollingshift(df, shiftCount)
     return createMetric(df_shifted, y_col, x_cols)
+
+
+
+def mergeResult(actual,y_actual,predicted,scaler,layer=1):
+    size = len (predicted)
+    merged_df = pandas.DataFrame(predicted, columns=['t+'+str(t) for t in range(1, layer+1)])
+    merged_df['timestamp'] = actual[0:size].index
+    merged_df = pandas.melt(merged_df, id_vars='timestamp', value_name='prediction', var_name='h')
+    merged_df['actual'] = np.transpose(y_actual).ravel()
+    merged_df[['prediction', 'actual']] = scaler.inverse_transform( merged_df[['prediction', 'actual']])
+    return  merged_df
+

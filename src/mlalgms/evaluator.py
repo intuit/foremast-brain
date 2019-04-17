@@ -11,7 +11,19 @@ import math
 
 #from sklearn.metrics import accuracy_score
 #accuracy_score(y_test, y_pred)
+# %load -s mape common/utils.py
 
+def mape(actuals,predictions):
+    """Mean absolute percentage error"""
+    length = len(predictions)
+    if (length==0):
+        return 0
+    tot = 0
+    for i in range(length) :
+        if (actuals[i]!=0):
+            tot+=np.abs (predictions[i] - actuals[i])/actuals[i]  
+    ret = tot/length*100
+    return ret
 
 def mean_absolute_percentage_error(y, y_hat): 
     """
@@ -123,15 +135,12 @@ def checkSeasonality(dataframe,beginningDate, lastDate, time_diff_unit=ONE_DAY, 
 def suggestedAlgorithm(dataframe, hasIndex=True):
     stationary = isStationary(dataframe.y)
     #check if it is stable overall
-    if stationary:
-       return 'stationary'
     #first check daily
     beginningDate = getStartTime(dataframe)
     startDate = beginningDate
     lastDate = getLastTime(dataframe) 
     stableCount = 0
     unstableCount = 0
-    print(beginningDate,"    ",lastDate )
     loops = math.ceil((lastDate - beginningDate)/ONE_DAY)
     loopshour = math.ceil((lastDate - beginningDate)/ONE_HOUR)
     for i in range(loops):
@@ -150,16 +159,14 @@ def suggestedAlgorithm(dataframe, hasIndex=True):
             unstableCount +=1
         startDate = endDate 
     if (stableCount > 0):
-        return 'stationary'      
-    print("check seasonality days ",loops)
+        return 'stationary',None    
     ret = checkSeasonality(dataframe,beginningDate, lastDate, time_diff_unit=ONE_DAY, loops = loops)
     if (ret):
-        return "one_day";
-    print("check seasonality hours ",loopshour)
+        return 'seasonality', 'daily';
     ret =checkSeasonality(dataframe,beginningDate,lastDate, time_diff_unit=ONE_HOUR, loops = loopshour)        
     if (ret):
-        return "on_hour"
-    return "unknow"
+        return 'seasonal','hourly'
+    return 'not stationary',''
 
 
 
