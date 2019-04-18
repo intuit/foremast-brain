@@ -275,8 +275,7 @@ def main():
         outputMsg = []
         uuid = openRequest['id']
         status = openRequest['status']
-        #updatedStatus = reserveJob(es_url_status_update, uuid, status)
-        updatedStatus = reserveJob(es_url_status_update,es_url_status_search, uuid,status)
+        updatedStatus = reserveJob(es_url_status_update, es_url_status_search, uuid,status)
 
         logger.warning("Start to processing job id "+uuid+ " original status:"+ status)
 
@@ -337,7 +336,6 @@ def main():
         start = time.time()
         
         #Need to be removed below line due to baseline is enabled at upstream
-        #skipBaseline = True
         skipCurrent = (currentConfig=='')
         
         try:
@@ -345,7 +343,6 @@ def main():
                 ret = update_es_doc(strategy, status, es_url_status_update, es_url_status_search, uuid,
                                     REQUEST_STATE.COMPLETED_UNKNOWN.value, "Error: no current config")
                 logger.warning("request error : jobid  "+uuid+" updateESDocStatus  is :"+ str(ret)+ " current config is empty. make status unknown")
-                #print(getNowStr(), " : jobid  ",uuid, " current config is empty. make status unknown")
                 #measurementmetrics.sendMetric(MONITORING_REQUEST_TIME, label_info, calculateDuration(start))
                 continue
 

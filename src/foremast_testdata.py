@@ -42,7 +42,7 @@ wavefront_request = {
 
 def getTestRequest(metricstore='prometheus'):
   if metricstore=='prometheus':
-      return foremast_request
+      return prometheus_request
   else:
       return wavefront_request
   
