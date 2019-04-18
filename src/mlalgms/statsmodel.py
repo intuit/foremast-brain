@@ -88,73 +88,71 @@ def calculateHistoricalParameters(series):
     return  mean, deviation
 
 
-
-def detectAnomalies(series, mean, deviation, threshold = 2 , bound=IS_UPPER_BOUND, minvalue=0, returnAnomaliesOnly= True): 
-    ts=[]
-    adata=[]
-    anomalies=[]
-    nrow =  series.shape[0]
-    i=0
-    upper = mean + threshold*deviation
-    lower = mean - threshold*deviation
-    zscore=[]
+def detectAnomalies(series, mean, deviation, threshold=2, bound=IS_UPPER_BOUND, minvalue=0, returnAnomaliesOnly=True):
+    ts = []
+    adata = []
+    anomalies = []
+    nrow = series.shape[0]
+    i = 0
+    upper = mean + threshold * deviation
+    lower = mean - threshold * deviation
+    zscore = []
     zscore_upper_diff = []
     zscore_lower_diff = []
     for i in range(nrow):
-        if (deviation !=0):
-            z = (series.iloc[i,0] - mean)/deviation  
+        isAnomaly = False
+        if (deviation != 0):
+            z = (series.iloc[i, 0] - mean) / deviation
         else:
-            z=0 
-        isAnomaly = False     
-        if series.iloc[i,0]>minvalue:
-   
+            z = 0
+        if series.iloc[i, 0] > minvalue:
             if (not returnAnomaliesOnly):
                 ts.append(series.index[i])
-                adata.append(series.iloc[i,0])
-            if bound==IS_UPPER_BOUND:
-                if series.iloc[i,0] > upper:
+                adata.append(series.iloc[i, 0])
+            if bound == IS_UPPER_BOUND:
+                if series.iloc[i, 0] > upper:
                     if returnAnomaliesOnly:
                         ts.append(series.index[i])
-                        adata.append(series.iloc[i,0])
+                        adata.append(series.iloc[i, 0])
                     isAnomaly = True
-                    zscore_upper_diff.append(z-threshold)
+                    zscore_upper_diff.append(z - threshold)
                     zscore_lower_diff.append(0)
-    
-            elif bound==IS_LOWER_BOUND:
-                if series.iloc[i,0] < lower:
+
+            elif bound == IS_LOWER_BOUND:
+                if series.iloc[i, 0] < lower:
                     if returnAnomaliesOnly:
                         ts.append(series.index[i])
-                        adata.append(series.iloc[i,0])  
-                    isAnomaly = True  
+                        adata.append(series.iloc[i, 0])
+                    isAnomaly = True
                     zscore_upper_diff.append(0)
-                    zscore_lower_diff.append(-z+threshold)      
+                    zscore_lower_diff.append(-z + threshold)
             else:
-                if (series.iloc[i,0] > upper   or series.iloc[i,0] < lower):
+                if (series.iloc[i, 0] > upper or series.iloc[i, 0] < lower):
                     if returnAnomaliesOnly:
                         ts.append(series.index[i])
-                        adata.append(series.iloc[i,0])
-                    isAnomaly = True  
-                    if series.iloc[i,0] > upper:
-                        zscore_upper_diff.append(z-threshold)
+                        adata.append(series.iloc[i, 0])
+                    isAnomaly = True
+                    if series.iloc[i, 0] > upper:
+                        zscore_upper_diff.append(z - threshold)
                         zscore_lower_diff.append(0)
-                    if eries.iloc[i,0] < lower :
+                    if series.iloc[i, 0] < lower:
                         zscore_upper_diff.append(0)
-                        zscore_lower_diff.append(-z+threshold) 
-        if returnAnomaliesOnly :
-                if isAnomaly:
-                    anomalies.append(isAnomaly)
-                    zscore.append(z)
-        else:
-                anomalies.append(isAnomaly) 
+                        zscore_lower_diff.append(-z + threshold)
+        if returnAnomaliesOnly:
+            if isAnomaly:
+                anomalies.append(isAnomaly)
                 zscore.append(z)
-                if not isAnomaly:
-                    zscore_upper_diff.append(z-threshold)
-                    zscore_lower_diff.append(-z+threshold)
-                 
-    if returnAnomaliesOnly :
-        return ts,adata,zscore
-    #return  ts,adata,anomalies, zscore
-    return  ts,adata,anomalies,zscore
+        else:
+            anomalies.append(isAnomaly)
+            zscore.append(z)
+            if not isAnomaly:
+                zscore_upper_diff.append(z - threshold)
+                zscore_lower_diff.append(-z + threshold)
+
+    if returnAnomaliesOnly:
+        return ts, adata, zscore
+    # return  ts,adata,anomalies, zscore
+    return ts, adata, anomalies, zscore
 
 
 

@@ -76,6 +76,8 @@ def executeQuery( query, start_time, query_granularity, end_time):
 
 def sendMetric(metricName, tags, value,  timestamp=0,source=None):
     flushFrequency = globalConfig.getValueByKey("FLUSH_FREQUENCY")
+    if flushFrequency is None:
+        flushFrequency =5
     ts = timestamp
     if timestamp==0:
         ts = getNowInSeconds()
@@ -115,6 +117,11 @@ def sendDeltaCounter(metricName, tags, value, source=None):
 def flushNow():
     sendClient.flush_now()
 
+
+#def sendMetric():
+
+
+#def sendMetrics():
 
 
 ##############

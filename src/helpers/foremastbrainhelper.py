@@ -54,7 +54,7 @@ def queryData(metricUrl, period, isProphet = False, datasource='prometheus'):
                     djson = json.loads(respStr)
                     if period == METRIC_PERIOD.HISTORICAL.value and (modeDropAnomaly is not None and modeDropAnomaly=='y'):
                         try:
-                            modelUrl = getModelUrl(metricUrl)
+                            modelUrl = getModelUrl(metricUrl, datasource)
                             respStr = dorequest(modelUrl)
                             ajson = json.loads(respStr)
                         except Exception as e1:
@@ -65,11 +65,11 @@ def queryData(metricUrl, period, isProphet = False, datasource='prometheus'):
                     if len(datalist)<4:
                         logger.error("missing wavefront query parameters : " +metricUrl)
                         return []
-                    qresult  = executeQuery(datalist[0],datalist[1],datalist[2],datalist[3])
+                    qresult  = executeQuery(datalist[0], datalist[1], datalist[2], datalist[3])
                     if period == METRIC_PERIOD.HISTORICAL.value and (modeDropAnomaly is not None and modeDropAnomaly=='y'):
                         #amonaly result 
                         try:
-                            aresult = executeQuery(getModelUrl(dequote(datalist[0]),datasource) ,datalist[1],datalist[2],datalist[3])
+                            aresult = executeQuery(getModelUrl(dequote(datalist[0]), datasource), datalist[1], datalist[2], datalist[3])
                             return convertResponseToMetricInfos(qresult, period, isProphet,aresult) 
                         except Exception as e1:
                             logger.error(e1.__cause__)
@@ -106,13 +106,18 @@ def selectRequestToProcess(requests):
 
 
 
-def  canRequestProcess(request):
+def canRequestProcess(request):
+    # find requests updated 30 mins ago for hpa and continuous strategy
+    strategy = request['strategy']
+    if strategy in ['hpa', 'continuous']:
+        if rateLimitCheck(request['modified_at'], 30*60):
+            return request
+        return None
+    # for other strategies
     startTime = request['startTime']
     endTime = request['endTime']
     if (canProcess(startTime, endTime)):
         if rateLimitCheck(request['modified_at']):
-            return request
-        else:
             return request
     return None
 

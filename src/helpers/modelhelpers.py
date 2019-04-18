@@ -136,6 +136,10 @@ def calculateScore( metricInfoDataset, modelHolder, strategy):
     #logical added here
     #let's define score 5 as normal unchanged.
     score = 50
+    # TODO: dynamic handle metric
+    # temporary return for error5xx
+    if metricType == 'error5xx':
+        return score
 
     ltps = len(tps_a)
     zltps = len(tps_zscore)
@@ -191,7 +195,7 @@ def detectAnomalyData(metricInfo,  modelHolder, metricType, strategy):
 def triggerModelMetric(metricInfo, lower, upper):
     logger.warning("## emit upper and lower "+metricInfo.metricName+" ->" +str(metricInfo.metricKeys)+" ("+str(lower)+","+str(upper)+")")
     try:
-        modelMetric.sendMetric(metricInfo.metricName, metricInfo.metricKeys, upper)
+        modelMetric.sendMetric(metricInfo.metricName, metricInfo.metricKeys, upper, True)
     except Exception as e:
         logger.error('triggerModelMetric upper_bound '+metricInfo.metricName+' failed ',e )
     try:

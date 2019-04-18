@@ -4,7 +4,6 @@ from wavefront.metric import parseQueryData
 from prometheus.apis import retrieveMetricName
 from metadata.globalconfig import globalconfig
 from utils.dictutils import convertDictKey
-from asn1crypto._ffi import null
 
 
 metric_domain = "foremast:"
@@ -25,7 +24,7 @@ def getModelUrl(url,datasource='prometheus', isUpper=None):
     if datasource == 'prometheus':   
         origMetricName = retrieveMetricName(url)
     elif datasource == 'wavefront':
-        origMetricName, others = parseQueryData(url)
+        origMetricName, others = parseQueryData(url, False)
     newMetricName = getModelMetricName(origMetricName,datasource,isUpper)
     return url.replace(origMetricName, newMetricName)
 

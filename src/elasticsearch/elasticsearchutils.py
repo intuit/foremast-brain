@@ -2,6 +2,7 @@ import requests
 import json
 from datetime import datetime, timezone
 import logging
+from retrying import retry
 
 
 
@@ -146,7 +147,14 @@ payload_search_status_list3 =  {
 headers = {'Content-Type': 'application/json'}
 
 
-
+# execute ES query with retry
+@retry(wait_exponential_multiplier=1000, wait_exponential_max=10000, stop_max_attempt_number=RETRY_COUNT)
+def execute(url, query):
+    resp = requests.post(url, query, headers=headers, timeout=10)
+    if resp.status_code == 200:
+        return resp.text
+    logger.error('Error: failed to execute query {}'.format(query))
+    raise Exception("Retry ES query")
 
 
 def buildElasticSearchUrl(endpoint, indexname, isSearch=True):
