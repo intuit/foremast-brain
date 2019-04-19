@@ -1,6 +1,21 @@
 import pandas
-
+import numpy as np
 from utils.converterutils import addHeader
+import datetime as dt
+from dateutil.parser import parse
+
+
+
+def getDataFrame(dataframe, needDisplay=False):
+  idx = dataframe.timestamp.values
+  y = dataframe.y.values
+  df = addHeader (idx,y)
+  if (needDisplay):
+    dtime = [dt.datetime.fromtimestamp(int(x)).strftime('%Y-%m-%d %H:%M:%S') for x in idx ]
+    dtime1 = [parse(d) for d in dtime]
+    df_display =addHeader (dtime1, y)
+    return df, df_display
+  return df, None
 
 
 def mergeDF(left, right):   

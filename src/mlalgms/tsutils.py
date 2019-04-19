@@ -1,15 +1,9 @@
 from sklearn.preprocessing import MinMaxScaler
-import statsmodels
-import statsmodels.api as sm
 from statsmodels.tsa.stattools import coint, adfuller
 import pandas
 from pandas import Series
 import numpy as np  
 import sklearn.preprocessing as preprocessing
-
-
-
-
 
 # Encode the categorical features as numbers
 def cn_encode_features(df):
@@ -19,11 +13,7 @@ def cn_encode_features(df):
         if clonedDf.dtypes[column] == np.object:
             encoders[column] = preprocessing.LabelEncoder()
             clonedDf[column] = encoders[column].fit_transform(clonedDf[column])
-    return clonedDf
-
-
-
-    
+    return clonedDf    
 
 def isStationary(ts, threshold = 0.01):
   try:
@@ -48,6 +38,7 @@ def getScaler():
 def inverseScaler(df, scaler,colList):
     return scaler.inverse_transform(df[colList])
 
+T= 5
 
 def rollingshift(df, shiftCount=1):
     df_shifted = df.copy()
@@ -86,4 +77,3 @@ def mergeResult(actual,y_actual,predicted,scaler,layer=1):
     merged_df['actual'] = np.transpose(y_actual).ravel()
     merged_df[['prediction', 'actual']] = scaler.inverse_transform( merged_df[['prediction', 'actual']])
     return  merged_df
-

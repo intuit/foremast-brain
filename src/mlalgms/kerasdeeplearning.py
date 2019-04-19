@@ -1,9 +1,7 @@
-import math
 from keras.models import Sequential
 from keras.layers import Dense
 from keras.layers import LSTM,GRU
 from keras.callbacks import EarlyStopping
-from sklearn.preprocessing import MinMaxScaler
 from sklearn.metrics import mean_squared_error
 import warnings
 warnings.filterwarnings("ignore")
