@@ -14,7 +14,7 @@ class SingleMetricInfo(MetricInfo):
         self.metricTCategory =  metricTCategory
         self.metricClass = metricClass
     def copyConfig(self):
-        return SingleMetricInfo(metricName, metricKeys,{},None, metricCategory,metricClass)
+        return SingleMetricInfo(self.metricName, self.metricKeys,{},None,self.metricCategory, self.metricClass)
 
 
     
@@ -31,7 +31,7 @@ class MultiTypeMetricInfo(MetricInfo):
         self.metricClass = metricClass
 
     def copyConfig(self):
-        return MultiTypeMetricInfo(metricNameList, metricKeys,{}, None, metricTCategorylist, metricClass)
+        return MultiTypeMetricInfo(self.metricNameList, self.metricKeys,{}, None, self.metricTCategorylist, self.metricClass)
 
     
 class MultiKeyMetricInfo(MetricInfo):
@@ -43,4 +43,4 @@ class MultiKeyMetricInfo(MetricInfo):
         self.metricTCategorylist =  metricTCategorylist
         self.metricClass = metricClass
     def copyConfig(self):
-        return MultiKeyMetricInfo (metricName, metricKeyslist, {}, null, metricTCategorylist, metricClass )
+        return MultiKeyMetricInfo (self.metricName, self.metricKeyslist, {}, None, self.metricTCategorylist, self.metricClass )
