@@ -166,7 +166,7 @@ def saveReason(jobId, logTime, logContent):
     #TODO:
     return True
     
-def saveModel(jobIdd, modelParameters={}, modelData={}):  
+def saveModel(jobId, modelParameters={}, modelData={}):  
     #TODO: new elastic search index with model parameter and model data column, 
     #Please add both model_parameter change timestampe and model data timestamp 
     return True
