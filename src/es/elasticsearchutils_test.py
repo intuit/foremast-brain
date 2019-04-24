@@ -17,6 +17,7 @@ def resource_es(request):
     es.es.indices.refresh('test_index')
     es.es.indices.refresh('hpalogs_test')
     es.es.indices.refresh('model_test')
+
     def resource_teardown():
         es.es.indices.delete("test_index")
         es.es.indices.delete("hpalogs_test")
@@ -119,6 +120,7 @@ def test_save_model(resource_es):
     cnt, list = resource_es.parse_result(res)
     assert cnt == 1
     assert list[0]['model_parameters']['parameter1'] == "val19"
+
 
 def test_get_model(resource_es):
     resource_es.save_model('application:namespace:stragegy', model_parameters={"parameter": "param01"},

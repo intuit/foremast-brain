@@ -70,6 +70,7 @@ payload_search_status_with_filter = Template('''{
     }]
 }''')
 
+
 class ESClient:
     def __init__(self):
         """Initial to create necessary indexes, ignore if exist"""
@@ -174,7 +175,8 @@ class ESClient:
         """
         try:
             body = {'job_id': jobid, 'hpalog': log_content, 'log_time': log_time}
-            res = self.es.search(index_name, doc_type, body=payload_query_by_job_id.substitute(jobid=jobid, order='asc'))
+            res = self.es.search(index_name, doc_type,
+                                 body=payload_query_by_job_id.substitute(jobid=jobid, order='asc'))
             cnt, _ = self.parse_result(res)
             if cnt >= LOG_DOC_COUNT:
                 # update the oldest doc
@@ -190,7 +192,8 @@ class ESClient:
             logger.exception('Exception when save hpa logs {}'.format(jobid))
             return False
 
-    def save_model(self, jobid, model_parameters={}, model_data={}, model_config={}, index_name=MODEL_INDEX_NAME, doc_type=INDEX_TYPE):
+    def save_model(self, jobid, model_parameters={}, model_data={}, model_config={}, index_name=MODEL_INDEX_NAME,
+                   doc_type=INDEX_TYPE):
         """
         Store model that can share with other components
         :param jobid: application name:namespace:strategy for HPA, uuid for other strategy
@@ -211,7 +214,8 @@ class ESClient:
             if model_config:
                 model_config['modified_at'] = self.__get_now()
                 body['model_config'] = model_config
-            res = self.es.search(index_name, doc_type, body=payload_query_by_job_id.substitute(jobid=jobid, order='desc'))
+            res = self.es.search(index_name, doc_type,
+                                 body=payload_query_by_job_id.substitute(jobid=jobid, order='desc'))
             cnt, _ = self.parse_result(res)
             if cnt > 0:
                 # update the doc
@@ -276,7 +280,8 @@ class ESClient:
         :return:
         """
         try:
-            res = self.es.search(index_name, doc_type, body=payload_query_by_job_id.substitute(jobid=jobid, order='desc'))
+            res = self.es.search(index_name, doc_type,
+                                 body=payload_query_by_job_id.substitute(jobid=jobid, order='desc'))
             cnt, list = self.parse_result(res)
             if cnt > 0 and key in list[0]:
                 return list[0][key]
