@@ -3,25 +3,31 @@ import numpy as np
 from utils.converterutils import addHeader
 import datetime as dt
 from dateutil.parser import parse
+from datetime import datetime
 
+
+def convertToProphetDF(dataframe):
+    idx = dataframe.index.get_values()
+    p_utc = [datetime.utcfromtimestamp(int(d)) for d in idx]
+    df_prophet = addHeader (idx, dataframe.y.values, p_utc,False)
+    return df_prophet
 
 
 def getDataFrame(dataframe, needDisplay=False):
-  idx = dataframe.timestamp.values
-  y = dataframe.y.values
-  df = addHeader (idx,y)
-  if (needDisplay):
-    dtime = [dt.datetime.fromtimestamp(int(x)).strftime('%Y-%m-%d %H:%M:%S') for x in idx ]
-    dtime1 = [parse(d) for d in dtime]
-    df_display =addHeader (dtime1, y)
-    return df, df_display
-  return df, None
+    idx = dataframe.timestamp.values
+    y = dataframe.y.values
+    df = addHeader (idx,y)
+    if (needDisplay):
+        dtime = [dt.datetime.fromtimestamp(int(x)).strftime('%Y-%m-%d %H:%M:%S') for x in idx ]
+        dtime1 = [parse(d) for d in dtime]
+        df_display =addHeader (dtime1, y)
+        return df, df_display
+    return df, None
 
 
 def mergeDF(left, right):   
     return pandas.merge(left, right,how='outer', on='ds') 
-        
-        
+               
         
 def mergeColumnmap(leftColumnmap, rightColumnmap, mergedColumnlist):  
     columnmap={}

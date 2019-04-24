@@ -1,6 +1,6 @@
 from fbprophet import Prophet
 from mlalgms.statsmodel import IS_UPPER_BOUND,IS_LOWER_BOUND
-import logging
+#import logging
 import numpy as np
 
 PROPHET_PERIOD = 'period'
@@ -10,7 +10,7 @@ DEFAULT_PROPHET_FREQ  ='T'
   
 
 
-def predictProphet(timeseries, period=1 ,frequence ='T', seasonality_name='', pscale=0.1, columnPosition=0, interval_width=0.97 ):
+def predictProphet(timeseries, period=1 ,frequence ='T', seasonality_name='', pscale=0.1, columnPosition=0, interval_width=0.8 ):
     prophet = Prophet()
     if seasonality_name=='daily':
         prophet = Prophet(daily_seasonality=True,interval_width=interval_width)
@@ -33,13 +33,13 @@ def predictProphet(timeseries, period=1 ,frequence ='T', seasonality_name='', ps
     
 
 
-def prophetPredictUpperLower(timeseries, period=1,frequence ='T', zscore = 2,seasonality_name='',prior_scale=0.1, columnPosition=0, interval_width=0.97):
+def prophetPredictUpperLower(timeseries, period=1,frequence ='T', zscore = 2,seasonality_name='',prior_scale=0.1, columnPosition=0, interval_width=0.8):
     df = timeseries.copy()
     df.dropna()
     orig_len = len(timeseries)
     fc = predictProphet(df, period, frequence,seasonality_name, prior_scale,columnPosition,interval_width=interval_width)
-    print(fc)
-    after_len = len(fc)
+    #print(fc)
+    #after_len = len(fc)
     #print(orig_len ,'  ', after_len)
     if seasonality_name=='':  
         mean = fc[orig_len:].yhat_lower.mean()
@@ -88,11 +88,9 @@ def detectAnomalies(df , bound=IS_UPPER_BOUND, returnAnomaliesOnly= True):
 
 
 
-		
 def merge_dataframe(historical, forecast):
-	return forecast.set_index('ds')[['yhat', 'yhat_lower', 'yhat_upper']].join(historical.set_index('ds'))
-		
-		
+    return forecast.set_index('ds')[['yhat', 'yhat_lower', 'yhat_upper']].join(historical.set_index('ds'))
+
 def calculate_errors(dataframe, prediction_size):    
     # Make a copy
     df = dataframe.copy();
