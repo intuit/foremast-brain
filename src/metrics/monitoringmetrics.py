@@ -66,7 +66,7 @@ class modelmetrics:
             self.instance.metrics[metricNameUpper] = Gauge(metricNameUpper, metricNameUpper+" model upper bound",  
                                                   labelnames=newlabeldata.keys())
         if not (metricNameLower in self.instance.metrics ):
-            self.instance.metrics[metricNameLower] = Gauge(metricNameLower, metricNameLower+" model upper bound", 
+            self.instance.metrics[metricNameLower] = Gauge(metricNameLower, metricNameLower+" model lower bound",
                                                    labelnames=newlabeldata.keys())                                     
                                                    
     def sendMetric(self,metricname, labeldata, value, isUpper = True, time=0):

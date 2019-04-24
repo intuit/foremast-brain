@@ -5,7 +5,7 @@ import time
 from scipy.stats import mannwhitneyu, wilcoxon,kruskal,friedmanchisquare
 
 from utils.timeutils import  canProcess, rateLimitCheck
-from elasticsearch.elasticsearchutils import updateDocStatus, searchByID , parseResult,RETRY_COUNT
+from es.elasticsearchutils import ESClient
 from metadata.metadata import REQUEST_STATE, METRIC_PERIOD, MIN_DATA_POINTS
 from prometheus.metric import convertPromesResponseToMetricInfos,urlEndNow
 from wavefront.metric import convertResponseToMetricInfos,parseQueryData
@@ -29,7 +29,8 @@ logging.basicConfig(format='%(asctime)s %(message)s')
 logger = logging.getLogger('foremastbrainhelper')
 #global config
 config=  globalconfig()
-
+es = ESClient()
+RETRY_COUNT = 2
 
 
 ########################################################
@@ -122,33 +123,11 @@ def canRequestProcess(request):
     return None
 
 
-def retrieveRequestById(es_url_status_search, id):
-    resp = searchByID(es_url_status_search, id)
-    openRequestlist=parseResult(resp)
-
-    if (len(openRequestlist) > 0):
-        return  openRequestlist[0]
+def retrieveRequestById(id):
+    resp = es.search_by_id(id)
+    if resp:
+        return resp['_source']
     return None
-
-#############################################
-# Name : preprocess
-#        update preprocess request status
-# Parameters:
-# url_update -- elasticsearch updarte url
-# uuid --- requst uuid
-def preprocess(url_update, uuid):
-     return updateDocStatus(url_update, uuid, REQUEST_STATE.PREPROCESS.value)
-
-
-
-#############################################
-# Name : postprocess
-#        update post process request status
-# Parameters:
-# url_update -- elasticsearch updarte url
-# uuid --- requst uuid
-def postprocess (url_update, uuid):
-     return updateDocStatus(url_update, uuid, REQUEST_STATE.POSTPROCESS.value)
 
 
 #############################################
@@ -161,22 +140,22 @@ def postprocess (url_update, uuid):
 # statues --- status in elasticsearch
 # return status for reservation
 
-def reserveJob(url_update, url_search, uuid, status):
+def reserveJob(uuid, status):
     for i in range(RETRY_COUNT):
         if status == REQUEST_STATE.INITIAL.value :
             updatedStatus = REQUEST_STATE.PREPROCESS_INPROGRESS.value
-            updateDocStatus(url_update, uuid, updatedStatus)
+            es.update_doc_status(uuid, updatedStatus)
         elif status == REQUEST_STATE.PREPROCESS_COMPLETED.value:
             updatedStatus = REQUEST_STATE.PREPROCESS_INPROGRESS.value
-            updateDocStatus(url_update, uuid, updatedStatus)
+            es.update_doc_status(uuid, updatedStatus)
         elif status == REQUEST_STATE.PREPROCESS_INPROGRESS.value:
             updatedStatus = REQUEST_STATE.PREPROCESS_INPROGRESS.value
-            updateDocStatus(url_update, uuid, updatedStatus)
+            es.update_doc_status(uuid, updatedStatus)
         else:
             #leave this for test
             updatedStatus = status
-            updateDocStatus(url_update, uuid, updatedStatus)
-        openRequest = retrieveRequestById(url_search, uuid)
+            es.update_doc_status(uuid, updatedStatus)
+        openRequest = retrieveRequestById(uuid)
         if openRequest == None:
             logger.error("failed to find uuid "+uuid)
             continue
@@ -191,11 +170,11 @@ def reserveJob(url_update, url_search, uuid, status):
 
 
 
-def updateESDocStatus(url_update, url_search, uuid, status, info='', reason=''):
+def updateESDocStatus(uuid, status, info='', reason=''):
     for i in range(RETRY_COUNT):
-        updateDocStatus(url_update, uuid, status, info, reason)
+        es.update_doc_status(uuid, status, info, reason)
         #leave this for test
-        openRequest = retrieveRequestById(url_search, uuid)
+        openRequest = retrieveRequestById(uuid)
         if openRequest != None:
             new_status = openRequest['status']
             if new_status == status:
@@ -205,8 +184,8 @@ def updateESDocStatus(url_update, url_search, uuid, status, info='', reason=''):
         continue
     #one more last try
     for i in range(RETRY_COUNT):
-        updateDocStatus(url_update, uuid, status)
-        openRequest = retrieveRequestById(url_search, uuid)
+        es.update_doc_status(uuid, status)
+        openRequest = retrieveRequestById(uuid)
         if openRequest != None:
             new_status = openRequest['status']
             if new_status == status:
