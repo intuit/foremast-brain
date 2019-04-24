@@ -1,6 +1,5 @@
-import pandas as pd
 from fbprophet import Prophet
-from mlalgms.statsmodel import IS_UPPER_BOUND
+from mlalgms.statsmodel import IS_UPPER_BOUND,IS_LOWER_BOUND
 import logging
 import numpy as np
 
@@ -46,7 +45,7 @@ def prophetPredictUpperLower(timeseries, period=1,frequence ='T', zscore = 2,sea
         mean = fc[orig_len:].yhat_lower.mean()
         std = fc[orig_len:].yhat_lower.std()
         return mean-zscore*std, mean+zscore*std
-    return fc[['ds','yhat_lower','yhat_upper']][orig_len:]
+    return fc[['ds','yhat_lower','yhat_upper','yhat']][orig_len:]
 
 
 def detectAnomalies(df , bound=IS_UPPER_BOUND, returnAnomaliesOnly= True):
@@ -56,33 +55,33 @@ def detectAnomalies(df , bound=IS_UPPER_BOUND, returnAnomaliesOnly= True):
     myshape = df.shape
     nrow = myshape[0]
     for i in range(nrow):  
-         isAnomaly = False
-         if (not returnAnomaliesOnly):
+        isAnomaly = False
+        if (not returnAnomaliesOnly):
             ts.append(df['ds'][i])
             adata.append(df['y'][i])
-         if bound==IS_UPPER_BOUND:
+        if bound==IS_UPPER_BOUND:
             if df['y'][i] > df['yhat_upper'][i]:
                 if returnAnomaliesOnly:
                     ts.append(df['ds'][i])
                     adata.append(df['y'][i])
                 isAnomaly = True
-         elif bound==IS_LOWER_BOUND:
+        elif bound==IS_LOWER_BOUND:
             if df['y'][i] < df['yhat_lower'][i]:
                 if returnAnomaliesOnly:
                     ts.append(df['ds'][i])
                     adata.append(df['y'][i])
                 isAnomaly = True            
-         else:   
+        else:   
             if df['y'][i] > df['yhat_upper'][i] or df['y'][i] < df['yhat_lower'][i]:
                 if returnAnomaliesOnly:
                     ts.append(df['ds'][i])
                     adata.append(df['y'][i])
                 isAnomaly = True
                     
-         if returnAnomaliesOnly:
+        if returnAnomaliesOnly:
             if isAnomaly:
                 anomalies.append(True)
-         else:
+        else:
             anomalies.append(isAnomaly)             
     #return  mae, deviation,addHeader(ts,adata)
     return  ts,adata, anomalies
@@ -112,12 +111,4 @@ def calculate_errors(dataframe, prediction_size):
     error_mean = lambda error_name: np.mean(np.abs(predicted_part[error_name]))
     
     return {'MAPE': error_mean('p'), 'MAE': error_mean('e')}
-		
-	
-	
-	
-	
-	
-	
-	
-	
+
