@@ -11,9 +11,9 @@ class globalconfig:
             globalconfig.instance = globalconfig.__globalconfig()
     def setKV(self, key, value):
         self.instance.configs[key] = value
-    def getValueByKey(self,key):
+    def getValueByKey(self,key, defaultValue = None):
         if not ( key in self.instance.configs.keys()):
-            return None
+            return defaultValue
         return self.instance.configs[key]
     def getKVs(self):
         return self.instance.configs
