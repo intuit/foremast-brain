@@ -33,14 +33,14 @@ def isStationary(ts, threshold = 0.01):
       return False
     
 def getScaler():
-    return MinMaxScaler()
+    return MinMaxScaler(feature_range=(0, 1))
 
 def inverseScaler(df, scaler,colList):
     return scaler.inverse_transform(df[colList])
 
-T= 5
 
-def rollingshift(df, shiftCount=1):
+
+def rollingshift(df, shiftCount=1, T=6):
     df_shifted = df.copy()
     df_shifted['y_t+1'] = df_shifted['y'].shift(-1, freq='H')
     x_cols = []
@@ -56,7 +56,7 @@ def rollingshift(df, shiftCount=1):
     return df_shifted, y_col, x_cols
 
 
-def createMetric(df, y_col, x_cols):
+def createMetric(df, y_col, x_cols, T=6):
     y_train = df[y_col].as_matrix()
     X_train = df[x_cols].as_matrix()
     X_train = X_train.reshape(X_train.shape[0], T, 1)
@@ -67,13 +67,18 @@ def createRollingMetric(df, shiftCount=1):
     df_shifted, y_col, x_cols = rollingshift(df, shiftCount)
     return createMetric(df_shifted, y_col, x_cols)
 
-
-
-def mergeResult(actual,y_actual,predicted,scaler,layer=1):
+########################################################
+#    Name :  mergeResult
+#    input : 
+#        actual --actual dataframe
+#        y_actual -- actual value
+#        predicted --- predicted result
+#    output:  merged result with actual and predicted    
+########################################################
+def mergeResult(actual,y_actual,predicted,layer=1):
     size = len (predicted)
     merged_df = pandas.DataFrame(predicted, columns=['t+'+str(t) for t in range(1, layer+1)])
     merged_df['timestamp'] = actual[0:size].index
     merged_df = pandas.melt(merged_df, id_vars='timestamp', value_name='prediction', var_name='h')
     merged_df['actual'] = np.transpose(y_actual).ravel()
-    merged_df[['prediction', 'actual']] = scaler.inverse_transform( merged_df[['prediction', 'actual']])
-    return  merged_df
+    return merged_df

@@ -136,8 +136,8 @@ def retrieveRequestById(es_url_status_search, id):
 # Parameters:
 # url_update -- elasticsearch updarte url
 # uuid --- requst uuid
-def preprocess(url_update, uuid):
-     return updateDocStatus(url_update, uuid, REQUEST_STATE.PREPROCESS.value)
+#def preprocess(url_update, uuid):
+#     return updateDocStatus(url_update, uuid, REQUEST_STATE.PREPROCESS.value)
 
 
 
@@ -256,7 +256,7 @@ def computeHistoricalModel(historicalConfigMap, modelHolder, isProphet = False, 
     for metricType, metricUrl in historicalConfigMap.items():
         metricStore = 'prometheus'
         if historicalMetricStores is not None:
-           metricStore = historicalMetricStores[metricType]
+            metricStore = historicalMetricStores[metricType]
         metricInfolist = queryData(metricUrl, METRIC_PERIOD.HISTORICAL.value, isProphet, metricStore);
         if(len(metricInfolist)==0):
             continue

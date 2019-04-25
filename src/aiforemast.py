@@ -31,7 +31,7 @@ from helpers.foremastbrainhelper import pairWiseComparson, computeAnomaly,retrie
 from mlalgms.pairwisemodel import MANN_WHITE,WILCOXON,KRUSKAL,FRIED_MANCHI_SQUARE,ALL,ANY,DEFAULT_PAIRWISE_THRESHOLD
 from mlalgms.statsmodel import IS_UPPER_BOUND, IS_UPPER_O_LOWER_BOUND, IS_LOWER_BOUND
 
-from mlalgms.fbprophet import PROPHET_PERIOD, PROPHET_FREQ, DEFAULT_PROPHET_PERIOD, DEFAULT_PROPHET_FREQ
+from mlalgms.fbprophetalgm import PROPHET_PERIOD, PROPHET_FREQ, DEFAULT_PROPHET_PERIOD, DEFAULT_PROPHET_FREQ
 
 from mlalgms.pairwisemodel import MANN_WHITE_MIN_DATA_POINT,WILCOXON_MIN_DATA_POINTS,KRUSKAL_MIN_DATA_POINTS 
 
@@ -65,7 +65,7 @@ jobs=[]
             
 config =  globalconfig()
 
-def cacheModels(modelHolder, max_cache_size = MAX_CACHE_SIZE):
+def cacheModels(modelHolder):
     #if not enableCache:
     #    return
     if(len(jobs)== MAX_CACHE_SIZE):
