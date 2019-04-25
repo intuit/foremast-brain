@@ -77,7 +77,7 @@ def checkSeasonality(dataframe,beginningDate, lastDate, time_diff_unit=ONE_DAY, 
         return False
        
     
-def suggestedPattern(dataframe):
+def suggestedPattern(dataframe, ignoreHourly=False):
     #stationary = isStationary(dataframe.y)
     #check if it is stable overall
     #first check daily
@@ -105,11 +105,12 @@ def suggestedPattern(dataframe):
         startDate = endDate 
     if (stableCount > 0):
         return 'stationary',None  
-    ret =checkSeasonality(dataframe,beginningDate,lastDate, time_diff_unit=ONE_HOUR, loops = loopshour) 
-    if (ret):
-        ret = checkPattern(dataframe,beginningDate,lastDate, time_diff_unit=ONE_HOUR, loops = loopshour)
-        if ret:
-            return 'seasonal','hourly'  
+    if ignoreHourly:
+        ret =checkSeasonality(dataframe,beginningDate,lastDate, time_diff_unit=ONE_HOUR, loops = loopshour) 
+        if (ret):
+            ret = checkPattern(dataframe,beginningDate,lastDate, time_diff_unit=ONE_HOUR, loops = loopshour)
+            if ret:
+                return 'seasonal','hourly'  
     ret = checkSeasonality(dataframe,beginningDate, lastDate, time_diff_unit=ONE_DAY, loops = loops)
     if (ret):
         ret = checkPattern(dataframe,beginningDate,lastDate, time_diff_unit=ONE_DAY, loops = loops)

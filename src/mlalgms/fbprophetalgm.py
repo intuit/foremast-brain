@@ -33,7 +33,7 @@ def predictProphet(timeseries, period=1 ,frequence ='T', seasonality_name='', ps
     
 
 
-def prophetPredictUpperLower(timeseries, period=1,frequence ='T', zscore = 2,seasonality_name='',prior_scale=0.1, columnPosition=0, interval_width=0.8):
+def prophetPredictUpperLower(timeseries, period=1,frequence ='T', zscore = 2,seasonality_name='',prior_scale=0.1, columnPosition=0, interval_width=0.8, needyhat=False):
     df = timeseries.copy()
     df.dropna()
     orig_len = len(timeseries)
@@ -45,7 +45,9 @@ def prophetPredictUpperLower(timeseries, period=1,frequence ='T', zscore = 2,sea
         mean = fc[orig_len:].yhat_lower.mean()
         std = fc[orig_len:].yhat_lower.std()
         return mean-zscore*std, mean+zscore*std
-    return fc[['ds','yhat_lower','yhat_upper','yhat']][orig_len:]
+    if needyhat :       
+        return fc[['ds','yhat_lower','yhat_upper','yhat']][orig_len:]
+    return fc[['ds','yhat_lower','yhat_upper']][orig_len:]
 
 
 def detectAnomalies(df , bound=IS_UPPER_BOUND, returnAnomaliesOnly= True):
