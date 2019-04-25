@@ -9,6 +9,7 @@ from mlalgms.statsmodel import detectAnomalies,detectLowerUpperAnomalies,calcula
 from mlalgms.statsmodel import detectDoubleExponentialSmoothingAnomalies,retrieveHW_Anomalies,detectBivariateAnomalies
 from mlalgms.fbprophet import prophetPredictUpperLower,PROPHET_PERIOD, PROPHET_FREQ,DEFAULT_PROPHET_PERIOD, DEFAULT_PROPHET_FREQ
 from metrics.monitoringmetrics import modelmetrics, anomalymetrics, hpascoremetrics
+from metrics.metricclass import SingleMetricInfo
 from utils.timeutils import getNowStr
 from metadata.globalconfig import globalconfig
 
@@ -43,10 +44,10 @@ hpascoremetrics = hpascoremetrics()
 
 
 def calculateModel(metricInfo, modelHolder, metricType,strategy=None):
-   if metricInfo.metricClass=='SingleMetricInfo' or  isinstance(metricInfo, SingleMetricInfo):
-       return calculateSingleMetricModel(metricInfo, modelHolder, metricType,strategy)
-   else:
-       pass
+    if metricInfo.metricClass=='SingleMetricInfo' or  isinstance(metricInfo, SingleMetricInfo):
+        return calculateSingleMetricModel(metricInfo, modelHolder, metricType,strategy)
+    else:
+        pass
 
 def calculateModels(metricInfos, modelHolder, metricTypes, strategy=None):
     tpstag = 0
