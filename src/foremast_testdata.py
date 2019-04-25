@@ -100,7 +100,7 @@ def getTestRequest(metricstore='prometheus', strategy = "continuous"):
       if strategy == "continuous":
           return wavefront_request
       else:
-          wavefront_request_hpa
+          return wavefront_request_hpa
   
   
   
