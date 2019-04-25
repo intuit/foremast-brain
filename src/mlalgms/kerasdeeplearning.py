@@ -1,9 +1,7 @@
-import math
 from keras.models import Sequential
 from keras.layers import Dense
 from keras.layers import LSTM,GRU
 from keras.callbacks import EarlyStopping
-from sklearn.preprocessing import MinMaxScaler
 from sklearn.metrics import mean_squared_error
 import warnings
 warnings.filterwarnings("ignore")
@@ -61,4 +59,8 @@ def compileModel(model, X_df, y_df, batchSize=BATCH_SIZE,
 
 def predictModel(model, X_df):
     return model.predict(X_df)
+
+
+
+
     

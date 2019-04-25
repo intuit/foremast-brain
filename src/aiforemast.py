@@ -1,23 +1,15 @@
-import time
 import logging
 import os
-import time
-from concurrent import futures
-from concurrent.futures import ProcessPoolExecutor
-
-from prometheus_client import start_http_server
 
 from es.elasticsearchutils import ESClient
-from helpers.foremastbrainhelper import computeNonHistoricalModel, computeHistoricalModel, isCompletedStatus, \
-    updateESDocStatus
-from helpers.foremastbrainhelper import pairWiseComparson, computeAnomaly, retrieveRequestById
-from helpers.foremastbrainhelper import selectRequestToProcess, canRequestProcess, reserveJob
+
+from helpers.foremastbrainhelper import selectRequestToProcess, canRequestProcess
 from metadata.globalconfig import globalconfig
 from metadata.metadata import DEFAULT_THRESHOLD, DEFAULT_LOWER_THRESHOLD, PAIRWISE_ALGORITHM, PAIRWISE_THRESHOLD, \
     DEFAULT_MIN_LOWER_BOUND
 from metadata.metadata import REQUEST_STATE, AI_MODEL, METRIC_PERIOD, MIN_DATA_POINTS
 from metadata.metadata import THRESHOLD, LOWER_THRESHOLD, BOUND, MIN_LOWER_BOUND
-from mlalgms.fbprophet import PROPHET_PERIOD, PROPHET_FREQ, DEFAULT_PROPHET_PERIOD, DEFAULT_PROPHET_FREQ
+from mlalgms.fbprophetalgm import PROPHET_PERIOD, PROPHET_FREQ, DEFAULT_PROPHET_PERIOD, DEFAULT_PROPHET_FREQ
 from mlalgms.pairwisemodel import ALL, DEFAULT_PAIRWISE_THRESHOLD
 from mlalgms.pairwisemodel import MANN_WHITE_MIN_DATA_POINT, WILCOXON_MIN_DATA_POINTS, KRUSKAL_MIN_DATA_POINTS
 from mlalgms.statsmodel import IS_UPPER_BOUND
@@ -25,6 +17,22 @@ from models.modelclass import ModelHolder
 from utils.converterutils import convertStringToMap, convertStrToInt, convertStrToFloat
 from utils.strutils import escapeString
 from utils.timeutils import isPast
+from metadata.metadata import REQUEST_STATE,AI_MODEL, MAE, DEVIATION,METRIC_PERIOD, MIN_DATA_POINTS
+from metadata.metadata import THRESHOLD, LOWER_THRESHOLD, BOUND,MIN_LOWER_BOUND
+from metadata.metadata import DEFAULT_THRESHOLD , DEFAULT_LOWER_THRESHOLD ,PAIRWISE_ALGORITHM,PAIRWISE_THRESHOLD,DEFAULT_MIN_LOWER_BOUND
+from models.modelclass import ModelHolder
+
+from helpers.modelhelpers import calculateModel
+from mlalgms.pairwisemodel import MANN_WHITE,WILCOXON,KRUSKAL,FRIED_MANCHI_SQUARE,ALL,ANY,DEFAULT_PAIRWISE_THRESHOLD
+from mlalgms.statsmodel import IS_UPPER_BOUND, IS_UPPER_O_LOWER_BOUND, IS_LOWER_BOUND
+
+from mlalgms.fbprophetalgm import PROPHET_PERIOD, PROPHET_FREQ, DEFAULT_PROPHET_PERIOD, DEFAULT_PROPHET_FREQ
+
+from mlalgms.pairwisemodel import MANN_WHITE_MIN_DATA_POINT,WILCOXON_MIN_DATA_POINTS,KRUSKAL_MIN_DATA_POINTS 
+
+from prometheus_client import start_http_server
+from utils.timeutils import calculateDuration
+
 
 # logging
 logging.basicConfig(format='%(asctime)s %(message)s')
@@ -48,8 +56,8 @@ jobs = []
 config = globalconfig()
 
 
-def cacheModels(modelHolder, max_cache_size=MAX_CACHE_SIZE):
-    # if not enableCache:
+def cacheModels(modelHolder):
+    #if not enableCache:
     #    return
     if (len(jobs) == MAX_CACHE_SIZE):
         # always remove the lst one because rate limiting.
@@ -265,7 +273,9 @@ def main():
         outputMsg = []
         uuid = openRequest['id']
         status = openRequest['status']
+
         updatedStatus = reserveJob(uuid, status)
+
 
         logger.warning("Start to processing job id " + uuid + " original status:" + status)
 
@@ -319,10 +329,9 @@ def main():
         label_info['hasCurrent'] = 'False'
         start = time.time()
 
-        # Need to be removed below line due to baseline is enabled at upstream
-        # skipBaseline = True
-        skipCurrent = (currentConfig == '')
-
+        
+        #Need to be removed below line due to baseline is enabled at upstream
+        skipCurrent = (currentConfig=='')
         try:
             if (skipCurrent):
                 ret = update_es_doc(strategy, status, uuid,

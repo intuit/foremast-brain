@@ -196,9 +196,9 @@ def calculateMovingAverageParameters(series, window=0, threshold=2.0, calculateS
     other_models[STD_UPPER]=std_upper
     other_models[STD_LOWER]= std_lower
     other_models[PREDIT_UPPERS]= llower_bound
-    other_models[PREDIT_LOWERS]= hupper_upper
+    other_models[PREDIT_LOWERS]= hupper_bound
 #    return hlower_bound.y.values[len(llower_bound)-1], hupper_bound.y.values[len(hupper_bound)-1], other_models
-    return hlower_bound.y.values[len(llower_bound)-1], hupper_bound.y.values[len(hupper_bound)-1]
+    return llower_bound.y.values[len(llower_bound)-1], hupper_bound.y.values[len(hupper_bound)-1]
 
     '''
     originalWindow = window
@@ -565,11 +565,11 @@ def retrieveHW_Anomalies( y, upperBond, lowerBond, bound=IS_UPPER_BOUND,  return
                 isAnomaly = True
         if returnAnomaliesOnly:
             if isAnomaly:
-                anomalies.append(True)
+                anomlies.append(True)
         else:
-            anomalies.append(isAnomaly)
+            anomlies.append(isAnomaly)
     #return addHeader(ts,adata)
-    return ts,adata ,anomalies
+    return ts,adata ,anomlies
     
 def retrieveHW_AnomaliesByModel( y, model,bound=IS_UPPER_BOUND):  
     return retrieveHW_Anomalies(y, model.UpperBond, model.LowerBond, bound)
@@ -601,7 +601,7 @@ def detectHoltWinderAnomalies( y, predictHours=1, threshold=2, slen=24, bound=IS
     model = createHoltWintersModel(y, predictHours,threshold, slen)
     if calculateScore==True:
         logging.info(retrieveHW_MAPE(y, model))
-    return retrieveHW_AnomaliesModel( y, model, bound)
+    return retrieveHW_AnomaliesByModel( y, model, bound)
 
 #ddd = detectHoltWinderAnomalies(ads.Ads, 2, threshold=3,slen=7, calculateScore=True)
 #ddd = detectHoltWinderAnomalies(ads.Ads, 2, threshold=3,slen=24, calculateScore=True)
