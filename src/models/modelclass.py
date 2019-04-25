@@ -33,14 +33,70 @@ class ModelHolder:
             self._model_data[metricType]={}
         self._model_data[metricType][key]=value
 
-    def getMetricTypes(self):
+    def getModelConfigKeys(self):
         return self._model_config.keys()
+    
     def getMapByMetricType(self, metricType):
         if not metricType in self._model_data:
             return None
         return self._model_data[metricType]
-    def getModelConfigByKey(self, key):
-        return self._model_config.get(key)
+    
+    def getModelConfigByKey(self, key1, key2=None, key3=None):
+        if key2 is None:
+            return self.getModelConfigByKey1(key1)
+        else:
+            if key3 is None:
+                return self.getModelConfigByKey2(key1,key2)
+            else:
+                return self.getModelConfigByKey3(key1,key2, key3)
+    
+
+    def getModelConfigByKey1(self, key1):
+        if not key1 in self._model_config:
+            return None
+        return self._model_config[key1]
+    
+    def getModelConfigByKey2(self, key1, key2):
+        if not key1 in self._model_config:
+            return None
+        if not key2 in self._model_config[key1]:
+            return None
+        return self._model_config[key1][key2]
+        
+    
+    def setModelConfig(self,key, data1, data2=None, data3 =None):
+        if data2 is None : 
+            return self.setModelConfig1(key,data1)
+        else:
+            if data3 is None :
+                self.setModelConfig2(key,data1, data2)
+            else:
+                self.setModelConfig3(key, data1, data2, data2)
+
+    
+    def setModelConfig1(self,key,data1):
+        if not ( key in self._model_config):
+            self._model_config[key]={}
+        self._model_config[key] = data1
+        
+    def setModelConfig2(self,key, data1, data2):
+        if not ( key in self._model_config):
+            self._model_config[key]={}
+        if not (data1 in self._model_config[key] ):
+            self._model_config[key][data1]={}
+        self._model_config[key][data1]= data2
+        
+    def setModelConfig3(self,key, data1, data2, data3):
+        if not ( key in self._model_config):
+            self._model_config[key]={}
+        if not (data1 in self._model_config[key] ):
+            self._model_config[key][data1]={}
+        if not (data2 in self._model_config[key][data1] ):
+            self._model_config[key][data1][data2]={}    
+        self._model_config[key][data1][data2]= data3
+
+
+    def getModelConfig(self, key):
 
     @property
     def period(self):
