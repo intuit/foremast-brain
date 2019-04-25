@@ -96,8 +96,6 @@ class ModelHolder:
         self._model_config[key][data1][data2]= data3
 
 
-    def getModelConfig(self, key):
-
     @property
     def period(self):
         return self._period
