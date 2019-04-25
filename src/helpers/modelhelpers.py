@@ -7,7 +7,7 @@ from mlalgms.statsmodel import calculateDoubleExponentialSmoothingParameters,cre
 from mlalgms.statsmodel import IS_UPPER_BOUND, IS_UPPER_O_LOWER_BOUND, IS_LOWER_BOUND
 from mlalgms.statsmodel import detectAnomalies,detectLowerUpperAnomalies,calculateBivariateParameters
 from mlalgms.statsmodel import detectDoubleExponentialSmoothingAnomalies,retrieveHW_Anomalies,detectBivariateAnomalies
-from mlalgms.fbprophet import prophetPredictUpperLower,PROPHET_PERIOD, PROPHET_FREQ,DEFAULT_PROPHET_PERIOD, DEFAULT_PROPHET_FREQ
+from mlalgms.fbprophetalgm import prophetPredictUpperLower,PROPHET_PERIOD, PROPHET_FREQ,DEFAULT_PROPHET_PERIOD, DEFAULT_PROPHET_FREQ
 from metrics.monitoringmetrics import modelmetrics, anomalymetrics, hpascoremetrics
 from metrics.metricclass import SingleMetricInfo
 from utils.timeutils import getNowStr
@@ -323,18 +323,6 @@ def detectSignalAnomalyData( metricInfo, modelHolder, metricType, strategy=None)
         ts,data,flags =detectLowerUpperAnomalies(series, lower_bound , upper_bound, bound)
         print("Anomaly data: %s" % data)
         triggerAnomalyMetric(metricInfo, ts, data)
-        return ts,data
-    elif modelHolder.model_name == AI_MODEL.HOLT_WINDER.value:
-        upper_bound = modelHolder.getModelByKey(metricType,UPPER_BOUND)
-        if upper_bound == None:
-            pass
-                #TODO raise error and also need to make upperBound as narray
-        lower_bound = modelHolder.gettModelByKey(metricType,LOWER_BOUND)
-        if lower_bound == None:
-            pass
-        ts,adata,flags = retrieveHW_Anomalies( y, upper_bound, lower_bound, bound)
-        print("Anomaly data: %s" % adata)
-        triggerAnomalyMetric(metricInfo, ts, adata)
         return ts,data
     else:
         #default is modelHolder.model_name == AI_MODEL.MOVING_AVERAGE_ALL.value:
