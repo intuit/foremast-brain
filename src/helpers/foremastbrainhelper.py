@@ -2,15 +2,15 @@ import logging
 import json
 import time
 
-from scipy.stats import mannwhitneyu, wilcoxon,kruskal,friedmanchisquare
+#from scipy.stats import mannwhitneyu, wilcoxon,kruskal,friedmanchisquare
 
 from utils.timeutils import  canProcess, rateLimitCheck
 from es.elasticsearchutils import ESClient
 from metadata.metadata import REQUEST_STATE, METRIC_PERIOD, MIN_DATA_POINTS
 from prometheus.metric import convertPromesResponseToMetricInfos,urlEndNow
-from wavefront.metric import convertResponseToMetricInfos,parseQueryData
+from wavefront.metric import convertResponseToMetricInfos  #parseQueryData
 from utils.urlutils import dorequest
-from metrics.metricclass import MetricInfo, SingleMetricInfo
+#from metrics.metricclass import MetricInfo, SingleMetricInfo
 from utils.dictutils import retrieveKVList
 from helpers.modelhelpers import calculateModel,detectAnomalyData, calculateScore,calculateModels
 from wavefront.apis import executeQuery,dequote
@@ -164,7 +164,7 @@ def reserveJob(uuid, status):
             return  updatedStatus
         else:
             if i == 2 :
-               logger.error("failed to update uuid  "+uuid+"  from "+status +" to "+updatedStatus)
+                logger.error("failed to update uuid  "+uuid+"  from "+status +" to "+updatedStatus)
             continue
     return status
 
@@ -189,7 +189,7 @@ def updateESDocStatus(uuid, status, info='', reason=''):
         if openRequest != None:
             new_status = openRequest['status']
             if new_status == status:
-               return  True
+                return  True
         time.sleep(1)
         logger.error("ElasticSearch failed "+uuid)
         continue
@@ -198,7 +198,7 @@ def updateESDocStatus(uuid, status, info='', reason=''):
 
 def isCompletedStatus (status):
     if status == REQUEST_STATE.INITIAL.value:
-       return False
+        return False
     elif  status == REQUEST_STATE.PREPROCESS_COMPLETED.value:
         return False
     elif status == REQUEST_STATE.PREPROCESS_INPROGRESS.value:
