@@ -25,6 +25,21 @@ STD_LOWER = 'std_lower'
 PREDIT_UPPERS = 'predict_upper'
 PREDIT_LOWERS = 'predict_lower'
 
+def calculateTSTrend(series):
+    sum_x = 0
+    sum_y = 0
+    sum_xy = 0
+    sum_x_2 = 0 
+    size = len(series)
+    for i in range(len(series)):
+        sum_x += series[i]
+        sum_y += i
+        sum_xy += series[i]*i
+        sum_x_2 = series[i]*series[i]
+    b = (sum_xy - (sum_x*sum_y)/size)/(sum_x_2 - (sum_x*sum_x)/size)
+    return b
+
+
     
 def calculateBivariateParameters(x, y, isCovCorOnly=False):  
     

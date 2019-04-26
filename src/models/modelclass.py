@@ -71,7 +71,7 @@ class ModelHolder:
             if data3 is None :
                 self.setModelConfig2(key,data1, data2)
             else:
-                self.setModelConfig3(key, data1, data2, data2)
+                self.setModelConfig3(key, data1, data2, data3)
 
     
     def setModelConfig1(self,key,data1):
