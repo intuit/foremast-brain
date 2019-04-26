@@ -174,7 +174,7 @@ class ESClient:
         :return:
         """
         try:
-            body = {'job_id': jobid, 'hpalog': log_content, 'log_time': log_time}
+            body = {'job_id': jobid, 'hpalog': log_content, 'timestamp': log_time}
             res = self.es.search(index_name, doc_type,
                                  body=payload_query_by_job_id.substitute(jobid=jobid, order='asc'))
             cnt, _ = self.parse_result(res)
