@@ -44,6 +44,8 @@ def testRange(value, low, high):
             return 1
     else:
             return 0
+        
+
 
 def calculateHistoricalModel(dataframe, interval_width=0.8, predicted_count=35, zscore=2, metricPattern= None):
     if metricPattern is None:
