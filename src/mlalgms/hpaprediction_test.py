@@ -10,7 +10,7 @@ class HPAPredictionMethods(unittest.TestCase):
     def testalgm(self):
         fds = pd.read_csv('../../test_data/fds_seasonality.csv')
         lstm, lstm_display = getDataFrame(fds, True)  
-        modelType, otherdata = calculateHistoricalModel(lstm)
+        modelType, otherdata, trend = calculateHistoricalModel(lstm)
         if modelType in [AI_MODEL.MOVING_AVERAGE_ALL.value]:
             assert otherdata is not None
         elif modelType in [AI_MODEL.PROPHET.value]:

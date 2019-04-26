@@ -25,17 +25,25 @@ STD_LOWER = 'std_lower'
 PREDIT_UPPERS = 'predict_upper'
 PREDIT_LOWERS = 'predict_lower'
 
-def calculateTSTrend(series):
+def calculateTSTrend(y_series, ts_series=None):
     sum_x = 0
     sum_y = 0
     sum_xy = 0
     sum_x_2 = 0 
-    size = len(series)
-    for i in range(len(series)):
-        sum_x += series[i]
-        sum_y += i
-        sum_xy += series[i]*i
-        sum_x_2 = series[i]*series[i]
+    size = 0 
+    if ts_series is None:
+        size = len(y_series)
+    else:
+        size = min(len(y_series),len(ts_series))
+    for i in range(len(y_series)):
+        sum_x += y_series[i]
+        if ts_series is None:
+            sum_y += i
+            sum_xy += y_series[i]*i
+        else:
+            sum_y += ts_series[i]
+            sum_xy += y_series[i]*ts_series[i]
+        sum_x_2 = y_series[i]*y_series[i]
     b = (sum_xy - (sum_x*sum_y)/size)/(sum_x_2 - (sum_x*sum_x)/size)
     return b
 

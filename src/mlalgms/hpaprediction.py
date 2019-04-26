@@ -1,6 +1,6 @@
 import numpy as np
 from mlalgms.patternprediction  import suggestedPattern
-from mlalgms.statsmodel import calculateHistoricalParameters
+from mlalgms.statsmodel import calculateHistoricalParameters, calculateTSTrend
 from mlalgms.fbprophetalgm import prophetPredictUpperLower
 from utils.dfUtils import convertToProphetDF
 from metadata.metadata import AI_MODEL
@@ -38,7 +38,6 @@ def checkAnomaly(timestamp, value, preds):
 
 
 def testRange(value, low, high):
-    print(low, type(low))
     if value < low:
             return -1
     elif value > high:
@@ -51,14 +50,15 @@ def calculateHistoricalModel(dataframe, interval_width=0.8, predicted_count=35, 
         metricPattern, type = suggestedPattern(dataframe, ignoreHourly=True)
     if metricPattern in ['stationary',  'not stationary']:
         mean, deviation = calculateHistoricalParameters(dataframe)
-        return AI_MODEL.MOVING_AVERAGE_ALL.value, [mean, deviation]
+        return AI_MODEL.MOVING_AVERAGE_ALL.value, [mean, deviation], 0
     else:
         df_prophet = convertToProphetDF(dataframe)
         #current we only predict hourly or daily. prophet only support f
         #https://github.com/facebook/prophet/issues/118 for suggestion
         predictedDF = prophetPredictUpperLower(df_prophet, predicted_count, 'T', zscore, 'daily', interval_width=0.8) 
+        trend = calculateTSTrend(predictedDF.yhat.values,predictedDF.index.get_values())
         predicted = storeAsJson(predictedDF)
-        return AI_MODEL.PROPHET.value, predicted 
+        return AI_MODEL.PROPHET.value, predicted, trend
         
 
 

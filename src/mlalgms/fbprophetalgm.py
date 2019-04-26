@@ -33,7 +33,7 @@ def predictProphet(timeseries, period=1 ,frequence ='T', seasonality_name='', ps
     
 
 
-def prophetPredictUpperLower(timeseries, period=1,frequence ='T', zscore = 2,seasonality_name='',prior_scale=0.1, columnPosition=0, interval_width=0.8, needyhat=False):
+def prophetPredictUpperLower(timeseries, period=1,frequence ='T', zscore = 2,seasonality_name='',prior_scale=0.1, columnPosition=0, interval_width=0.8, needyhat=True):
     df = timeseries.copy()
     df.dropna()
     orig_len = len(timeseries)
