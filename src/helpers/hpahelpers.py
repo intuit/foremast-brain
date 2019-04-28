@@ -144,7 +144,7 @@ def calculateHPAScore(metricInfoDataset, modelHolder):
                 properties = modelHolder.getModelConfigByKey('hpa',metricType)
                 hpainfo = hpametricinfo(priority, metricType, metricInfo.metricDF, algorithm,  mlmodel, properties)
                 hpametricinfolist.append(hpainfo)
-    score= calculateMetricsScore(hpametricinfolist, ensuredMetrics=['latency'],  50)
+    score= calculateMetricsScore(hpametricinfolist)
     hpascore =round(score, 0)
     logger.warning(getNowStr(),"###calculated score is ",hpascore )
     triggerHPAScoreMetric(hap_metricInfo, score)
@@ -155,8 +155,8 @@ def calculateHPAScore(metricInfoDataset, modelHolder):
         
 
 def retrieveConfig(metricType, modelHolder):
-    threshold = modelHolder.etModelConfigByKey(metricType,THRESHOLD)
-    minLowerBound= modelHolder.etModelConfigByKey(metricType,MIN_LOWER_BOUND)
+    threshold = modelHolder.getModelConfigByKey(metricType,THRESHOLD)
+    minLowerBound= modelHolder.getModelConfigByKey(metricType,MIN_LOWER_BOUND)
     if threshold is None:
         threshold = globalConfig.getThresholdByKey(metricType,THRESHOLD)
     if minLowerBound is None:
@@ -175,7 +175,7 @@ def calculateHPAModels(metricInfos, modelHolder, metricTypes):
     for i in range (len(metricInfos)):
         threshold, minLowerBound = retrieveConfig(metricTypes[i], modelHolder)
         probability = convertToPvalue(threshold)
-        algm, modeldata, metricpattern, trend = calculateHistoricalModel(metricInfos[i].metricDF, interval_width=probability , predicted_count=35, gprobability=probability)
+        algm, modeldata, metricpattern, trend = calculateHistoricalModel(metricInfos[i][0].metricDF, interval_width=probability , predicted_count=35, gprobability=probability)
         modeldatajson[metricTypes[i]]= modeldata 
         modelparametersjson[metricTypes[i]] = {'algorithm':algm,'metricpattern':metricpattern, 'trend':trend}
         modelHolder.setAllModelParameters(metricTypes[i],modelparametersjson[metricTypes[i]] )
