@@ -33,21 +33,29 @@ def predictProphet(timeseries, period=1 ,frequence ='T', seasonality_name='', ps
     
 
 
-def prophetPredictUpperLower(timeseries, period=1,frequence ='T', zscore = 2,seasonality_name='',prior_scale=0.1, columnPosition=0, interval_width=0.8, needyhat=True):
+def prophetPredictUpperLower(timeseries, period=1,frequence ='T', zscore= 2, seasonality_name='',prior_scale=0.1, columnPosition=0, interval_width=0.8,isHPA=False):
     df = timeseries.copy()
     df.dropna()
+    mean = 0
+    std = 0
+    if isHPA :
+        mean = df.y.values.mean()
+        std = df.y.values.std()
     orig_len = len(timeseries)
     fc = predictProphet(df, period, frequence,seasonality_name, prior_scale,columnPosition,interval_width=interval_width)
     #print(fc)
     #after_len = len(fc)
     #print(orig_len ,'  ', after_len)
     if seasonality_name=='':  
-        mean = fc[orig_len:].yhat_lower.mean()
-        std = fc[orig_len:].yhat_lower.std()
-        return mean-zscore*std, mean+zscore*std
-    if needyhat :       
-        return fc[['ds','yhat_lower','yhat_upper','yhat']][orig_len:]
-    return fc[['ds','yhat_lower','yhat_upper']][orig_len:]
+        lmean = fc[orig_len:].yhat_lower.mean()
+        lstd = fc[orig_len:].yhat_lower.std()
+        umean = fc[orig_len:].yhat_upper.mean()
+        ustd = fc[orig_len:].yhat_upper.std()
+        llower = zscore*lstd -lmean
+        lupper = zscore*ustd -umean
+        return llower, lupper , mean, std
+   
+    return fc[['ds','yhat_lower','yhat_upper','yhat']][orig_len:],mean, std
 
 
 def detectAnomalies(df , bound=IS_UPPER_BOUND, returnAnomaliesOnly= True):

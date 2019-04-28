@@ -10,9 +10,9 @@ from metadata.metadata import REQUEST_STATE, METRIC_PERIOD, MIN_DATA_POINTS
 from prometheus.metric import convertPromesResponseToMetricInfos,urlEndNow
 from wavefront.metric import convertResponseToMetricInfos  #parseQueryData
 from utils.urlutils import dorequest
-#from metrics.metricclass import MetricInfo, SingleMetricInfo
 from utils.dictutils import retrieveKVList
-from helpers.modelhelpers import calculateModel,detectAnomalyData, calculateScore,calculateModels
+from helpers.modelhelpers import calculateModel,detectAnomalyData
+from helpers.hpahelpers import calculateScore,calculateModels
 from wavefront.apis import executeQuery,dequote
 from metrics.monitoringmetrics import getModelUrl
 from metadata.globalconfig import globalconfig
@@ -235,11 +235,11 @@ def computeHistoricalModel(historicalConfigMap, modelHolder, isProphet = False, 
     for metricType, metricUrl in historicalConfigMap.items():
         metricStore = 'prometheus'
         if historicalMetricStores is not None:
-           metricStore = historicalMetricStores[metricType]
+            metricStore = historicalMetricStores[metricType]
         metricInfolist = queryData(metricUrl, METRIC_PERIOD.HISTORICAL.value, isProphet, metricStore);
         if(len(metricInfolist)==0):
             continue
-        filteredMetricInfoList, str =  filterEmptyDF(metricInfolist, min_data_points)
+        filteredMetricInfoList, str = filterEmptyDF(metricInfolist, min_data_points)
         if (str!=''):
             msg = str
         if len(filteredMetricInfoList) == 0:
@@ -289,7 +289,7 @@ def computeNonHistoricalModel(configMap, period, metricStores=None, strategy=Non
     for metricType, metricUrl in configMap.items():
         metricStore = 'prometheus'
         if metricStores is not None:
-           metricStore = metricStores[metricType]
+            metricStore = metricStores[metricType]
         metricInfolist = queryData(metricUrl, period, False, metricStore);
         if(len(metricInfolist)==0):
             continue
@@ -319,7 +319,6 @@ def pairWiseComparson(currentDataSet, baselineDataSet, model , threshold, bound 
     gsimilar = True
     ifMeetSize = True
     for ckey, cvalue in currentDataSet.items():
-        cmetricInfoList = cvalue
         for bkey, bvalue in baselineDataSet.items():
             if ckey == bkey :
                 ret, p,algm, meetSize = pairwiseMetricInfoListValidation(cvalue,bvalue , model, threshold, bound)
@@ -339,7 +338,6 @@ def pairwiseMetricInfoListValidation(currentMetricInfoList, baselineMetricInfoLi
     if (currentLen ==1 and baselineLen ==1 ):
         ret, p, algm, meetSize = TwoDataSetSameDistribution(currentMetricInfoList[0].metricDF.y.values, baselineMetricInfoList[0].metricDF.y.values, threshold,model,bound)
         return ret, p, algm, meetSize
-    list=[]
     for singleMetricInfo in currentMetricInfoList:
         list.append(singleMetricInfo.metricDF.y.values);
     for singleMetricInfo in baselineMetricInfoList:
@@ -362,23 +360,23 @@ def computeAnomaly(metricInfoDataset, modelHolder, strategy = None):
     isFirstTime = True
     if (metricTypeSize>0):
         for metricType, metricInfoList in metricInfoDataset.items():
-             for metricInfo in metricInfoList:
-                 ts,adata =  detectAnomalyData(metricInfo,  modelHolder, metricType, strategy)
-                 if (len(ts) > 0):
-                     if isFirstTime:
-                         anomalieDisplay.append("{'")
-                         anomalieDisplay.append(metricType)
-                         anomalieDisplay.append("':[")
-                         isFirstTime = False
-                     else:
-                         anomalieDisplay.append(",")
-                     anomalieDisplay.append("{'metric':")
-                     anomalieDisplay.append(str(metricInfo.columnmap['y']))
-                     anomalieDisplay.append(",'value':{ 'ts' : ")
-                     anomalieDisplay.append(str(ts))
-                     anomalieDisplay.append(", 'value'  : ")
-                     anomalieDisplay.append(str(adata))
-                     anomalieDisplay.append("}}")
+            for metricInfo in metricInfoList:
+                ts,adata =  detectAnomalyData(metricInfo,  modelHolder, metricType, strategy)
+                if (len(ts) > 0):
+                    if isFirstTime:
+                        anomalieDisplay.append("{'")
+                        anomalieDisplay.append(metricType)
+                        anomalieDisplay.append("':[")
+                        isFirstTime = False
+                    else:
+                        anomalieDisplay.append(",")
+                    anomalieDisplay.append("{'metric':")
+                    anomalieDisplay.append(str(metricInfo.columnmap['y']))
+                    anomalieDisplay.append(",'value':{ 'ts' : ")
+                    anomalieDisplay.append(str(ts))
+                    anomalieDisplay.append(", 'value'  : ")
+                    anomalieDisplay.append(str(adata))
+                    anomalieDisplay.append("}}")
         if (not isFirstTime):
             anomalieDisplay.append("]")
             anomalieDisplay.append("}")

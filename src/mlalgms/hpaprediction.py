@@ -4,6 +4,7 @@ from mlalgms.statsmodel import calculateHistoricalParameters, calculateTSTrend
 from mlalgms.fbprophetalgm import prophetPredictUpperLower
 from utils.dfUtils import convertToProphetDF
 from metadata.metadata import AI_MODEL
+from mlalgms.scoreutils import convertToZscore
 #from sklearn.preprocessing import MinMaxScaler
 #from mlalgms.kerasdeeplearning import create_datasets,createModel, compileModel, predictModel
 #from mlalgms.evaluator import mape
@@ -21,33 +22,44 @@ def storeAsJson(predictions):
         ret.append(data)
     return ret
 
-def checkAnomaly(timestamp, value, preds):
-    length = len(preds)
-    prev = 0
-    for i in range(length):
-        if (timestamp< preds[i][0]):
-            if (timestamp > prev):
-                prev = preds[i][0]
-            else:
-                testRange(value, preds[i][0],preds[i][1])
+
+       
+
+def checkHPAAnomaly(timestamp, value, mlmodel, algorithm=AI_MODEL.PROPHET.value):
+    if algorithm in [AI_MODEL.MOVING_AVERAGE_ALL.value]:
+        return testRange(value, mlmodel['lower_bound'],mlmodel['upper_bound'])
+    elif algorithm in [AI_MODEL.PROPHET.value]:
+        if "predictions" not in mlmodel:
+            return 0,0,0
         else:
-            if (timestamp > prev):
-                testRange(value, preds[i][0],preds[i][1])
-    #unknow
-    return 0
+            preds = mlmodel['predictions']
+            length = len(preds)
+            prev = 0
+            for i in range(length):
+                if (timestamp< preds[i][0]):
+                    if (timestamp > prev):
+                        prev = preds[i][0]
+                    else:
+                        testRange(value, preds[i][0],preds[i][1])
+                else:
+                    if (timestamp > prev):
+                        testRange(value, preds[i][0],preds[i][1])
+            #unknow
+            return 0,0,0
+
 
 
 def testRange(value, low, high):
     if value < low:
-            return -1
+            return -1, low, high
     elif value > high:
-            return 1
+            return 1, low, high
     else:
-            return 0
+            return 0, low, high
         
 
 
-def calculateHistoricalModel(dataframe, interval_width=0.8, predicted_count=35, zscore=2, metricPattern= None):
+def calculateHistoricalModel(dataframe, interval_width=0.8, predicted_count=35, gprobability=0.8, metricPattern= None):
     if metricPattern is None:
         metricPattern, type = suggestedPattern(dataframe, ignoreHourly=True)
     if metricPattern in ['stationary',  'not stationary']:
@@ -57,10 +69,14 @@ def calculateHistoricalModel(dataframe, interval_width=0.8, predicted_count=35, 
         df_prophet = convertToProphetDF(dataframe)
         #current we only predict hourly or daily. prophet only support f
         #https://github.com/facebook/prophet/issues/118 for suggestion
-        predictedDF = prophetPredictUpperLower(df_prophet, predicted_count, 'T', zscore, 'daily', interval_width=0.8) 
+
+        predictedDF, mean, stdev = prophetPredictUpperLower(df_prophet, predicted_count, 'T', seasonality_name= 'daily', interval_width=0.8,isHPA=True) 
+        zscore = convertToZscore(gprobability)
+        gupper = zscore*stdev + mean
+        glower =zscore*stdev - mean
         trend = calculateTSTrend(predictedDF.yhat.values,predictedDF.index.get_values())
         predicted = storeAsJson(predictedDF)
-        return AI_MODEL.PROPHET.value, predicted, trend
+        return AI_MODEL.PROPHET.value, predicted, trend,gupper,glower
         
 
 
