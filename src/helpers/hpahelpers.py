@@ -183,7 +183,8 @@ def calculateHPAModels(metricInfos, modelHolder, metricTypes):
     es.save_model(modelHolder.id, model_parameters=modelHolder.storeModelParameters(),  model_data=modelHolder.storeModels())
     return modelHolder
     
-    
+#def fetchPersistedModel(modelHolder):  
+      
 
 
 

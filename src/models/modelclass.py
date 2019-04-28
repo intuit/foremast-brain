@@ -56,8 +56,13 @@ class ModelHolder:
     def storeModels(self):
         return self._model_data
     
+    def loadModels(self, model_data):
+        self._model_data = model_data
+    
     def storeModelParameters(self):
         return self._model_parameters
+    def loadModelParameters(self, model_parameters):
+        self._model_parameters = model_parameters
     
     def getModelParametersByKey(self, key1, key2=None, key3=None):
         if key2 is None:

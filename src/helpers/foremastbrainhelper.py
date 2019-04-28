@@ -232,6 +232,16 @@ def computeHistoricalModel(historicalConfigMap, modelHolder, isProphet = False, 
     dataSet = {}
     msg = ''
     min_data_points = modelHolder.getModelConfigByKey(MIN_DATA_POINTS)
+    
+    #TODO Need to pass during by default could be 30 minutes.
+    if strategy =='hpa':
+        modeldata = es.get_model_data(modelHolder.id)
+        if modeldata is not None :
+            modelHolder.loadModels(modeldata)
+            modelParameters= es.get_model_parameters(modelHolder.id)
+            modelHolder.ModelParameters(modelParameters)
+            modelHolder,msg
+        
     for metricType, metricUrl in historicalConfigMap.items():
         metricStore = 'prometheus'
         if historicalMetricStores is not None:
