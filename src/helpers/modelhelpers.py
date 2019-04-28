@@ -85,6 +85,10 @@ def calculateSingleMetricModel(metricInfo, modelHolder, metricType, strategy=Non
     series = metricInfo.metricDF
     threshold = globalConfig.getThresholdByKey(metricType,THRESHOLD)
     minLowerBound = globalConfig.getThresholdByKey(metricType,MIN_LOWER_BOUND)
+    if strategy == 'hpa':
+        
+        calculateHistoricalModel(series, interval_width=0.8, predicted_count=35, gprobability=0.8, metricPattern= None):
+
     if modelHolder.model_name == AI_MODEL.MOVING_AVERAGE.value:
         window = modelHolder.getModelConfigByKey(WINDOW)
         if window == None:

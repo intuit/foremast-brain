@@ -1,12 +1,6 @@
 from scipy.stats import norm
 
 
-
-#print(norm.ppf(0.01))
-#print(1-norm.cdf(0))
-#print(1-norm.cdf(0.1))
-
-
 def convertToZscore(pvalue):
     return  norm.ppf(pvalue)
 

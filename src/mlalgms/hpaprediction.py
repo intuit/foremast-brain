@@ -64,19 +64,15 @@ def calculateHistoricalModel(dataframe, interval_width=0.8, predicted_count=35, 
         metricPattern, type = suggestedPattern(dataframe, ignoreHourly=True)
     if metricPattern in ['stationary',  'not stationary']:
         mean, deviation = calculateHistoricalParameters(dataframe)
-        return AI_MODEL.MOVING_AVERAGE_ALL.value, [mean, deviation], 0
+        return AI_MODEL.MOVING_AVERAGE_ALL.value, [deviation*gprobability-mean, deviation*gprobability+mean, mean, deviation], metricPattern, 0
     else:
         df_prophet = convertToProphetDF(dataframe)
         #current we only predict hourly or daily. prophet only support f
         #https://github.com/facebook/prophet/issues/118 for suggestion
-
-        predictedDF, mean, stdev = prophetPredictUpperLower(df_prophet, predicted_count, 'T', seasonality_name= 'daily', interval_width=0.8,isHPA=True) 
-        zscore = convertToZscore(gprobability)
-        gupper = zscore*stdev + mean
-        glower =zscore*stdev - mean
+        predictedDF= prophetPredictUpperLower(df_prophet, predicted_count, 'T', seasonality_name= 'daily', interval_width=0.8,isHPA=True) 
         trend = calculateTSTrend(predictedDF.yhat.values,predictedDF.index.get_values())
         predicted = storeAsJson(predictedDF)
-        return AI_MODEL.PROPHET.value, predicted, trend,gupper,glower
+        return AI_MODEL.PROPHET.value, predicted, metricPattern, trend
         
 
 

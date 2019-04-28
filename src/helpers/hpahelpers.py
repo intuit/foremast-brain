@@ -1,5 +1,8 @@
 import logging
-
+from mlalgms.hpaprediction import calculateHistoricalModel
+from hpa.metricscore import hpametricinfo
+from models.modelclass import ModelHolder
+from mlalgms.scoreutils import  convertToPvalue
 from metrics.monitoringmetrics import hpascoremetrics
 from models.modelclass import ModelHolder
 from metadata.metadata import AI_MODEL, MAE, DEVIATION, THRESHOLD, BOUND,LOWER_BOUND,UPPER_BOUND,LOWER_THRESHOLD, MIN_LOWER_BOUND
@@ -13,7 +16,10 @@ from metrics.monitoringmetrics import modelmetrics, anomalymetrics, hpascoremetr
 from metrics.metricclass import SingleMetricInfo
 from utils.timeutils import getNowStr
 from metadata.globalconfig import globalconfig
+from es.elasticsearchutils import ESClient
 
+
+es = ESClient()
 
 
 # logging
@@ -28,7 +34,7 @@ hpascoremetrics = hpascoremetrics()
 
 
 #hpa only
-def calculateScore( metricInfoDataset, modelHolder, strategy):
+def calculateScore( metricInfoDataset, modelHolder):
     #detect score
     tps = 0
     latency=0
@@ -121,6 +127,22 @@ def calculateScore( metricInfoDataset, modelHolder, strategy):
 
 
 
+
+def calculateHPAScore(metricInfoDataset, modelHolder):
+    metricTypeSize = len(metricInfoDataset)
+    if (metricTypeSize==0):
+        return
+    hpametricinfolist = []
+    for metricType, metricInfoList in metricInfoDataset.items():
+        for metricInfo in metricInfoList:
+                priority = modelHolder.getModelConfigByKey('hpa',metricType,'priority')
+                algorithm = modelHolder.getModelParametersByKey(metricType,'algorithm')
+                mlmodel = modelHolder.
+                hpametricinfo(priority, metricType, ts, value, algorithm=None,  mlmodel=None, hpaproperties=None, metricconfig=None):
+                detectAnomalyData(metricInfo,  modelHolder, metricType, strategy)
+           
+    
+
 def triggerHPAScoreMetric(metricInfo, score):
     logger.warning("## emit score hpa_score ->" +str(metricInfo.metricKeys)+" "+str(score))
     try:
@@ -128,24 +150,38 @@ def triggerHPAScoreMetric(metricInfo, score):
     except Exception as e:
         logger.error('triggerHPAScoreMetric '+metricInfo.metricName+' failed ',e )
         
-        
 
-def calculateModels(metricInfos, modelHolder, metricTypes, strategy=None):
-    tpstag = 0
-    latencytag=0
-    errtag=0
+def retrieveConfig(metricType, modelHolder):
+    threshold = modelHolder.etModelConfigByKey(metricType,THRESHOLD)
+    minLowerBound= modelHolder.etModelConfigByKey(metricType,MIN_LOWER_BOUND)
+    if threshold is None:
+        threshold = globalConfig.getThresholdByKey(metricType,THRESHOLD)
+    if minLowerBound is None:
+        minLowerBound = globalConfig.getThresholdByKey(metricType,MIN_LOWER_BOUND)  
+    return threshold, minLowerBound   
+
+
+
+         
+
+def calculateHPAModels(metricInfos, modelHolder, metricTypes):
+    modeldatajson = {}
+    modelparametersjson = {}
+    size = len(metricInfos)
+    hapinfoList=[]
     for i in range (len(metricInfos)):
-      calculateModel(metricInfos[i][0], modelHolder, metricTypes[i],strategy)
-      if metricTypes[i] =='traffic':
-          tpstag = i
-      elif metricTypes[i] == 'latency':
-          latencytag = i
-      elif metricTypes[i] == 'error5xx':
-          errtag = i
-    if (strategy == "hpa1"):
-        _,_,_,_,cov_tps_latency = calculateBivariateParameters(metricInfos[tpstag], metricInfos[latencytag])
-        _,_,_,_,cov_tps_error = calculateBivariateParameters(metricInfos[tpstag], metricInfos[errtag])
-    return modelHolder
+        threshold, minLowerBound = retrieveConfig(metricTypes[i], modelHolder)
+        probability = convertToPvalue(threshold)
+        algm, modeldata, metricpattern, trend = calculateHistoricalModel(metricInfos[i].metricDF, interval_width=probability , predicted_count=35, gprobability=probability)
+        modeldatajson[metricTypes[i]]= modeldata 
+        modelparametersjson[metricTypes[i]] = {'algorithm':algm,'metricpattern':metricpattern, 'trend':trend}
+        modelHolder.setAllModelParameters(metricTypes[i],modelparametersjson[metricTypes[i]] )
+        modelHolder.setModel(metricTypes[i], modeldata)
+    es.save_model(modelHolder.id, model_parameters=modelHolder.storeModelParameters(),  model_data=modelHolder.storeModels())
+    
+    
+
+
 
 
 def calculate_score(diff):

@@ -12,7 +12,7 @@ from wavefront.metric import convertResponseToMetricInfos  #parseQueryData
 from utils.urlutils import dorequest
 from utils.dictutils import retrieveKVList
 from helpers.modelhelpers import calculateModel,detectAnomalyData
-from helpers.hpahelpers import calculateScore,calculateModels
+from helpers.hpahelpers import calculateScore,calculateHPAModels
 from wavefront.apis import executeQuery,dequote
 from metrics.monitoringmetrics import getModelUrl
 from metadata.globalconfig import globalconfig
@@ -253,7 +253,7 @@ def computeHistoricalModel(historicalConfigMap, modelHolder, isProphet = False, 
     metricTypes, metricInfos = retrieveKVList(dataSet)
 
     if strategy=='hpa':
-        modelHolder = calculateModels(metricInfos, modelHolder, metricTypes,strategy)
+        modelHolder = calculateHPAModels(metricInfos, modelHolder, metricTypes)
         return modelHolder,msg
     for i in range (metricTypeCount):
         modelHolder = calculateModel(metricInfos[i][0], modelHolder, metricTypes[i], strategy)
@@ -352,6 +352,7 @@ def pairwiseMetricInfoListValidation(currentMetricInfoList, baselineMetricInfoLi
 
 def computeAnomaly(metricInfoDataset, modelHolder, strategy = None):
     metricTypeSize = len(metricInfoDataset)
+    #hpa strategy
     if (strategy=='hpa'):
         if metricTypeSize==0:
             return
