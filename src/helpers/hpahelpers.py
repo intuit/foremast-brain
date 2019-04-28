@@ -2,18 +2,13 @@ import logging
 from mlalgms.hpaprediction import calculateHistoricalModel
 from hpa.metricscore import hpametricinfo
 from models.modelclass import ModelHolder
+from hpa.hpascore import calculateMetricsScore
+
 from mlalgms.scoreutils import  convertToPvalue
-from metrics.monitoringmetrics import hpascoremetrics
-from models.modelclass import ModelHolder
-from metadata.metadata import AI_MODEL, MAE, DEVIATION, THRESHOLD, BOUND,LOWER_BOUND,UPPER_BOUND,LOWER_THRESHOLD, MIN_LOWER_BOUND
-from metadata.metadata import DEFAULT_THRESHOLD , DEFAULT_LOWER_THRESHOLD
-from mlalgms.statsmodel import calculateHistoricalParameters,calculateMovingAverageParameters,calculateExponentialSmoothingParameters
-from mlalgms.statsmodel import calculateDoubleExponentialSmoothingParameters,createHoltWintersModel,retrieveSaveModelData
-from mlalgms.statsmodel import IS_UPPER_BOUND, IS_UPPER_O_LOWER_BOUND, IS_LOWER_BOUND
-from mlalgms.statsmodel import detectAnomalies,detectLowerUpperAnomalies,calculateBivariateParameters
-from mlalgms.fbprophetalgm import prophetPredictUpperLower,PROPHET_PERIOD, PROPHET_FREQ,DEFAULT_PROPHET_PERIOD, DEFAULT_PROPHET_FREQ
 from metrics.monitoringmetrics import modelmetrics, anomalymetrics, hpascoremetrics
-from metrics.metricclass import SingleMetricInfo
+
+from metadata.metadata import AI_MODEL, MAE, DEVIATION, THRESHOLD, BOUND,LOWER_BOUND,UPPER_BOUND,LOWER_THRESHOLD, MIN_LOWER_BOUND
+
 from utils.timeutils import getNowStr
 from metadata.globalconfig import globalconfig
 from es.elasticsearchutils import ESClient
@@ -33,7 +28,7 @@ hpascoremetrics = hpascoremetrics()
 
 
 
-#hpa only
+'''
 def calculateScore( metricInfoDataset, modelHolder):
     #detect score
     tps = 0
@@ -69,7 +64,7 @@ def calculateScore( metricInfoDataset, modelHolder):
     if (metricTypeSize>0):
         for metricType, metricInfoList in metricInfoDataset.items():
              for metricInfo in metricInfoList:
-                ts,adata,anomalies,zscore,mean,stdev = detectAnomalyData(metricInfo,  modelHolder, metricType, strategy)
+                ts,adata,anomalies,zscore,mean,stdev = detectAnomalyData(metricInfo,  modelHolder, metricType, 'hpa')
                 if metricType =='traffic':
                     lmetricInfo = metricInfo
                     tps_a= anomalies
@@ -125,30 +120,38 @@ def calculateScore( metricInfoDataset, modelHolder):
     logger.warning(getNowStr(),"###calculated score is ",score )
     triggerHPAScoreMetric(lmetricInfo, score)
 
-
-
-
-def calculateHPAScore(metricInfoDataset, modelHolder):
-    metricTypeSize = len(metricInfoDataset)
-    if (metricTypeSize==0):
-        return
-    hpametricinfolist = []
-    for metricType, metricInfoList in metricInfoDataset.items():
-        for metricInfo in metricInfoList:
-                priority = modelHolder.getModelConfigByKey('hpa',metricType,'priority')
-                algorithm = modelHolder.getModelParametersByKey(metricType,'algorithm')
-                mlmodel = modelHolder.
-                hpametricinfo(priority, metricType, ts, value, algorithm=None,  mlmodel=None, hpaproperties=None, metricconfig=None):
-                detectAnomalyData(metricInfo,  modelHolder, metricType, strategy)
-           
-    
-
+'''
 def triggerHPAScoreMetric(metricInfo, score):
     logger.warning("## emit score hpa_score ->" +str(metricInfo.metricKeys)+" "+str(score))
     try:
         hpascoremetrics.sendMetric(metricInfo.metricName, metricInfo.metricKeys, score)
     except Exception as e:
         logger.error('triggerHPAScoreMetric '+metricInfo.metricName+' failed ',e )
+
+def calculateHPAScore(metricInfoDataset, modelHolder):
+    metricTypeSize = len(metricInfoDataset)
+    if (metricTypeSize==0):
+        return
+    hpametricinfolist = []
+    hap_metricInfo = None
+    for metricType, metricInfoList in metricInfoDataset.items():
+        for metricInfo in metricInfoList:
+                if hap_metricInfo is None:
+                    hpa_metricInfo = metricInfo
+                priority = modelHolder.getModelConfigByKey('hpa',metricType,'priority')
+                algorithm = modelHolder.getModelParametersByKey(metricType,'algorithm')
+                mlmodel = modelHolder.getModelByKey(metricType)
+                properties = modelHolder.getModelConfigByKey('hpa',metricType)
+                hpainfo = hpametricinfo(priority, metricType, metricInfo.metricDF, algorithm,  mlmodel, properties)
+                hpametricinfolist.append(hpainfo)
+    score= calculateMetricsScore(hpametricinfolist, ensuredMetrics=['latency'],  50)
+    hpascore =round(score, 0)
+    logger.warning(getNowStr(),"###calculated score is ",hpascore )
+    triggerHPAScoreMetric(hap_metricInfo, score)
+           
+    
+
+
         
 
 def retrieveConfig(metricType, modelHolder):
@@ -178,6 +181,7 @@ def calculateHPAModels(metricInfos, modelHolder, metricTypes):
         modelHolder.setAllModelParameters(metricTypes[i],modelparametersjson[metricTypes[i]] )
         modelHolder.setModel(metricTypes[i], modeldata)
     es.save_model(modelHolder.id, model_parameters=modelHolder.storeModelParameters(),  model_data=modelHolder.storeModels())
+    return modelHolder
     
     
 

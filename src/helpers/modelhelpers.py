@@ -5,7 +5,7 @@ from metadata.metadata import DEFAULT_THRESHOLD , DEFAULT_LOWER_THRESHOLD
 from mlalgms.statsmodel import calculateHistoricalParameters,calculateMovingAverageParameters,calculateExponentialSmoothingParameters
 from mlalgms.statsmodel import calculateDoubleExponentialSmoothingParameters,createHoltWintersModel,retrieveSaveModelData
 from mlalgms.statsmodel import IS_UPPER_BOUND, IS_UPPER_O_LOWER_BOUND, IS_LOWER_BOUND
-from mlalgms.statsmodel import detectAnomalies,detectLowerUpperAnomalies,calculateBivariateParameters
+from mlalgms.statsmodel import detectAnomalies,detectLowerUpperAnomalies
 from mlalgms.fbprophetalgm import prophetPredictUpperLower,PROPHET_PERIOD, PROPHET_FREQ,DEFAULT_PROPHET_PERIOD, DEFAULT_PROPHET_FREQ
 from metrics.monitoringmetrics import modelmetrics, anomalymetrics, hpascoremetrics
 from metrics.metricclass import SingleMetricInfo
@@ -85,9 +85,8 @@ def calculateSingleMetricModel(metricInfo, modelHolder, metricType, strategy=Non
     series = metricInfo.metricDF
     threshold = globalConfig.getThresholdByKey(metricType,THRESHOLD)
     minLowerBound = globalConfig.getThresholdByKey(metricType,MIN_LOWER_BOUND)
-    if strategy == 'hpa':
-        
-        calculateHistoricalModel(series, interval_width=0.8, predicted_count=35, gprobability=0.8, metricPattern= None):
+    #if strategy == 'hpa':    
+    #    calculateHistoricalModel(series, interval_width=0.8, predicted_count=35, gprobability=0.8, metricPattern= None)
 
     if modelHolder.model_name == AI_MODEL.MOVING_AVERAGE.value:
         window = modelHolder.getModelConfigByKey(WINDOW)

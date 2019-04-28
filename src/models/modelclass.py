@@ -50,6 +50,8 @@ class ModelHolder:
 
     def getModelConfigKeys(self):
         return self._model_config.keys()
+    def getModelConfigs(self):
+        return self._model_config
     
     def storeModels(self):
         return self._model_data

@@ -12,7 +12,7 @@ from wavefront.metric import convertResponseToMetricInfos  #parseQueryData
 from utils.urlutils import dorequest
 from utils.dictutils import retrieveKVList
 from helpers.modelhelpers import calculateModel,detectAnomalyData
-from helpers.hpahelpers import calculateScore,calculateHPAModels
+from helpers.hpahelpers import calculateHPAScore,calculateHPAModels
 from wavefront.apis import executeQuery,dequote
 from metrics.monitoringmetrics import getModelUrl
 from metadata.globalconfig import globalconfig
@@ -356,7 +356,7 @@ def computeAnomaly(metricInfoDataset, modelHolder, strategy = None):
     if (strategy=='hpa'):
         if metricTypeSize==0:
             return
-        return calculateScore( metricInfoDataset, modelHolder, strategy)
+        return calculateHPAScore( metricInfoDataset, modelHolder, strategy)
     anomalieDisplay =[]
     isFirstTime = True
     if (metricTypeSize>0):
