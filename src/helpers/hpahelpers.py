@@ -139,7 +139,7 @@ def calculateHPAScore(metricInfoDataset, modelHolder):
     for metricType, metricInfoList in metricInfoDataset.items():
         for metricInfo in metricInfoList:
                 if hap_metricInfo is None:
-                    hpa_metricInfo = metricInfo
+                    hap_metricInfo = metricInfo
                 priority = modelHolder.getModelConfigByKey('hpa',metricType,'priority')
                 algorithm = modelHolder.getModelParametersByKey(metricType,'algorithm')
                 mlmodel = modelHolder.getModelByKey(metricType)
