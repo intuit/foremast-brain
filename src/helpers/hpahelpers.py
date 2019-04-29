@@ -17,7 +17,6 @@ from es.elasticsearchutils import ESClient
 
 es = ESClient()
 
-
 # logging
 logging.basicConfig(format='%(asctime)s %(message)s')
 logger = logging.getLogger('hpahelpers')
@@ -26,6 +25,102 @@ logger = logging.getLogger('hpahelpers')
 globalConfig =  globalconfig()
 hpascoremetrics = hpascoremetrics()
 
+
+
+def triggerHPAScoreMetric(metricInfo, score):
+    logger.warning("## emit score hpa_score ->" +str(metricInfo.metricKeys)+" "+str(score))
+    try:
+        hpascoremetrics.sendMetric(metricInfo.metricName, metricInfo.metricKeys, score)
+    except Exception as e:
+        logger.error('triggerHPAScoreMetric '+metricInfo.metricName+' failed ',e )
+
+def calculateHPAScore(metricInfoDataset, modelHolder):
+    metricTypeSize = len(metricInfoDataset)
+    if (metricTypeSize==0):
+        logger.warning(modelHolder.id+' metric type size is 0.')
+        return
+    hpametricinfolist = []
+    hap_metricInfo = None
+    ddd = None
+    for metricType, metricInfoList in metricInfoDataset.items():
+        for metricInfo in metricInfoList:
+                if hap_metricInfo is None:
+                    hap_metricInfo = metricInfo
+                priority = modelHolder.getModelConfigByKey('hpa',metricType,'priority')
+                algorithm = modelHolder.getModelParametersByKey(metricType,'algorithm')
+                mlmodel = modelHolder.getModelByKey(metricType)
+                properties = modelHolder.getModelConfigByKey('hpa',metricType)
+                hpainfo = hpametricinfo(priority, metricType, metricInfo.metricDF, algorithm,  mlmodel, properties)
+                hpametricinfolist.append(hpainfo)
+                if ddd is None:
+                    ddd = metricInfo.metricDF
+                else:
+                    ddd = pd.merge(ddd,  metricInfo.metricDF, left_on=ddd.index, right_on= metricInfo.metricDF.index)
+    #### joined ts
+    size=len(ddd)
+    print(ddd.column)
+    ts = 0
+    if (size>0):
+        #TODO: fetch the max one
+        try:
+            ts = ddd.key_0.values[-1]
+        except Exception as e:
+            logger.error("uuid : " + modelHolder.id + " merge dataframe failed "+str(ddd.column), e)
+    score, loginfo = calculateMetricsScore(hpametricinfolist,ts)
+    if loginfo is not None:
+        es.save_reason(modelHolder.id, ts, loginfo)
+    hpascore =round(score, 0)
+#    logger.warning(getNowStr()+'###calculated score is '+hpascore )
+    triggerHPAScoreMetric(hap_metricInfo, score)
+           
+    
+
+
+        
+
+def retrieveConfig(metricType, modelHolder):
+    threshold = modelHolder.getModelConfigByKey(metricType,THRESHOLD)
+    minLowerBound= modelHolder.getModelConfigByKey(metricType,MIN_LOWER_BOUND)
+    if threshold is None:
+        threshold = globalConfig.getThresholdByKey(metricType,THRESHOLD)
+    if minLowerBound is None:
+        minLowerBound = globalConfig.getThresholdByKey(metricType,MIN_LOWER_BOUND)  
+    return threshold, minLowerBound   
+
+
+
+         
+
+def calculateHPAModels(metricInfos, modelHolder, metricTypes):
+    modeldatajson = {}
+    modelparametersjson = {}
+    size = len(metricInfos)
+    hapinfoList=[]
+    for i in range (len(metricInfos)):
+        threshold, minLowerBound = retrieveConfig(metricTypes[i], modelHolder)
+        probability = convertToPvalue(threshold)
+        algm, modeldata, metricpattern, trend = calculateHistoricalModel(metricInfos[i][0].metricDF, intervalwidth=probability , predicted_count=35, gprobability=threshold)
+        modeldatajson[metricTypes[i]]= modeldata 
+        modelparametersjson[metricTypes[i]] = {'algorithm':algm,'metricpattern':metricpattern, 'trend':trend}
+        modelHolder.setAllModelParameters(metricTypes[i],modelparametersjson[metricTypes[i]] )
+        modelHolder.setModel(metricTypes[i], modeldata)
+    es.save_model(modelHolder.id, model_parameters=modelHolder.storeModelParameters(),  model_data=modelHolder.storeModels())
+    return modelHolder
+    
+#def fetchPersistedModel(modelHolder):  
+      
+
+
+
+
+def calculate_score(diff):
+    score = min(50,diff*10)
+    return score
+
+def calculate_lowscore(diff, mean, stdev):
+    score = ((diff*stdev)/mean)*50
+    logger.warning('*******************',score, diff, mean,stdev)
+    return score
 
 
 
@@ -122,94 +217,4 @@ def calculateScore( metricInfoDataset, modelHolder):
     triggerHPAScoreMetric(lmetricInfo, score)
 
 '''
-def triggerHPAScoreMetric(metricInfo, score):
-    logger.warning("## emit score hpa_score ->" +str(metricInfo.metricKeys)+" "+str(score))
-    try:
-        hpascoremetrics.sendMetric(metricInfo.metricName, metricInfo.metricKeys, score)
-    except Exception as e:
-        logger.error('triggerHPAScoreMetric '+metricInfo.metricName+' failed ',e )
-
-def calculateHPAScore(metricInfoDataset, modelHolder):
-    metricTypeSize = len(metricInfoDataset)
-    if (metricTypeSize==0):
-        return
-    hpametricinfolist = []
-    hap_metricInfo = None
-    ddd = None
-    for metricType, metricInfoList in metricInfoDataset.items():
-        for metricInfo in metricInfoList:
-                if hap_metricInfo is None:
-                    hap_metricInfo = metricInfo
-                priority = modelHolder.getModelConfigByKey('hpa',metricType,'priority')
-                algorithm = modelHolder.getModelParametersByKey(metricType,'algorithm')
-                mlmodel = modelHolder.getModelByKey(metricType)
-                properties = modelHolder.getModelConfigByKey('hpa',metricType)
-                hpainfo = hpametricinfo(priority, metricType, metricInfo.metricDF, algorithm,  mlmodel, properties)
-                hpametricinfolist.append(hpainfo)
-                if ddd is None:
-                    ddd = metricInfo.metricDF
-                else:
-                    ddd = pd.merge(ddd,  metricInfo.metricDF, left_on=ddd.index, right_on= metricInfo.metricDF.index)
-    #### joined ts
-    print(ddd)
-    size=len(ddd)
-    ts = 0
-    if (size>0):
-        #TODO: fetch the max one
-        ts = ddd.key_0.values[-1]
-    score, loginfo = calculateMetricsScore(hpametricinfolist,ts)
-    if loginfo is not None:
-        es.save_reason(modelHolder.id, ts, loginfo)
-    hpascore =round(score, 0)
-#    logger.warning(getNowStr()+'###calculated score is '+hpascore )
-    triggerHPAScoreMetric(hap_metricInfo, score)
-           
-    
-
-
-        
-
-def retrieveConfig(metricType, modelHolder):
-    threshold = modelHolder.getModelConfigByKey(metricType,THRESHOLD)
-    minLowerBound= modelHolder.getModelConfigByKey(metricType,MIN_LOWER_BOUND)
-    if threshold is None:
-        threshold = globalConfig.getThresholdByKey(metricType,THRESHOLD)
-    if minLowerBound is None:
-        minLowerBound = globalConfig.getThresholdByKey(metricType,MIN_LOWER_BOUND)  
-    return threshold, minLowerBound   
-
-
-
-         
-
-def calculateHPAModels(metricInfos, modelHolder, metricTypes):
-    modeldatajson = {}
-    modelparametersjson = {}
-    size = len(metricInfos)
-    hapinfoList=[]
-    for i in range (len(metricInfos)):
-        threshold, minLowerBound = retrieveConfig(metricTypes[i], modelHolder)
-        probability = convertToPvalue(threshold)
-        algm, modeldata, metricpattern, trend = calculateHistoricalModel(metricInfos[i][0].metricDF, intervalwidth=probability , predicted_count=35, gprobability=threshold)
-        modeldatajson[metricTypes[i]]= modeldata 
-        modelparametersjson[metricTypes[i]] = {'algorithm':algm,'metricpattern':metricpattern, 'trend':trend}
-        modelHolder.setAllModelParameters(metricTypes[i],modelparametersjson[metricTypes[i]] )
-        modelHolder.setModel(metricTypes[i], modeldata)
-    es.save_model(modelHolder.id, model_parameters=modelHolder.storeModelParameters(),  model_data=modelHolder.storeModels())
-    return modelHolder
-    
-#def fetchPersistedModel(modelHolder):  
-      
-
-
-
-
-def calculate_score(diff):
-    score = min(50,diff*10)
-    return score
-
-def calculate_lowscore(diff, mean, stdev):
-    score = ((diff*stdev)/mean)*50
-    logger.warning('*******************',score, diff, mean,stdev)
-    return score
         
