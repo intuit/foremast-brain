@@ -28,7 +28,7 @@ class ModelHolder:
         self._model_data.setdefault(key, value)
     '''
     def getModelByKey(self, metricType, key=None):
-        data = self.getModelByKey1(metricType)
+        data = self.getModelsByKey1(metricType)
         if data is None:
             return data
         if key is None:
@@ -69,6 +69,8 @@ class ModelHolder:
             return self.getModelParametersByKey1(key1)
         else:
             data = self.getModelParametersByKey2(key1,key2)
+            if key3 is None:
+                return data
             if data is None:
                 return None
             if not key3 in data:
@@ -80,7 +82,7 @@ class ModelHolder:
         return self._model_parameters[key1]
     
     def getModelParametersByKey2(self, key1, key2):
-        data = self.getModelParametersByKey1(self, key1)
+        data = self.getModelParametersByKey1( key1)
         if data is None:
             return data
         if not key2 in data:
