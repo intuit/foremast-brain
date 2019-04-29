@@ -1,5 +1,7 @@
 from metadata.metadata import METRIC_PERIOD
 
+import numpy as np
+
 class MetricInfo:
     def __init__(self, metricClass='MetricInfo'):
         self.metricClass= metricClass
@@ -8,17 +10,19 @@ class MetricInfo:
 class SingleMetricInfo(MetricInfo):
     def __init__(self,  metricName, metricKeys, columnmap, metricDF, metricTCategory=METRIC_PERIOD.CURRENT.value, metricClass = 'SingleMetricInfo'):
         self.columnmap = columnmap
-        self.metricDF = metricDF
+        if metricDF is not None:
+            df = metricDF
+            df = df[np.isfinite(df).all(1)]
+            self.metricDF = df
+        else:
+            self.metricDF = None
         self.metricName= metricName
         self.metricKeys = metricKeys
         self.metricTCategory =  metricTCategory
         self.metricClass = metricClass
     def copyConfig(self):
         return SingleMetricInfo(self.metricName, self.metricKeys,{},None,self.metricCategory, self.metricClass)
-
-
-    
-        
+  
         
         
 class MultiTypeMetricInfo(MetricInfo):
@@ -26,7 +30,12 @@ class MultiTypeMetricInfo(MetricInfo):
         self.columnmap = columnmap
         self.metricNamelist = metricNamelist
         self.metricKeys = metricKeys
-        self.metricDF = metricDF
+        if metricDF is not None:
+            df = metricDF
+            df = df[np.isfinite(df).all(1)]
+            self.metricDF = df
+        else:
+            self.metricDF = None
         self.metricTCategorylist =  metricTCategorylist
         self.metricClass = metricClass
 
@@ -39,7 +48,12 @@ class MultiKeyMetricInfo(MetricInfo):
         self.columnmap = columnmap
         self.metricName= metricName
         self.metricKeyslist = metricKeyslist
-        self.metricDF = metricDF
+        if metricDF is not None:
+            df = metricDF
+            df = df[np.isfinite(df).all(1)]
+            self.metricDF = df
+        else:
+            self.metricDF = None
         self.metricTCategorylist =  metricTCategorylist
         self.metricClass = metricClass
     def copyConfig(self):

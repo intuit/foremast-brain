@@ -79,7 +79,7 @@ def checkCurrentRange(algorithm, mlmodel,dataframe, ts):
 #  Need to get max ts.
 #  How to deal with missing data
 #######################################		
-		
+'''		
 def addhpamap(map,rtmetricmd):
 	ts = rtmetricmd.ts
 	canAdd = False
@@ -102,4 +102,4 @@ def retriveTime(map):
 	for key in map:
 		return map[key][0]
 	
-	
+'''	

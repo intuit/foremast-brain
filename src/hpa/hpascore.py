@@ -8,7 +8,7 @@ NO_CHANGE = 0
 BASE_SCORE = 50 
 
 
-def calculateMetricsScore(hpametricinfos, ts,ensuredMetrics=['latency'],  mostRecentlyScore = BASE_SCORE):
+def calculateMetricsScore(hpametricinfos, ts,ensuredMetrics=['latency','cpu'],  mostRecentlyScore = BASE_SCORE):
     score = mostRecentlyScore
     logJson ={}
     
