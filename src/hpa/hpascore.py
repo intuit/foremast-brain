@@ -43,22 +43,25 @@ def calculateMetricsScore(hpametricinfos, ts,ensuredMetrics=['latency'],  mostRe
                     ensuredMetricsOcurred = True
                     if (trend == UP):
                         #there will be no hpa change. 
-                        return score, None
+                        msg = logReason(score)
+                        if msg is None:
+                            return score, None
+                        logJson['reason']=msg
+                        logJson['hpascore'] = score
+                        logJson['details'] =  metricDetails
+                        return score, logJson
                     elif trend == DOWN:
-                        score -= - trend*5
+                        score = score - trend*5
                         logJson['reason']='hpa is scaling down'
                         logJson['hpascore'] = score
                         logJson['details'] =  metricDetails
                         return score, logJson
                 else:
                     if ensuredMetricsOcurred:
-                        if (score > 50):
-                            logJson['reason']='hpa is scaling up'
-                        elif score <50:
-                            logJson['reason']='hpa is scaling down'
-                        else:
+                        msg = logReason(score)
+                        if msg is None:
                             return score, None
-                            
+                        logJson['reason'] = msg    
                         logJson['hpascore'] = score
                         logJson['details'] =  metricDetails
                         return score, logJson
@@ -92,7 +95,8 @@ def calculateMetricsScore(hpametricinfos, ts,ensuredMetrics=['latency'],  mostRe
                     else:
                         if ensuredMetricsOcurred:
                             #TODO
-                            score - trend *2.5, logJson
+                            score = score- trend *2.5
+                            score, logJson
                         continue
                 elif trend == UP:
                     msg = logReason(score)
@@ -102,6 +106,12 @@ def calculateMetricsScore(hpametricinfos, ts,ensuredMetrics=['latency'],  mostRe
                     logJson['hpascore'] = score
                     logJson['details'] =  metricDetails
                     return score, logJson
+    msg = logReason(score)
+    if msg is None:
+        return score, None   
+    logJson['reason']=msg
+    logJson['hpascore'] = score
+    logJson['details'] =  metricDetails         
     return score, logJson
             
             
