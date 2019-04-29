@@ -58,7 +58,6 @@ def calculateHPAScore(metricInfoDataset, modelHolder):
                     ddd = pd.merge(ddd,  metricInfo.metricDF, left_on=ddd.index, right_on= metricInfo.metricDF.index)
     #### joined ts
     size=len(ddd)
-    print(ddd.columns)
     ts = 0
     if (size>0):
         #TODO: fetch the max one

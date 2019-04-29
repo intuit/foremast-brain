@@ -62,13 +62,13 @@ def queryData(metricUrl, period, isProphet = False, datasource='prometheus'):
                             logger.error(e1.__cause__)
                         
                 elif datasource == 'wavefront':
+                    writeMetricToWaveFront =   config.getValueByKey('METRIC_DESTINATION')=='wavefront'
                     datalist = metricUrl.split("&&")
                     if len(datalist)<4:
                         logger.error("missing wavefront query parameters : " +metricUrl)
                         return []
                     qresult  = executeQuery(datalist[0], datalist[1], datalist[2], datalist[3])
                     if period == METRIC_PERIOD.HISTORICAL.value and (modeDropAnomaly is not None and modeDropAnomaly=='y'):
-                        writeMetricToWaveFront =   config.getValueByKey('METRIC_DESTINATION')=='wavefront'
                         #amonaly result 
                         try:
                             aresult = executeQuery(getModelUrl(dequote(datalist[0]), datasource), datalist[1], datalist[2], datalist[3])
@@ -241,7 +241,7 @@ def computeHistoricalModel(historicalConfigMap, modelHolder, isProphet = False, 
             modelHolder.loadModels(modeldata)
             modelParameters= es.get_model_parameters(modelHolder.id)
             modelHolder.ModelParameters(modelParameters)
-            modelHolder,msg
+            #return modelHolder,msg
         
     for metricType, metricUrl in historicalConfigMap.items():
         metricStore = 'prometheus'
