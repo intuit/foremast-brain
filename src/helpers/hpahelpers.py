@@ -3,6 +3,7 @@ from mlalgms.hpaprediction import calculateHistoricalModel
 from hpa.metricscore import hpametricinfo
 from models.modelclass import ModelHolder
 from hpa.hpascore import calculateMetricsScore
+import pandas as pd
 
 from mlalgms.scoreutils import  convertToPvalue
 from metrics.monitoringmetrics import modelmetrics, anomalymetrics, hpascoremetrics
@@ -134,6 +135,7 @@ def calculateHPAScore(metricInfoDataset, modelHolder):
         return
     hpametricinfolist = []
     hap_metricInfo = None
+    ddd = None
     for metricType, metricInfoList in metricInfoDataset.items():
         for metricInfo in metricInfoList:
                 if hap_metricInfo is None:
@@ -144,7 +146,16 @@ def calculateHPAScore(metricInfoDataset, modelHolder):
                 properties = modelHolder.getModelConfigByKey('hpa',metricType)
                 hpainfo = hpametricinfo(priority, metricType, metricInfo.metricDF, algorithm,  mlmodel, properties)
                 hpametricinfolist.append(hpainfo)
-    score= calculateMetricsScore(hpametricinfolist)
+                if ddd is None:
+                    ddd = metricInfo.metricDF
+                else:
+                    ddd = pd.merge(ddd,  metricInfo.metricDF, left_on=ddd.index, right_on= metricInfo.metricDF.index)
+    #### joined ts
+    print(ddd)
+    size=len(ddd)
+    if (size>0):
+        ts = ddd.index[-1]
+    score= calculateMetricsScore(hpametricinfolist,ts)
     hpascore =round(score, 0)
     logger.warning(getNowStr(),"###calculated score is ",hpascore )
     triggerHPAScoreMetric(hap_metricInfo, score)
