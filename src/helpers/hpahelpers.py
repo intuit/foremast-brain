@@ -153,11 +153,15 @@ def calculateHPAScore(metricInfoDataset, modelHolder):
     #### joined ts
     print(ddd)
     size=len(ddd)
+    ts = 0
     if (size>0):
-        ts = ddd.index[-1]
-    score= calculateMetricsScore(hpametricinfolist,ts)
+        #TODO: fetch the max one
+        ts = ddd.key_0.values[-1]
+    score, loginfo = calculateMetricsScore(hpametricinfolist,ts)
+    if loginfo is not None:
+        es.save_reason(modelHolder.id, ts, loginfo)
     hpascore =round(score, 0)
-    logger.warning(getNowStr(),"###calculated score is ",hpascore )
+#    logger.warning(getNowStr()+'###calculated score is '+hpascore )
     triggerHPAScoreMetric(hap_metricInfo, score)
            
     
@@ -186,7 +190,7 @@ def calculateHPAModels(metricInfos, modelHolder, metricTypes):
     for i in range (len(metricInfos)):
         threshold, minLowerBound = retrieveConfig(metricTypes[i], modelHolder)
         probability = convertToPvalue(threshold)
-        algm, modeldata, metricpattern, trend = calculateHistoricalModel(metricInfos[i][0].metricDF, interval_width=probability , predicted_count=35, gprobability=threshold)
+        algm, modeldata, metricpattern, trend = calculateHistoricalModel(metricInfos[i][0].metricDF, intervalwidth=probability , predicted_count=35, gprobability=threshold)
         modeldatajson[metricTypes[i]]= modeldata 
         modelparametersjson[metricTypes[i]] = {'algorithm':algm,'metricpattern':metricpattern, 'trend':trend}
         modelHolder.setAllModelParameters(metricTypes[i],modelparametersjson[metricTypes[i]] )

@@ -27,23 +27,14 @@ def storeAsJson(predictions):
 
 def checkHPAAnomaly(timestamp, value, mlmodel, algorithm=AI_MODEL.PROPHET.value):
     if algorithm in [AI_MODEL.MOVING_AVERAGE_ALL.value]:
-        return testRange(value, mlmodel['lower_bound'],mlmodel['upper_bound'])
+        #formast will be low, high, mean, stdev
+        return testRange(value, mlmodel[0],mlmodel[1])
     elif algorithm in [AI_MODEL.PROPHET.value]:
-        if "predictions" not in mlmodel:
-            return 0,0,0
-        else:
-            preds = mlmodel['predictions']
+            preds = mlmodel
             length = len(preds)
-            prev = 0
             for i in range(length):
-                if (timestamp< preds[i][0]):
-                    if (timestamp > prev):
-                        prev = preds[i][0]
-                    else:
-                        testRange(value, preds[i][0],preds[i][1])
-                else:
-                    if (timestamp > prev):
-                        testRange(value, preds[i][0],preds[i][1])
+                if (timestamp<= preds[i][0]):
+                    return testRange(value, preds[i][1],preds[i][2])        
             #unknow
             return 0,0,0
 
@@ -59,7 +50,7 @@ def testRange(value, low, high):
         
 
 
-def calculateHistoricalModel(dataframe, interval_width=0.8, predicted_count=35, gprobability=0.8, metricPattern= None):
+def calculateHistoricalModel(dataframe, intervalwidth=0.8, predicted_count=35, gprobability=0.8, metricPattern= None):
     if metricPattern is None:
         metricPattern, type = suggestedPattern(dataframe, ignoreHourly=True)
     if metricPattern in ['stationary',  'not stationary']:
@@ -69,7 +60,7 @@ def calculateHistoricalModel(dataframe, interval_width=0.8, predicted_count=35, 
         df_prophet = convertToProphetDF(dataframe)
         #current we only predict hourly or daily. prophet only support f
         #https://github.com/facebook/prophet/issues/118 for suggestion
-        predictedDF= prophetPredictUpperLower(df_prophet, predicted_count, 'T', seasonality_name= 'daily', interval_width=0.8,isHPA=True) 
+        predictedDF= prophetPredictUpperLower(df_prophet, predicted_count, 'T', seasonality_name= 'daily', interval_width=intervalwidth) 
         trend = calculateTSTrend(predictedDF.yhat.values,predictedDF.index.get_values())
         predicted = storeAsJson(predictedDF)
         return AI_MODEL.PROPHET.value, predicted, metricPattern, trend
