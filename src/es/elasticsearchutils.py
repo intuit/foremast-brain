@@ -12,13 +12,28 @@ INDEX_TYPE = "document"
 REQ_INDEX_NAME = "documents"
 LOG_INDEX_NAME = "hpalogs"
 LOG_DOC_COUNT = 10
-MODEL_INDEX_NAME = "models"
+MODEL_DATA_INDEX_NAME = "model_datas"
+MODEL_CONFIG_INDEX_NAME = "model_configs"
+MODEL_PARAMETER_INDEX_NAME = "model_parameters"
 
 # query by job id
 payload_query_by_job_id = Template('''
 {
     "query": {
-        "match": {"job_id": "$jobid"}
+        "bool": {
+            "must": [{
+                "match": {
+                    "job_id": "$jobid"
+                }
+            }],
+            "filter": [{
+                "range": {
+                    "modified_at": {
+                        "lte": "now-${pass_sec}s/s"
+                    }
+                }
+            }]
+        }
     },
     "sort": [{
         "modified_at": {
@@ -27,7 +42,9 @@ payload_query_by_job_id = Template('''
         }
     }]
 }
-''')
+'''
+)
+
 
 # query by status list
 payload_search_status_list2 = Template('''{
@@ -79,8 +96,12 @@ class ESClient:
             self.es.indices.create(index=REQ_INDEX_NAME, ignore=400)
         if not self.es.indices.exists(LOG_INDEX_NAME):
             self.es.indices.create(index=LOG_INDEX_NAME, ignore=400)
-        if not self.es.indices.exists(MODEL_INDEX_NAME):
-            self.es.indices.create(index=MODEL_INDEX_NAME, ignore=400)
+        if not self.es.indices.exists(MODEL_DATA_INDEX_NAME):
+            self.es.indices.create(index=MODEL_DATA_INDEX_NAME, ignore=400)
+        if not self.es.indices.exists(MODEL_PARAMETER_INDEX_NAME):
+            self.es.indices.create(index=MODEL_PARAMETER_INDEX_NAME, ignore=400)
+        if not self.es.indices.exists(MODEL_CONFIG_INDEX_NAME):
+            self.es.indices.create(index=MODEL_CONFIG_INDEX_NAME, ignore=400)
 
     def search_by_id(self, id, index_name=REQ_INDEX_NAME, doc_type=INDEX_TYPE):
         """
@@ -130,7 +151,7 @@ class ESClient:
             self.es.update(index_name, doc_type, uuid, body=bodies)
             return True
         except Exception as e:
-            logger.exception('Exception when update doc %s with %s status %s\n', (uuid, status, e))
+            logger.exception('Exception when update doc %s with %s status %s\n', uuid, status, e)
             return False
 
     def search_status_and_lastmodify(self, status, pass_sec=3, index_name=REQ_INDEX_NAME, doc_type=INDEX_TYPE):
@@ -146,7 +167,7 @@ class ESClient:
             qry = payload_search_status_with_filter.substitute(status=status, pass_sec=pass_sec)
             return self.es.search(index_name, doc_type, body=qry)
         except Exception as e:
-            logger.exception('Exception when search doc by status %s %s\n', (status, e))
+            logger.exception('Exception when search doc by status %s %s\n', status, e)
             return None
 
     def search_by_statuslist(self, *status, index_name=REQ_INDEX_NAME, doc_type=INDEX_TYPE):
@@ -176,7 +197,7 @@ class ESClient:
         try:
             body = {'job_id': jobid, 'hpalog': log_content, 'timestamp': log_time}
             res = self.es.search(index_name, doc_type,
-                                 body=payload_query_by_job_id.substitute(jobid=jobid, order='asc'))
+                                 body=payload_query_by_job_id.substitute(jobid=jobid, order='asc', pass_sec=0))
             cnt, _ = self.parse_result(res)
             if cnt >= LOG_DOC_COUNT:
                 # update the oldest doc
@@ -192,10 +213,10 @@ class ESClient:
             logger.exception('Exception when save hpa logs {}'.format(jobid))
             return False
 
-    def save_model(self, jobid, model_parameters={}, model_data={}, model_config={}, index_name=MODEL_INDEX_NAME,
-                   doc_type=INDEX_TYPE):
+    def save_model(self, jobid, model_parameters={}, model_data={}, model_config={}, index_name=None, doc_type=INDEX_TYPE):
         """
         Store model that can share with other components
+        The parameters, data and config will be stored to different indexes, call API with named arguments is preferred
         :param jobid: application name:namespace:strategy for HPA, uuid for other strategy
         :param model_parameters:
         :param model_data:
@@ -208,14 +229,20 @@ class ESClient:
             if model_parameters:
                 model_parameters['modified_at'] = self.__get_now()
                 body['model_parameters'] = model_parameters
-            if model_data:
+                if not index_name:
+                    index_name = MODEL_PARAMETER_INDEX_NAME
+            elif model_data:
                 model_data['modified_at'] = self.__get_now()
                 body['model_data'] = model_data
-            if model_config:
+                if not index_name:
+                    index_name = MODEL_DATA_INDEX_NAME
+            elif model_config:
                 model_config['modified_at'] = self.__get_now()
                 body['model_config'] = model_config
+                if not index_name:
+                    index_name = MODEL_CONFIG_INDEX_NAME
             res = self.es.search(index_name, doc_type,
-                                 body=payload_query_by_job_id.substitute(jobid=jobid, order='desc'))
+                                 body=payload_query_by_job_id.substitute(jobid=jobid, order='desc', pass_sec=0))
             cnt, _ = self.parse_result(res)
             if cnt > 0:
                 # update the doc
@@ -231,29 +258,32 @@ class ESClient:
             logger.exception('Exception when save model {}'.format(jobid))
             return False
 
-    def get_model_config(self, jobid, index_name=MODEL_INDEX_NAME, doc_type=INDEX_TYPE):
+    def get_model_config(self, jobid, interval, index_name=MODEL_CONFIG_INDEX_NAME, doc_type=INDEX_TYPE):
         """
         Retrieve model config
         :param jobid: application name:namespace:strategy for HPA, uuid for other strategy
+        :param interval config valid time
         :return:
         """
-        return self.__get_data(jobid, 'model_config', index_name, doc_type)
+        return self.__get_data(jobid, 'model_config', interval, index_name, doc_type)
 
-    def get_model_data(self, jobid, index_name=MODEL_INDEX_NAME, doc_type=INDEX_TYPE):
+    def get_model_data(self, jobid, interval, index_name=MODEL_DATA_INDEX_NAME, doc_type=INDEX_TYPE):
         """
         Retrieve model data
         :param jobid: application name : namespace : strategy
+        :param interval data valid time
         :return:
         """
-        return self.__get_data(jobid, 'model_data', index_name, doc_type)
+        return self.__get_data(jobid, 'model_data', interval, index_name, doc_type)
 
-    def get_model_parameters(self, jobid, index_name=MODEL_INDEX_NAME, doc_type=INDEX_TYPE):
+    def get_model_parameters(self, jobid, interval, index_name=MODEL_PARAMETER_INDEX_NAME, doc_type=INDEX_TYPE):
         """
         Retrieve model parameters
         :param jobid: application name:namespace:strategy for HPA, uuid for other strategy
+        :param interval parameters valid time
         :return:
         """
-        return self.__get_data(jobid, 'model_parameters', index_name, doc_type)
+        return self.__get_data(jobid, 'model_parameters', interval, index_name, doc_type)
 
     def parse_result(self, res):
         """
@@ -272,7 +302,7 @@ class ESClient:
             list.append(res['_source'])
         return len(list), list
 
-    def __get_data(self, jobid, key, index_name=MODEL_INDEX_NAME, doc_type=INDEX_TYPE):
+    def __get_data(self, jobid, key, interval, index_name, doc_type=INDEX_TYPE):
         """
         Used by model retrieve methods
         :param jobid:
@@ -281,7 +311,7 @@ class ESClient:
         """
         try:
             res = self.es.search(index_name, doc_type,
-                                 body=payload_query_by_job_id.substitute(jobid=jobid, order='desc'))
+                                 body=payload_query_by_job_id.substitute(jobid=jobid, order='desc', pass_sec=interval))
             cnt, list = self.parse_result(res)
             if cnt > 0 and key in list[0]:
                 return list[0][key]
