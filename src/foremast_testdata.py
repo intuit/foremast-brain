@@ -86,16 +86,61 @@ wavefront_request_hpa ={
           "currentConfig" : "error4xx== avg%28align%2860s%2C+mean%2C+ts%28appdynamics.apm.transactions.90th_percentile_resp_time_ms%2C+env%3Dprd+and+app%3Dfds-fss+%29%29%2C+app%29&&START_TIME&&m&&END_TIME ||latency== sum%28align%2860s%2C+mean%2C+ts%28appdynamics.apm.transactions.errors_per_min%2C+env%3Dprd+and+app%3Dfds-fss+%29%29%2C+app%29&&START_TIME&&m&&END_TIME",
           "modified_at" : "2019-04-22T20:56:16.880918+00:00",
           "strategy" : "hpa",
-          "status" : "completed_unknown",
+          "status" : "preprocess_inprogress",
           "statusCode" : "200",
           "policy" : "default",
           "info" : "Error: there is no current Metric. "
+}
+
+
+prometheus_request_hpa ={
+    "id": "3c100dba1da813e4e0be6ca07d88a5bbafe3ac8a0cacd58f1e8bcacfdb2119d1",
+    "appName": "hpa-samples",
+    "created_at": "2019-04-23T18:11:21.823927509Z",
+    "startTime": "2019-04-23T18:11:16Z",
+    "endTime": "2019-04-23T18:11:16Z",
+    "modified_at": "2019-04-23T13:56:07.538550-07:00",
+    
+    "currentConfig": "cpu== http://prometheus.iks-system.svc.cluster.local:9090/api/v1/query_range?query=namespace_app_pod_cpu_usage_seconds_total%7Bnamespace%3D%22dev-fm-foremast-examples-usw2-dev-dev%22%2Capp%3D%22hpa-samples%22%7D&START_TIME&END_TIME&step=60 ||tomcat_threads== http://prometheus.iks-system.svc.cluster.local:9090/api/v1/query_range?query=namespace_app_pod_tomcat_threads_busy_percentage%7Bnamespace%3D%22dev-fm-foremast-examples-usw2-dev-dev%22%2Capp%3D%22hpa-samples%22%7D&START_TIME&END_TIME&step=60 ||traffic== http://prometheus.iks-system.svc.cluster.local:9090/api/v1/query_range?query=namespace_app_pod_http_server_requests_count%7Bnamespace%3D%22dev-fm-foremast-examples-usw2-dev-dev%22%2Capp%3D%22hpa-samples%22%7D&START_TIME&END_TIME&step=60",
+    "historicalConfig": "cpu== http://prometheus.iks-system.svc.cluster.local:9090/api/v1/query_range?query=namespace_app_pod_cpu_usage_seconds_total%7Bnamespace%3D%22dev-fm-foremast-examples-usw2-dev-dev%22%2Capp%3D%22hpa-samples%22%7D&START_TIME&END_TIME&step=60 ||tomcat_threads== http://prometheus.iks-system.svc.cluster.local:9090/api/v1/query_range?query=namespace_app_pod_tomcat_threads_busy_percentage%7Bnamespace%3D%22dev-fm-foremast-examples-usw2-dev-dev%22%2Capp%3D%22hpa-samples%22%7D&START_TIME&END_TIME&step=60 ||traffic== http://prometheus.iks-system.svc.cluster.local:9090/api/v1/query_range?query=namespace_app_pod_http_server_requests_count%7Bnamespace%3D%22dev-fm-foremast-examples-usw2-dev-dev%22%2Capp%3D%22hpa-samples%22%7D&START_TIME&END_TIME&step=60",
+  
+  
+    "currentConfig1": "cpu== http://prometheus.iks-system.svc.cluster.local:9090/api/v1/query_range?query=namespace_app_pod_cpu_usage_seconds_total%7Bnamespace%3D%22dev-fm-foremast-examples-usw2-dev-dev%22%2Capp%3D%22hpa-samples%22%7D&START_TIME&END_TIME&step=60 ||tomcat_threads== http://prometheus.iks-system.svc.cluster.local:9090/api/v1/query_range?query=namespace_app_pod_tomcat_threads_busy_percentage%7Bnamespace%3D%22dev-fm-foremast-examples-usw2-dev-dev%22%2Capp%3D%22hpa-samples%22%7D&start=START_TIME&end=END_TIME&step=60 ||traffic== http://prometheus.iks-system.svc.cluster.local:9090/api/v1/query_range?query=namespace_app_pod_http_server_requests_count%7Bnamespace%3D%22dev-fm-foremast-examples-usw2-dev-dev%22%2Capp%3D%22hpa-samples%22%7D&start=START_TIME&end=END_TIME&step=60",
+    "historicalConfig1": "cpu== http://prometheus.iks-system.svc.cluster.local:9090/api/v1/query_range?query=namespace_app_pod_cpu_usage_seconds_total%7Bnamespace%3D%22dev-fm-foremast-examples-usw2-dev-dev%22%2Capp%3D%22hpa-samples%22%7D&start=START_TIME&end=END_TIME&step=60 ||tomcat_threads== http://prometheus.iks-system.svc.cluster.local:9090/api/v1/query_range?query=namespace_app_pod_tomcat_threads_busy_percentage%7Bnamespace%3D%22dev-fm-foremast-examples-usw2-dev-dev%22%2Capp%3D%22hpa-samples%22%7D&start=START_TIME&end=END_TIME&step=60 ||traffic== http://prometheus.iks-system.svc.cluster.local:9090/api/v1/query_range?query=namespace_app_pod_http_server_requests_count%7Bnamespace%3D%22dev-fm-foremast-examples-usw2-dev-dev%22%2Capp%3D%22hpa-samples%22%7D&start=START_TIME&end=END_TIME&step=60",
+    "currentMetricStore": "cpu== prometheus ||tomcat_threads== prometheus ||traffic== prometheus",
+    "historicalMetricStore": "cpu== prometheus ||tomcat_threads== prometheus ||traffic== prometheus",
+    "status": "preprocess_inprogress",
+    "statusCode": "200",
+    "strategy": "hpa",
+    "hpaMetricsConfig": [
+    {
+    "priority": 3,
+    "name": "cpu",
+    "isIncrease": True,
+    "isAbsolute": True
+    },
+    {
+    "priority": 2,
+    "name": "tomcat_threads",
+    "isIncrease": True,
+    "isAbsolute": False
+    },
+    {
+    "priority": 1,
+    "name": "traffic",
+    "isIncrease": True,
+    "isAbsolute": False
+    }
+    ],
+    "namespace": "dev-fm-foremast-examples-usw2-dev-dev",
 }
 
 def getTestRequest(metricstore='prometheus', strategy = "continuous"):
   if metricstore=='prometheus':
       if strategy == "continuous":
           return prometheus_request
+      else:
+          return prometheus_request_hpa
   else:
       if strategy == "continuous":
           return wavefront_request

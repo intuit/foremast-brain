@@ -2,6 +2,7 @@ import logging
 import json
 import time
 
+
 #from scipy.stats import mannwhitneyu, wilcoxon,kruskal,friedmanchisquare
 
 from utils.timeutils import  canProcess, rateLimitCheck
@@ -215,7 +216,11 @@ def filterEmptyDF(metricInfoList, min_data_points = 0):
         return metricInfoList
     newList =[]
     for element in metricInfoList:
-        if element.metricClass=='MetricInfo':
+        if element.metricClass in ['SingleMetricInfo' , 'MultiTypeMetricInfo' ,'MultiKeyMetricInfo'] :
+            #this step will perform data clean up
+            #df = element.metricDF
+            #df = df[np.isfinite(df).all(1)]
+            #print(df)
             continue
             #TODO:
         elif element.metricDF.empty:
