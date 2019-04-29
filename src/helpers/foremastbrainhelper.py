@@ -364,11 +364,11 @@ def pairwiseMetricInfoListValidation(currentMetricInfoList, baselineMetricInfoLi
 
 def computeAnomaly(metricInfoDataset, modelHolder, strategy = None):
     metricTypeSize = len(metricInfoDataset)
+    if metricTypeSize==0:
+        return
     #hpa strategy
     if (strategy=='hpa'):
-        if metricTypeSize==0:
-            return
-        return calculateHPAScore( metricInfoDataset, modelHolder, strategy)
+        return calculateHPAScore( metricInfoDataset, modelHolder)
     anomalieDisplay =[]
     isFirstTime = True
     if (metricTypeSize>0):
