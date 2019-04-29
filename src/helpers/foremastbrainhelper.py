@@ -312,12 +312,14 @@ def computeNonHistoricalModel(configMap, period, metricStores=None, strategy=Non
     metricTypeCount = len(dataSet)
     if metricTypeCount == 0 :
         return dataSet, period
+    '''
     if metricTypeCount == 1 :
         pass
     elif metricTypeCount == 2 :
         pass
     else:
         pass
+    '''
     return dataSet, period
 
 

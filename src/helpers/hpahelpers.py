@@ -175,7 +175,7 @@ def calculateHPAModels(metricInfos, modelHolder, metricTypes):
     for i in range (len(metricInfos)):
         threshold, minLowerBound = retrieveConfig(metricTypes[i], modelHolder)
         probability = convertToPvalue(threshold)
-        algm, modeldata, metricpattern, trend = calculateHistoricalModel(metricInfos[i][0].metricDF, interval_width=probability , predicted_count=35, gprobability=probability)
+        algm, modeldata, metricpattern, trend = calculateHistoricalModel(metricInfos[i][0].metricDF, interval_width=probability , predicted_count=35, gprobability=threshold)
         modeldatajson[metricTypes[i]]= modeldata 
         modelparametersjson[metricTypes[i]] = {'algorithm':algm,'metricpattern':metricpattern, 'trend':trend}
         modelHolder.setAllModelParameters(metricTypes[i],modelparametersjson[metricTypes[i]] )
