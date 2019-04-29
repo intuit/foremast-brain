@@ -106,6 +106,12 @@ def calculateMetricsScore(hpametricinfos, ts,ensuredMetrics=['latency'],  mostRe
                     logJson['hpascore'] = score
                     logJson['details'] =  metricDetails
                     return score, logJson
+    msg = logReason(score)
+    if msg is None:
+        return score, None   
+    logJson['reason']=msg
+    logJson['hpascore'] = score
+    logJson['details'] =  metricDetails         
     return score, logJson
             
             

@@ -185,5 +185,5 @@ class hpascoremetrics:
         if not (newMetricName in self.instance.metrics ):
             self.setMetricInfo(metricname, labeldata)          
         newlabeldata = convertDictKey(labeldata,"-", "_")
-        print("*****",newMetricName,"*******",newlabeldata,'******',value)
+        #print("*****",newMetricName,"*******",newlabeldata,'******',value)
         self.instance.metrics[newMetricName].labels(**newlabeldata).set(value)
