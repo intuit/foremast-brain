@@ -36,7 +36,7 @@ def formatData(result, isProphet):
     return df
 
 
-def convertResponseToMetricInfos(result, metricPeriod,  isProphet=False, aresult=None):
+def convertResponseToMetricInfos(result, metricPeriod,  isProphet=False, aresult=None, isDestWaveFront=True):
     metricInfos = []
     if result.timeseries is None:
         logger.error("error: wavefront response does not have timeseries")
@@ -56,7 +56,7 @@ def convertResponseToMetricInfos(result, metricPeriod,  isProphet=False, aresult
 
             except Exception as e:
                 logger.error(e.__cause__)
-    name, kvs = parseQueryData(result.query, False)
+    name, kvs = parseQueryData(result.query, (not isDestWaveFront))
     jMetric = kvs
     kvs['name'] = name
     gMetric = kvs

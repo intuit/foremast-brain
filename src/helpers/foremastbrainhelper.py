@@ -68,13 +68,14 @@ def queryData(metricUrl, period, isProphet = False, datasource='prometheus'):
                         return []
                     qresult  = executeQuery(datalist[0], datalist[1], datalist[2], datalist[3])
                     if period == METRIC_PERIOD.HISTORICAL.value and (modeDropAnomaly is not None and modeDropAnomaly=='y'):
+                        writeMetricToWaveFront =   config.getValueByKey('METRIC_DESTINATION')=='wavefront'
                         #amonaly result 
                         try:
                             aresult = executeQuery(getModelUrl(dequote(datalist[0]), datasource), datalist[1], datalist[2], datalist[3])
-                            return convertResponseToMetricInfos(qresult, period, isProphet,aresult) 
+                            return convertResponseToMetricInfos(qresult, period, isProphet,aresult,isDestWaveFront=writeMetricToWaveFront) 
                         except Exception as e1:
                             logger.error(e1.__cause__)
-                    return convertResponseToMetricInfos(qresult, period, isProphet) 
+                    return convertResponseToMetricInfos(qresult, period, isProphet,isDestWaveFront=writeMetricToWaveFront) 
                 break
             except Exception as e:
                 logger.error(e.__cause__)
