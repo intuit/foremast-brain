@@ -1,5 +1,6 @@
 import unittest
-from metadata import REQUEST_STATE
+from metadata.metadata import REQUEST_STATE
+
 
 class metadata_test(unittest.TestCase):
     ww= REQUEST_STATE.COMPLETED_HEALTH

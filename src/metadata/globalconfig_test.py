@@ -1,4 +1,4 @@
-from globalconfig import globalconfig
+from metadata.globalconfig import globalconfig
 import unittest
 
 

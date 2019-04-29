@@ -2,17 +2,17 @@ import logging
 import json
 import time
 
-from scipy.stats import mannwhitneyu, wilcoxon,kruskal,friedmanchisquare
+#from scipy.stats import mannwhitneyu, wilcoxon,kruskal,friedmanchisquare
 
 from utils.timeutils import  canProcess, rateLimitCheck
 from es.elasticsearchutils import ESClient
 from metadata.metadata import REQUEST_STATE, METRIC_PERIOD, MIN_DATA_POINTS
 from prometheus.metric import convertPromesResponseToMetricInfos,urlEndNow
-from wavefront.metric import convertResponseToMetricInfos,parseQueryData
+from wavefront.metric import convertResponseToMetricInfos  #parseQueryData
 from utils.urlutils import dorequest
-from metrics.metricclass import MetricInfo, SingleMetricInfo
 from utils.dictutils import retrieveKVList
-from helpers.modelhelpers import calculateModel,detectAnomalyData, calculateScore,calculateModels
+from helpers.modelhelpers import calculateModel,detectAnomalyData
+from helpers.hpahelpers import calculateHPAScore,calculateHPAModels
 from wavefront.apis import executeQuery,dequote
 from metrics.monitoringmetrics import getModelUrl
 from metadata.globalconfig import globalconfig
@@ -62,6 +62,7 @@ def queryData(metricUrl, period, isProphet = False, datasource='prometheus'):
                             logger.error(e1.__cause__)
                         
                 elif datasource == 'wavefront':
+                    writeMetricToWaveFront =   config.getValueByKey('METRIC_DESTINATION')=='wavefront'
                     datalist = metricUrl.split("&&")
                     if len(datalist)<4:
                         logger.error("missing wavefront query parameters : " +metricUrl)
@@ -71,10 +72,10 @@ def queryData(metricUrl, period, isProphet = False, datasource='prometheus'):
                         #amonaly result 
                         try:
                             aresult = executeQuery(getModelUrl(dequote(datalist[0]), datasource), datalist[1], datalist[2], datalist[3])
-                            return convertResponseToMetricInfos(qresult, period, isProphet,aresult) 
+                            return convertResponseToMetricInfos(qresult, period, isProphet,aresult,isDestWaveFront=writeMetricToWaveFront) 
                         except Exception as e1:
                             logger.error(e1.__cause__)
-                    return convertResponseToMetricInfos(qresult, period, isProphet) 
+                    return convertResponseToMetricInfos(qresult, period, isProphet,isDestWaveFront=writeMetricToWaveFront) 
                 break
             except Exception as e:
                 logger.error(e.__cause__)
@@ -164,7 +165,7 @@ def reserveJob(uuid, status):
             return  updatedStatus
         else:
             if i == 2 :
-               logger.error("failed to update uuid  "+uuid+"  from "+status +" to "+updatedStatus)
+                logger.error("failed to update uuid  "+uuid+"  from "+status +" to "+updatedStatus)
             continue
     return status
 
@@ -189,7 +190,7 @@ def updateESDocStatus(uuid, status, info='', reason=''):
         if openRequest != None:
             new_status = openRequest['status']
             if new_status == status:
-               return  True
+                return  True
         time.sleep(1)
         logger.error("ElasticSearch failed "+uuid)
         continue
@@ -198,7 +199,7 @@ def updateESDocStatus(uuid, status, info='', reason=''):
 
 def isCompletedStatus (status):
     if status == REQUEST_STATE.INITIAL.value:
-       return False
+        return False
     elif  status == REQUEST_STATE.PREPROCESS_COMPLETED.value:
         return False
     elif status == REQUEST_STATE.PREPROCESS_INPROGRESS.value:
@@ -232,14 +233,24 @@ def computeHistoricalModel(historicalConfigMap, modelHolder, isProphet = False, 
     dataSet = {}
     msg = ''
     min_data_points = modelHolder.getModelConfigByKey(MIN_DATA_POINTS)
+    
+    #TODO Need to pass during by default could be 30 minutes.
+    if strategy =='hpa':
+        modeldata = es.get_model_data(modelHolder.id)
+        if modeldata is not None :
+            modelHolder.loadModels(modeldata)
+            modelParameters= es.get_model_parameters(modelHolder.id)
+            modelHolder.ModelParameters(modelParameters)
+            #return modelHolder,msg
+        
     for metricType, metricUrl in historicalConfigMap.items():
         metricStore = 'prometheus'
         if historicalMetricStores is not None:
-           metricStore = historicalMetricStores[metricType]
+            metricStore = historicalMetricStores[metricType]
         metricInfolist = queryData(metricUrl, METRIC_PERIOD.HISTORICAL.value, isProphet, metricStore);
         if(len(metricInfolist)==0):
             continue
-        filteredMetricInfoList, str =  filterEmptyDF(metricInfolist, min_data_points)
+        filteredMetricInfoList, str = filterEmptyDF(metricInfolist, min_data_points)
         if (str!=''):
             msg = str
         if len(filteredMetricInfoList) == 0:
@@ -253,7 +264,7 @@ def computeHistoricalModel(historicalConfigMap, modelHolder, isProphet = False, 
     metricTypes, metricInfos = retrieveKVList(dataSet)
 
     if strategy=='hpa':
-        modelHolder = calculateModels(metricInfos, modelHolder, metricTypes,strategy)
+        modelHolder = calculateHPAModels(metricInfos, modelHolder, metricTypes)
         return modelHolder,msg
     for i in range (metricTypeCount):
         modelHolder = calculateModel(metricInfos[i][0], modelHolder, metricTypes[i], strategy)
@@ -289,7 +300,7 @@ def computeNonHistoricalModel(configMap, period, metricStores=None, strategy=Non
     for metricType, metricUrl in configMap.items():
         metricStore = 'prometheus'
         if metricStores is not None:
-           metricStore = metricStores[metricType]
+            metricStore = metricStores[metricType]
         metricInfolist = queryData(metricUrl, period, False, metricStore);
         if(len(metricInfolist)==0):
             continue
@@ -302,12 +313,14 @@ def computeNonHistoricalModel(configMap, period, metricStores=None, strategy=Non
     metricTypeCount = len(dataSet)
     if metricTypeCount == 0 :
         return dataSet, period
+    '''
     if metricTypeCount == 1 :
         pass
     elif metricTypeCount == 2 :
         pass
     else:
         pass
+    '''
     return dataSet, period
 
 
@@ -319,7 +332,6 @@ def pairWiseComparson(currentDataSet, baselineDataSet, model , threshold, bound 
     gsimilar = True
     ifMeetSize = True
     for ckey, cvalue in currentDataSet.items():
-        cmetricInfoList = cvalue
         for bkey, bvalue in baselineDataSet.items():
             if ckey == bkey :
                 ret, p,algm, meetSize = pairwiseMetricInfoListValidation(cvalue,bvalue , model, threshold, bound)
@@ -339,7 +351,6 @@ def pairwiseMetricInfoListValidation(currentMetricInfoList, baselineMetricInfoLi
     if (currentLen ==1 and baselineLen ==1 ):
         ret, p, algm, meetSize = TwoDataSetSameDistribution(currentMetricInfoList[0].metricDF.y.values, baselineMetricInfoList[0].metricDF.y.values, threshold,model,bound)
         return ret, p, algm, meetSize
-    list=[]
     for singleMetricInfo in currentMetricInfoList:
         list.append(singleMetricInfo.metricDF.y.values);
     for singleMetricInfo in baselineMetricInfoList:
@@ -354,34 +365,36 @@ def pairwiseMetricInfoListValidation(currentMetricInfoList, baselineMetricInfoLi
 
 def computeAnomaly(metricInfoDataset, modelHolder, strategy = None):
     metricTypeSize = len(metricInfoDataset)
+    if metricTypeSize==0:
+        return
+    #hpa strategy
     if (strategy=='hpa'):
-        if metricTypeSize==0:
-            return
-        return calculateScore( metricInfoDataset, modelHolder, strategy)
+        return calculateHPAScore( metricInfoDataset, modelHolder)
     anomalieDisplay =[]
     isFirstTime = True
     if (metricTypeSize>0):
         for metricType, metricInfoList in metricInfoDataset.items():
-             for metricInfo in metricInfoList:
-                 ts,adata =  detectAnomalyData(metricInfo,  modelHolder, metricType, strategy)
-                 if (len(ts) > 0):
-                     if isFirstTime:
-                         anomalieDisplay.append("{'")
-                         anomalieDisplay.append(metricType)
-                         anomalieDisplay.append("':[")
-                         isFirstTime = False
-                     else:
-                         anomalieDisplay.append(",")
-                     anomalieDisplay.append("{'metric':")
-                     anomalieDisplay.append(str(metricInfo.columnmap['y']))
-                     anomalieDisplay.append(",'value':{ 'ts' : ")
-                     anomalieDisplay.append(str(ts))
-                     anomalieDisplay.append(", 'value'  : ")
-                     anomalieDisplay.append(str(adata))
-                     anomalieDisplay.append("}}")
+            for metricInfo in metricInfoList:
+                ts,adata =  detectAnomalyData(metricInfo,  modelHolder, metricType, strategy)
+                if (len(ts) > 0):
+                    if isFirstTime:
+                        anomalieDisplay.append("{'")
+                        anomalieDisplay.append(metricType)
+                        anomalieDisplay.append("':[")
+                        isFirstTime = False
+                    else:
+                        anomalieDisplay.append(",")
+                    anomalieDisplay.append("{'metric':")
+                    anomalieDisplay.append(str(metricInfo.columnmap['y']))
+                    anomalieDisplay.append(",'value':{ 'ts' : ")
+                    anomalieDisplay.append(str(ts))
+                    anomalieDisplay.append(", 'value'  : ")
+                    anomalieDisplay.append(str(adata))
+                    anomalieDisplay.append("}}")
         if (not isFirstTime):
             anomalieDisplay.append("]")
             anomalieDisplay.append("}")
     else:
         pass
     return (not isFirstTime), ''.join(anomalieDisplay)
+

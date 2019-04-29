@@ -161,7 +161,7 @@ class hpascoremetrics:
     instance = None
     def __init__(self):
         if not hpascoremetrics.instance:
-           hpascoremetrics.instance = hpascoremetrics.__hpascoremetrics()
+            hpascoremetrics.instance = hpascoremetrics.__hpascoremetrics()
     def setMetricInfo(self, metricname, labels, time=0):
         mns =metricname.split(':')
         metricHPA = metric_domain+mns[0]+"_hpa_score"
@@ -178,7 +178,7 @@ class hpascoremetrics:
         if globalConfig.getValueByKey('METRIC_DESTINATION')=='wavefront':
             newMetricName = wavefront_domain
         if (len(mns)>1):
-           newMetricName = newMetricName+mns[0]+"_hpa_score"
+            newMetricName = newMetricName+mns[0]+"_hpa_score"
         if globalConfig.getValueByKey('METRIC_DESTINATION')=='wavefront':
             newMetricName = wavefront_prefix+ newMetricName
             return sendMetric(newMetricName, labeldata, value, time) 

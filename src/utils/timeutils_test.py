@@ -1,4 +1,4 @@
-from timeutils import isPast, canProcess, rateLimitCheck, getNow,getNowInSeconds
+from utils.timeutils import isPast, canProcess, rateLimitCheck, getNow,getNowInSeconds
 from dateutil.parser import parse
 
 

@@ -1,5 +1,6 @@
 import json
 import logging
+from datetime import datetime as dt
 from utils.converterutils import addHeader
 from utils.strutils import strcat
 from metrics.metricclass import MetricInfo, SingleMetricInfo, MultiKeyMetricInfo
@@ -13,8 +14,8 @@ logger = logging.getLogger('wavefront.metric')
 globalConfig =  globalconfig()
 
 
-def processTextResponse(content):
-    return processResponse(json.loads(content))
+#def processTextResponse(content):
+#    return processResponse(json.loads(content))
 
 
 def formatData(result, isProphet):
@@ -35,7 +36,7 @@ def formatData(result, isProphet):
     return df
 
 
-def convertResponseToMetricInfos(result, metricPeriod,  isProphet=False, aresult=None):
+def convertResponseToMetricInfos(result, metricPeriod,  isProphet=False, aresult=None, isDestWaveFront=True):
     metricInfos = []
     if result.timeseries is None:
         logger.error("error: wavefront response does not have timeseries")
@@ -55,7 +56,7 @@ def convertResponseToMetricInfos(result, metricPeriod,  isProphet=False, aresult
 
             except Exception as e:
                 logger.error(e.__cause__)
-    name, kvs = parseQueryData(result.query, False)
+    name, kvs = parseQueryData(result.query, (not isDestWaveFront))
     jMetric = kvs
     kvs['name'] = name
     gMetric = kvs
@@ -75,8 +76,7 @@ def convertResponseToMetricInfos(result, metricPeriod,  isProphet=False, aresult
 #                   prometheus supported name
 
 def urlclearup(data):
-    url = getdecoder(data)
-    return url.replace("+"," ")
+    return data.replace("+"," ")
 
 def parseQueryData(data, isPrometheus=True):
     data1 = data.split("ts(")

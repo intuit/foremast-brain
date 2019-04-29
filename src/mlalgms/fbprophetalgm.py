@@ -1,7 +1,6 @@
-import pandas as pd
 from fbprophet import Prophet
-from mlalgms.statsmodel import IS_UPPER_BOUND
-import logging
+from mlalgms.statsmodel import IS_UPPER_BOUND,IS_LOWER_BOUND
+#import logging
 import numpy as np
 
 PROPHET_PERIOD = 'period'
@@ -11,7 +10,7 @@ DEFAULT_PROPHET_FREQ  ='T'
   
 
 
-def predictProphet(timeseries, period=1 ,frequence ='T', seasonality_name='', pscale=0.1, columnPosition=0, interval_width=0.97 ):
+def predictProphet(timeseries, period=1 ,frequence ='T', seasonality_name='', pscale=0.1, columnPosition=0, interval_width=0.8 ):
     prophet = Prophet()
     if seasonality_name=='daily':
         prophet = Prophet(daily_seasonality=True,interval_width=interval_width)
@@ -34,19 +33,26 @@ def predictProphet(timeseries, period=1 ,frequence ='T', seasonality_name='', ps
     
 
 
-def prophetPredictUpperLower(timeseries, period=1,frequence ='T', zscore = 2,seasonality_name='',prior_scale=0.1, columnPosition=0, interval_width=0.97):
+def prophetPredictUpperLower(timeseries, period=1,frequence ='T', zscore= 2, seasonality_name='',prior_scale=0.1, columnPosition=0, interval_width=0.8):
     df = timeseries.copy()
     df.dropna()
+    mean = 0
+    std = 0
     orig_len = len(timeseries)
     fc = predictProphet(df, period, frequence,seasonality_name, prior_scale,columnPosition,interval_width=interval_width)
-    print(fc)
-    after_len = len(fc)
+    #print(fc)
+    #after_len = len(fc)
     #print(orig_len ,'  ', after_len)
     if seasonality_name=='':  
-        mean = fc[orig_len:].yhat_lower.mean()
-        std = fc[orig_len:].yhat_lower.std()
-        return mean-zscore*std, mean+zscore*std
-    return fc[['ds','yhat_lower','yhat_upper']][orig_len:]
+        lmean = fc[orig_len:].yhat_lower.mean()
+        lstd = fc[orig_len:].yhat_lower.std()
+        umean = fc[orig_len:].yhat_upper.mean()
+        ustd = fc[orig_len:].yhat_upper.std()
+        llower = zscore*lstd -lmean
+        uupper = zscore*ustd +umean
+        return llower, uupper
+   
+    return fc[['ds','yhat_lower','yhat_upper','yhat']][orig_len:]
 
 
 def detectAnomalies(df , bound=IS_UPPER_BOUND, returnAnomaliesOnly= True):
@@ -56,44 +62,42 @@ def detectAnomalies(df , bound=IS_UPPER_BOUND, returnAnomaliesOnly= True):
     myshape = df.shape
     nrow = myshape[0]
     for i in range(nrow):  
-         isAnomaly = False
-         if (not returnAnomaliesOnly):
+        isAnomaly = False
+        if (not returnAnomaliesOnly):
             ts.append(df['ds'][i])
             adata.append(df['y'][i])
-         if bound==IS_UPPER_BOUND:
+        if bound==IS_UPPER_BOUND:
             if df['y'][i] > df['yhat_upper'][i]:
                 if returnAnomaliesOnly:
                     ts.append(df['ds'][i])
                     adata.append(df['y'][i])
                 isAnomaly = True
-         elif bound==IS_LOWER_BOUND:
+        elif bound==IS_LOWER_BOUND:
             if df['y'][i] < df['yhat_lower'][i]:
                 if returnAnomaliesOnly:
                     ts.append(df['ds'][i])
                     adata.append(df['y'][i])
                 isAnomaly = True            
-         else:   
+        else:   
             if df['y'][i] > df['yhat_upper'][i] or df['y'][i] < df['yhat_lower'][i]:
                 if returnAnomaliesOnly:
                     ts.append(df['ds'][i])
                     adata.append(df['y'][i])
                 isAnomaly = True
                     
-         if returnAnomaliesOnly:
+        if returnAnomaliesOnly:
             if isAnomaly:
                 anomalies.append(True)
-         else:
+        else:
             anomalies.append(isAnomaly)             
     #return  mae, deviation,addHeader(ts,adata)
     return  ts,adata, anomalies
 
 
 
-		
 def merge_dataframe(historical, forecast):
-	return forecast.set_index('ds')[['yhat', 'yhat_lower', 'yhat_upper']].join(historical.set_index('ds'))
-		
-		
+    return forecast.set_index('ds')[['yhat', 'yhat_lower', 'yhat_upper']].join(historical.set_index('ds'))
+
 def calculate_errors(dataframe, prediction_size):    
     # Make a copy
     df = dataframe.copy();
@@ -112,12 +116,4 @@ def calculate_errors(dataframe, prediction_size):
     error_mean = lambda error_name: np.mean(np.abs(predicted_part[error_name]))
     
     return {'MAPE': error_mean('p'), 'MAE': error_mean('e')}
-		
-	
-	
-	
-	
-	
-	
-	
-	
+

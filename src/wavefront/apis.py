@@ -124,7 +124,7 @@ def sendDeltaCounter(metricName, tags, value, source=None):
     cacheCount = cacheCount+ 1
     if source is None:
         source = globalEnv
-    sendClient.send_delta_counter(name, value, source, tags)
+    sendClient.send_delta_counter(metricName, value, source, tags)
     #print("send delta buffer ", sendClient._metrics_buffer.qsize(), "failure ", sendClient.get_failure_count())
     if (cacheCount%flushFrequency == 0):
         flushNow()
