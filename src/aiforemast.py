@@ -43,6 +43,10 @@ logger = logging.getLogger('aiformast')
 METRIC_TYPE_THRESHOLD_COUNT = "metric_type_threshold_count"
 METRIC_TYPE = 'metric_type'
 HPA = 'hpa'
+CONTINUOUS = 'continuous'
+CANARY = 'canary'
+
+
 MAX_CACHE_SIZE = 2000
 CACHE_EXPIRE_TIME = 30 * 60
 DEFAULT_MAX_STUCK_IN_SECONDS = 90
@@ -129,7 +133,7 @@ def retrieveCachedRequest():
 
 # not to update es doc status if strategy is HPA or continuous
 def update_es_doc(req_strategy, req_org_status, uuid, to_status, info='', reason=''):
-    if req_strategy in [HPA, 'continuous']:
+    if req_strategy in [HPA, CONTINUOUS]:
         to_status = req_org_status
     return updateESDocStatus(uuid, to_status, info, reason)
 
@@ -278,152 +282,198 @@ def main():
 
         updatedStatus = reserveJob(uuid, status)
 
-
-        logger.warning("Start to processing job id " + uuid + " original status:" + status)
-
-        historicalConfig = openRequest['historicalConfig']
-        historicalConfigMap = None
-        if historicalConfig:
-            historicalConfigMap = convertStringToMap(historicalConfig)
-        currentConfig = openRequest['currentConfig']
-        currentConfigMap = None
-        if currentConfig:
-            currentConfigMap = convertStringToMap(currentConfig)
-        baselineConfig = None
-        if 'baselineConfig' in openRequest:
-            baselineConfig = openRequest['baselineConfig']
-        historicalMetricStore = None
-        if ('historicalMetricStore' in openRequest):
-            historicalMetricStore = openRequest['historicalMetricStore']
-        currentMetricStore = None
-        if ('currentMetricStore' in openRequest):
-            currentMetricStore = openRequest['currentMetricStore']
-        baselineMetricStore = None
-        if 'baselineMetricStore' in openRequest:
-            baselineMetricStore = openRequest['baselineMetricStore']
-        startTime = openRequest['startTime']
-        endTime = openRequest['endTime']
-        # strategy
+        #updatedStatus = reserveJob(uuid, status)
+        logger.warning("Start to processing job id "+uuid+ " original status:"+ status)
+        #strategy
         strategy = openRequest['strategy']
-        if strategy in [HPA, 'continuous']:
-            # replace start and end time for HPA and continuous strategy
-            start_history_str = str(time.time() - float(HISTORICAL_CONF_TIME_WINDOW))
-            start_current_str = str(time.time() - float(CURRENT_CONF_TIME_WINDOW))
-            end_str = str(time.time())
-
-            if historicalConfigMap:
-                for metric_type, metric_url in historicalConfigMap.items():
-                    metric_url = metric_url.replace('START_TIME', start_history_str)
-                    metric_url = metric_url.replace('END_TIME', end_str)
-                    historicalConfigMap[metric_type] = metric_url
-
-            if currentConfigMap:
-                for metric_type, metric_url in currentConfigMap.items():
-                    metric_url = metric_url.replace('START_TIME', start_current_str)
-                    metric_url = metric_url.replace('END_TIME', end_str)
-                    currentConfigMap[metric_type] = metric_url
-
-        skipHistorical = (historicalConfig == '') or (strategy == 'canary')
-        # only canary deploymebnt requires baseline
-        skipBaseline = strategy != 'canary'
-        label_info['jobId'] = uuid
-        label_info['calcuHistorical'] = 'False'
-        label_info['hasCurrent'] = 'False'
         start = time.time()
 
+        historicalConfig = None
+        historicalConfigMap = None
+        historicalMetricStore= None
+        if strategy not in [CANARY]:
+            if 'historicalConfig' in openRequest: 
+                historicalConfig =  openRequest['historicalConfig']
+                if historicalConfig!='':
+                    historicalConfigMap = convertStringToMap(historicalConfig)
+                    if  ('historicalMetricStore' in openRequest):    
+                        historicalMetricStore =openRequest['historicalMetricStore']
+
+        #currentConfig should never null
+        currentConfig = openRequest['currentConfig']
+        currentConfigMap = None
+        currentMetricStore = None
+        if currentConfig!='':
+            currentConfigMap = convertStringToMap(currentConfig)
+            if ('currentMetricStore' in openRequest):     
+                currentMetricStore = openRequest['currentMetricStore']
+
+
+        baselineConfig = None
+        baselineConfigMap = None
+        baselineMetricStore = None                
+        if strategy in [CANARY] and 'baselineConfig' in openRequest:
+            baselineConfig = openRequest['baselineConfig']
+            if baselineConfig!= '':
+                baselineConfigMap = convertStringToMap(baselineConfig)
+                if 'baselineMetricStore' in openRequest: 
+                    baselineMetricStore = openRequest['baselineMetricStore']
+                
+
+
+
+
+
+        skipHistorical = ( historicalConfig=='') or (strategy == CANARY)
+        # only canary deploymebnt requires baseline
+        skipBaseline = strategy != CANARY
+        #label_info['jobId']= uuid
+        #label_info['calcuHistorical']='False'
+        #label_info['hasCurrent']='False'
+
+        endTime = openRequest['endTime']
         
         #Need to be removed below line due to baseline is enabled at upstream
         skipCurrent = (currentConfig=='')
+
+        
         try:
             if (skipCurrent):
+                #this should not pick up 
                 ret = update_es_doc(strategy, status, uuid,
                                     REQUEST_STATE.COMPLETED_UNKNOWN.value, "Error: no current config")
-                logger.warning("request error : jobid  " + uuid + " updateESDocStatus  is :" + str(
-                    ret) + " current config is empty. make status unknown")
-                # print(getNowStr(), " : jobid  ",uuid, " current config is empty. make status unknown")
-                # measurementmetrics.sendMetric(MONITORING_REQUEST_TIME, label_info, calculateDuration(start))
+                logger.warning("request error : jobid  "+uuid+" updateESDocStatus  is :"+ str(ret)+ " current config is empty. make status unknown")
+                #measurementmetrics.sendMetric(MONITORING_REQUEST_TIME, label_info, calculateDuration(start))
                 continue
 
-            # dict  metric name : url , if modelHolder does not have model, give chance to recalculate
-            if modelHolder == None:
-                modelConfig = {THRESHOLD: threshold, LOWER_THRESHOLD: lower_threshold,
-                               MIN_DATA_POINTS: min_historical_data_points, BOUND: ML_BOUND,
-                               PAIRWISE_ALGORITHM: ML_PAIRWISE_ALGORITHM, PAIRWISE_THRESHOLD: ML_PAIRWISE_THRESHOLD}
-                modelHolder = ModelHolder(ML_ALGORITHM, modelConfig, {}, METRIC_PERIOD.HISTORICAL.value, uuid)
 
-            if (not (modelHolder.hasModels or skipHistorical)):
+            #dict  metric name : url , if modelHolder does not have model, give chance to recalculate
+            if modelHolder == None:
+                modelConfig={}
+                if strategy == CANARY:
+                    modelConfig = {PAIRWISE_ALGORITHM:ML_PAIRWISE_ALGORITHM,PAIRWISE_THRESHOLD:ML_PAIRWISE_THRESHOLD,BOUND: ML_BOUND}
+                    modelHolder = ModelHolder(ML_PAIRWISE_ALGORITHM,modelConfig,{}, METRIC_PERIOD.BASELINE.value, uuid)
+                else:
+                    modelConfig = {THRESHOLD: threshold, LOWER_THRESHOLD: lower_threshold,
+                               MIN_DATA_POINTS: min_historical_data_points, BOUND: ML_BOUND}   
+                    modelHolder = ModelHolder(ML_ALGORITHM,modelConfig,{}, METRIC_PERIOD.HISTORICAL.value, uuid)
+
+                
+                
+                
+               
+            if strategy in [HPA, CONTINUOUS]:
+                # replace start and end time for HPA and continuous strategy
+                start_history_str = 'start={}'.format(time.time() - float(HISTORICAL_CONF_TIME_WINDOW))
+                start_current_str = 'start={}'.format(time.time() - float(CURRENT_CONF_TIME_WINDOW))
+                end_str = 'end={}'.format(time.time())
+                hpaMetricsConfig = None
+                if strategy == HPA :
+                    if "hpaMetricsConfig" in openRequest:
+                        hpaMetricsConfig = openRequest['hpaMetricsConfig']
+                      
+    
+                if historicalConfigMap:
+                    for metric_type, metric_url in historicalConfigMap.items():
+                        if historicalMetricStore and convertStringToMap(historicalMetricStore)[metric_type] == 'wavefront':
+                            start_history_str = str(time.time() - float(HISTORICAL_CONF_TIME_WINDOW))
+                            end_str = str(time.time())
+                        metric_url = metric_url.replace('START_TIME', start_history_str)
+                        metric_url = metric_url.replace('END_TIME', end_str)
+                        historicalConfigMap[metric_type] = metric_url
+                        if hpaMetricsConfig is not None and metric_type in hpaMetricsConfig:
+                            hpaMetricsConfigMap = hpaMetricsConfig[metric_type]
+                            for k, v in hpaMetricsConfigMap.items():
+                                modelHolder.setModelConfig("hpa", metric_type, k, v)
+
+    
+                if currentConfigMap:
+                    for metric_type, metric_url in currentConfigMap.items():
+                        if currentMetricStore and convertStringToMap(currentMetricStore)[metric_type] == 'wavefront':
+                            start_current_str = str(time.time() - float(CURRENT_CONF_TIME_WINDOW))
+                            end_str = str(time.time())
+                        metric_url = metric_url.replace('START_TIME', start_current_str)
+                        metric_url = metric_url.replace('END_TIME', end_str)
+                        currentConfigMap[metric_type] = metric_url
+
+
+               
+                
+            if  (not (modelHolder.hasModels or skipHistorical) ):
                 storeMapHistorical = convertStringToMap(historicalMetricStore)
+                # below code only used while use prophet algm
                 isProphet = False
-                if (ML_ALGORITHM == AI_MODEL.PROPHET.value):
-                    isProphet = True
-                    modelConfig.setdefault(PROPHET_PERIOD, ML_PROPHET_PERIOD)
-                    modelConfig.setdefault(PROPHET_FREQ, ML_PROPHET_FREQ)
+                if (ML_ALGORITHM==AI_MODEL.PROPHET.value):
+                    isProphet=True
+                    modelConfig.setdefault(PROPHET_PERIOD, ML_PROPHET_PERIOD )
+                    modelConfig.setdefault(PROPHET_FREQ,ML_PROPHET_FREQ )
                 # pass stragegy for hpa
-                modelHolder, msg = computeHistoricalModel(historicalConfigMap, modelHolder, isProphet,
-                                                          storeMapHistorical, strategy)
-                label_info['calcuHistorical'] = 'True'
-                if (msg != ''):
+                modelHolder, msg = computeHistoricalModel(historicalConfigMap, modelHolder, isProphet,storeMapHistorical, strategy)
+                cacheModels(modelHolder)
+                label_info['calcuHistorical'] ='True' 
+                if (msg!=''):
                     outputMsg.append(msg)
                 if (not modelHolder.hasModels):
                     outputMsg.append("No historical Data and model ")
-                    # print(getNowStr(), ": Warning: No historical: "+str(modelHolder))
-
-            hasHistorical = modelHolder.hasModels
-
-            # start baseline
+                    #print(getNowStr(), ": Warning: No historical: "+str(modelHolder))
+                                
+            hasHistorical =  modelHolder.hasModels
+            
+            #start baseline             
             to_do = []
+            
+            currentDataSet={}
+            baselineDataSet={}
+            
 
-            currentDataSet = {}
-            baselineDataSet = {}
-
-            if skipBaseline:
-                currentDataSet, p = computeNonHistoricalModel(currentConfigMap, METRIC_PERIOD.CURRENT.value,
-                                                              convertStringToMap(currentMetricStore), strategy);
-            else:
+            if skipBaseline :
+                currentDataSet, _ = computeNonHistoricalModel(currentConfigMap, METRIC_PERIOD.CURRENT.value,convertStringToMap(currentMetricStore), strategy);
+            else:                
                 with ProcessPoolExecutor(max_workers=2) as executor:
-                    currentjob = executor.submit(computeNonHistoricalModel, currentConfigMap,
-                                                 METRIC_PERIOD.CURRENT.value, convertStringToMap(currentMetricStore),
-                                                 strategy);
-                    baselinejob = executor.submit(computeNonHistoricalModel, convertStringToMap(baselineConfig),
-                                                  METRIC_PERIOD.BASELINE.value, convertStringToMap(baselineMetricStore),
-                                                  strategy);
+                    currentjob = executor.submit(computeNonHistoricalModel, currentConfigMap,METRIC_PERIOD.CURRENT.value,convertStringToMap(currentMetricStore), strategy);
+                    baselinejob = executor.submit(computeNonHistoricalModel, convertStringToMap(baselineConfig), METRIC_PERIOD.BASELINE.value,convertStringToMap(baselineMetricStore), strategy);
                     to_do.append(currentjob)
                     to_do.append(baselinejob)
                     for future in futures.as_completed(to_do):
                         try:
                             res = future.result()
-                            if (res[1] == METRIC_PERIOD.CURRENT.value):
+                            if (res[1]== METRIC_PERIOD.CURRENT.value):
                                 currentDataSet = res[0]
                             else:
                                 baselineDataSet = res[0]
                         except Exception as e:
-                            logger.error("job id" + uuid + " encount errorProcessPoolExecutor " + str(e))
-
-            # This is used for canary deployment to comarsion how close baseline and current
+                            logger.error("job id"+ uuid+ " encount errorProcessPoolExecutor " +str(e))
+                            
+                                      
+                    
+            #This is used for canary deployment to comarsion how close baseline and current 
             currentLen = len(currentDataSet)
-            baselineLen = len(baselineDataSet)
-            hasCurrent = currentLen > 0
-            label_info['hasCurrent'] = hasCurrent
-
-            hasBaseline = baselineLen > 0
-            logger.warning("jobid:" + uuid + " hasCurrent " + str(hasCurrent) + ", hasBaseline " + str(hasBaseline))
-
+            baselineLen= len(baselineDataSet)
+            hasCurrent = currentLen>0
+            label_info['hasCurrent'] =hasCurrent 
+            
+            hasBaseline = baselineLen>0
+            logger.warning("jobid:"+ uuid +" hasCurrent "+ str(hasCurrent)+", hasBaseline "+ str(hasBaseline) )
+            
             if hasCurrent == False:
+                if strategy in [HPA, CONTINUOUS]:
+                    logger.warning("job id: " + uuid + "  not current metric...")
+                    continue
                 ret = True
-                if isPast(endTime, 20):
+                if isPast(endTime, 20) :
                     ret = update_es_doc(strategy, status, uuid,
                                         REQUEST_STATE.COMPLETED_UNKNOWN.value, "Error: there is no current Metric. ")
                     logger.warning("Current metric is empty, jobid " + uuid + " updateESDocStatus  is :" + str(
                         ret) + "  time past mark job unknow " + currentConfig + " ".join(outputMsg))
                 else:
-                    cacheModels(modelHolder, max_cache)
+                    cacheModels(modelHolder)
                     ret = update_es_doc(strategy, status, uuid,
                                         REQUEST_STATE.PREPROCESS_INPROGRESS.value,
                                         "Warning: there is no current Metric, Will keep try until reachs endTime. ")
                     logger.warning("Current metric is empty, jobid " + uuid + " updateESDocStatus  is :" + str(
                         ret) + " end time is not reach, will cache and retry " + currentConfig + " ".join(outputMsg))
                 if not ret:
-                    cacheModels(modelHolder, max_cache)
+                    cacheModels(modelHolder)
                     logger.error("ES update failed: job ID: " + uuid)
                 # measurementMetric.sendMetric(MONITORING_REQUEST_TIME, label_info, calculateDuration(start))
                 continue
@@ -484,7 +534,7 @@ def main():
                             "job id :" + uuid + " will reprocess . current and base have same distribution but not past endTime yet, updateESDocStatus  is :" + str(
                                 ret))
                 if not ret:
-                    cacheModels(modelHolder, max_cache)
+                    cacheModels(modelHolder)
                     logger.error("ES update failed: job ID: " + uuid)
                 # measurementMetric.sendMetric(MONITORING_REQUEST_TIME, label_info, calculateDuration(start))
                 continue
@@ -507,7 +557,7 @@ def main():
                         logger.warning(
                             "job ID : " + uuid + " continue . no baseline data yet. updateESDocStatus  is :" + str(ret))
                     if not ret:
-                        cacheModels(modelHolder, max_cache)
+                        cacheModels(modelHolder)
                         logger.error("ES update failed: job ID: " + uuid)
                     # measurementMetric.sendMetric(MONITORING_REQUEST_TIME, label_info, calculateDuration(start))
                     continue
@@ -515,6 +565,9 @@ def main():
             # check historical (we may need to fail fast for non histrical netric use case
             #:TODO
             if hasHistorical == False:
+                if strategy not in [HPA, CONTINUOUS]:
+                    logger.warning("job id: " + uuid + "  not historical metric...")
+                    continue
                 ret = True
                 if isPast(endTime, 5):
                     ret = update_es_doc(strategy, status, uuid,
@@ -532,29 +585,23 @@ def main():
                             ret))
 
                 if not ret:
-                    cacheModels(modelHolder, max_cache)
+                    cacheModels(modelHolder)
                     logger.error("ES update failed: job ID: " + uuid)
                 # measurementMetric.sendMetric(MONITORING_REQUEST_TIME, label_info, calculateDuration(start))
                 continue
 
-            if strategy in [HPA, 'continuous']:
+            if strategy in [HPA, CONTINUOUS]:
                 computeAnomaly(currentDataSet, modelHolder, strategy)
-                if isPast(endTime, 5):
-                    ret = update_es_doc(strategy, status, uuid,
-                                        REQUEST_STATE.COMPLETED_HEALTH.value,
-                                        "")
-                    logger.warning("job id: " + uuid + "  hpa cycle completed.")
-                else:
-                    ret = update_es_doc(strategy, status, uuid,
+                ret = update_es_doc(strategy, status, uuid,
                                         REQUEST_STATE.PREPROCESS_INPROGRESS.value,
                                         "")
-                    logger.warning("job id: " + uuid + "  hpa in progress.")
+                logger.warning("job id: " + uuid + "  hpa in progress.")
                 # if not ret:
                 #     cacheModels( modelHolder,  max_cache)
                 #     logger.error("ES update failed: hpa job ID: "+uuid)
 
                 # always cache models
-                cacheModels(modelHolder, max_cache)
+                cacheModels(modelHolder)
 
                 # measurementMetric.sendMetric(MONITORING_REQUEST_TIME, label_info, calculateDuration(start))
                 continue
@@ -571,7 +618,7 @@ def main():
                 logger.warning(
                     "**job ID is unhealth  " + uuid + " updateESDocStatus  is :" + str(ret) + "  " + anomaliesDataStr)
                 if not ret:
-                    cacheModels(modelHolder, max_cache)
+                    cacheModels(modelHolder)
                     logger.error("ES update failed: job ID: " + uuid)
             else:
                 if isPast(endTime, 10):
@@ -580,10 +627,10 @@ def main():
                                         "current compare to histroical model is health")
                     logger.warning("job ID: " + uuid + " is health, updateESDocStatus is :" + str(ret))
                     if not ret:
-                        cacheModels(modelHolder, max_cache)
+                        cacheModels(modelHolder)
                         logger.error("ES update failed: job ID: " + uuid)
                 else:
-                    cacheModels(modelHolder, max_cache)
+                    cacheModels(modelHolder)
                     ret = update_es_doc(strategy, status, uuid,
                                         REQUEST_STATE.PREPROCESS_INPROGRESS.value,
                                         "Need to continuous to check untile reachs deployment endTime.")

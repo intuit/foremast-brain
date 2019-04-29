@@ -177,7 +177,7 @@ class hpascoremetrics:
         newMetricName= metric_domain
         if globalConfig.getValueByKey('METRIC_DESTINATION')=='wavefront':
             newMetricName = wavefront_domain
-        if (len(mns)>1):
+        if (len(mns)>=1):
             newMetricName = newMetricName+mns[0]+"_hpa_score"
         if globalConfig.getValueByKey('METRIC_DESTINATION')=='wavefront':
             newMetricName = wavefront_prefix+ newMetricName
@@ -185,4 +185,5 @@ class hpascoremetrics:
         if not (newMetricName in self.instance.metrics ):
             self.setMetricInfo(metricname, labeldata)          
         newlabeldata = convertDictKey(labeldata,"-", "_")
+        print("*****",newMetricName,"*******",newlabeldata,'******',value)
         self.instance.metrics[newMetricName].labels(**newlabeldata).set(value)
