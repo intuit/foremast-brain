@@ -58,7 +58,7 @@ def calculateHPAScore(metricInfoDataset, modelHolder):
                     ddd = pd.merge(ddd,  metricInfo.metricDF, left_on=ddd.index, right_on= metricInfo.metricDF.index)
     #### joined ts
     size=len(ddd)
-    print(ddd.column)
+    print(ddd.columns)
     ts = 0
     if (size>0):
         #TODO: fetch the max one
@@ -70,6 +70,7 @@ def calculateHPAScore(metricInfoDataset, modelHolder):
     if loginfo is not None:
         es.save_reason(modelHolder.id, ts, loginfo)
     hpascore =round(score, 0)
+    print('*****hpascore ',hpascore)
 #    logger.warning(getNowStr()+'###calculated score is '+hpascore )
     triggerHPAScoreMetric(hap_metricInfo, score)
            

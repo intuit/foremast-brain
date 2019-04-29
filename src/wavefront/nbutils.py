@@ -7,7 +7,6 @@ import pandas as pd
 import time
 from dateutil.parser import parse
 
-import math
 
 APP_PLACEHOLDER = '[APP]'
 SEVEN_DAY = 24*7*60*60*1000
@@ -46,6 +45,7 @@ def formatData(result, dateFormat=True):
 
 def retrieveEndTime(deductMinutes=0):
     end_time = time.time() * 1000 - deductMinutes*ONE_MINUTE
+    return end_time
     
 def retrieveStartTime( deductMinutes=0,endTime_ms=0):
     if endTime_ms == 0:

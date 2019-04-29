@@ -72,16 +72,16 @@ class metric_test(unittest.TestCase):
     
     def test_wavefront_0(self):         
        nn, kv = parseQueryData(self.str1)  
-       expected_nn = 'ad.apm.errors.errors_per_min'
+       expected_nn = 'ad_apm_errors_errors_per_min'
        self.assertEqual(nn, expected_nn)
     
     def test_wavefront_1(self):
        nn, kv = parseQueryData(self.str2)  
-       expected_nn = 'tf.http.server.requests.count'
+       expected_nn = 'tf_http_server_requests_count'
        self.assertEqual(nn, expected_nn)
     def test_wavefront_2(self):
        nn, kv = parseQueryData(self.str3)  
-       expected_nn = 'appdynamics.apm.transactions.errors_per_min'
+       expected_nn = 'appdynamics_apm_transactions_errors_per_min'
        self.assertEqual(nn, expected_nn)   
      
 

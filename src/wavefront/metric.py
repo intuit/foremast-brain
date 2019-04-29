@@ -1,5 +1,6 @@
 import json
 import logging
+from datetime import datetime as dt
 from utils.converterutils import addHeader
 from utils.strutils import strcat
 from metrics.metricclass import MetricInfo, SingleMetricInfo, MultiKeyMetricInfo
@@ -13,8 +14,8 @@ logger = logging.getLogger('wavefront.metric')
 globalConfig =  globalconfig()
 
 
-def processTextResponse(content):
-    return processResponse(json.loads(content))
+#def processTextResponse(content):
+#    return processResponse(json.loads(content))
 
 
 def formatData(result, isProphet):
@@ -75,8 +76,7 @@ def convertResponseToMetricInfos(result, metricPeriod,  isProphet=False, aresult
 #                   prometheus supported name
 
 def urlclearup(data):
-    url = getdecoder(data)
-    return url.replace("+"," ")
+    return data.replace("+"," ")
 
 def parseQueryData(data, isPrometheus=True):
     data1 = data.split("ts(")
