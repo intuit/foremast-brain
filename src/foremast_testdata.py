@@ -93,7 +93,7 @@ wavefront_request_hpa ={
 }
 
 
-prometheus_request_hpa ={
+prometheus_request_hpa1 ={
     "id": "hpa-samples:dev-fm-foremast-examples-usw2-dev-dev:hpa",
     "appName": "hpa-samples",
     "created_at": "2019-04-23T18:11:21.823927509Z",
@@ -133,6 +133,35 @@ prometheus_request_hpa ={
     }
     },
     "namespace": "dev-fm-foremast-examples-usw2-dev-dev",
+}
+
+prometheus_request_hpa ={
+    "id": "hpa-samples:dev-fm-foremast-examples-usw2-dev-dev:hpa",
+    "appName": "hpa-samples",
+    "created_at": "2019-04-30T19:09:44.441791632Z",
+    "startTime": "2019-04-30T19:09:44Z",
+    "endTime": "2019-04-30T19:09:44Z",
+    "modified_at": "2019-04-30T12:58:11.535087-07:00",
+    "currentConfig": "traffic== http://prometheus.iks-system.svc.cluster.local:9090/api/v1/query_range?query=namespace_app_pod_http_server_requests_count%7Bnamespace%3D%22dev-fm-foremast-examples-usw2-dev-dev%22%2Capp%3D%22hpa-samples%22%7D&start=START_TIME&end=END_TIME&step=60 ||latency== http://prometheus.iks-system.svc.cluster.local:9090/api/v1/query_range?query=namespace_app_pod_http_server_requests_latency%7Bnamespace%3D%22dev-fm-foremast-examples-usw2-dev-dev%22%2Capp%3D%22hpa-samples%22%7D&start=START_TIME&end=END_TIME&step=60",
+    "historicalConfig": "latency== http://prometheus.iks-system.svc.cluster.local:9090/api/v1/query_range?query=namespace_app_pod_http_server_requests_latency%7Bnamespace%3D%22dev-fm-foremast-examples-usw2-dev-dev%22%2Capp%3D%22hpa-samples%22%7D&start=START_TIME&end=END_TIME&step=60 ||traffic== http://prometheus.iks-system.svc.cluster.local:9090/api/v1/query_range?query=namespace_app_pod_http_server_requests_count%7Bnamespace%3D%22dev-fm-foremast-examples-usw2-dev-dev%22%2Capp%3D%22hpa-samples%22%7D&start=START_TIME&end=END_TIME&step=60",
+    "currentMetricStore": "traffic== prometheus ||latency== prometheus",
+    "historicalMetricStore": "latency== prometheus ||traffic== prometheus",
+    "status": "preprocess_inprogress",
+    "statusCode": "200",
+    "strategy": "hpa",
+    "hpaMetricsConfig": {
+    "latency": {
+    "priority": 2,
+    "isIncrease": False,
+    "isAbsolute": False
+    },
+    "traffic": {
+    "priority": 1,
+    "isIncrease": False,
+    "isAbsolute": False
+    }
+    },
+    "namespace": "dev-fm-foremast-examples-usw2-dev-dev"
 }
 
 def getTestRequest(metricstore='prometheus', strategy = "continuous"):
