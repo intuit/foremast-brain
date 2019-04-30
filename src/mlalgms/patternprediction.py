@@ -110,7 +110,7 @@ def suggestedPattern(dataframe, ignoreHourly=False):
         if (ret):
             ret = checkPattern(dataframe,beginningDate,lastDate, time_diff_unit=ONE_HOUR, loops = loopshour)
             if ret:
-                return 'seasonal','hourly'  
+                return 'seasonality','hourly'  
     ret = checkSeasonality(dataframe,beginningDate, lastDate, time_diff_unit=ONE_DAY, loops = loops)
     if (ret):
         ret = checkPattern(dataframe,beginningDate,lastDate, time_diff_unit=ONE_DAY, loops = loops)

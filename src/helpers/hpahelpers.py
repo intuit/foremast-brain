@@ -62,7 +62,9 @@ def calculateHPAScore(metricInfoDataset, modelHolder):
                 algorithm = modelHolder.getModelParametersByKey(metricType,'algorithm')
                 mlmodel = modelHolder.getModelByKey(metricType)
                 properties = modelHolder.getModelConfigByKey('hpa',metricType)
-                hpainfo = hpametricinfo(priority, metricType, metricInfo.metricDF, algorithm,  mlmodel, properties)
+                modelParameters = modelHolder.getModelParametersByKey(metricType)
+
+                hpainfo = hpametricinfo(priority, metricType, metricInfo.metricDF, algorithm,  mlmodel, properties,modelParameters)
                 hpametricinfolist.append(hpainfo)
                 count = count +1
                 if ddd is None:
@@ -128,7 +130,10 @@ def calculateHPAModels(metricInfos, modelHolder, metricTypes):
                                                                          predicted_count=35, threshold=threshold, lowerthreshold =lowerthreshold,
                                                                          minLowerBound=minLowerBound )
         modeldatajson[metricTypes[i]]= modeldata 
-        modelparametersjson[metricTypes[i]] = {'algorithm':algm,'metricpattern':metricpattern, 'trend':trend}
+        if algm==AI_MODEL.PROPHET.value:
+            lowerthreshold= threshold
+        modelparametersjson[metricTypes[i]] = {'algorithm':algm,'metricpattern':metricpattern, 'trend':trend, 
+                                               'threshold':threshold, 'lowerthreshold': lowerthreshold}
         modelHolder.setAllModelParameters(metricTypes[i],modelparametersjson[metricTypes[i]] )
         modelHolder.setModel(metricTypes[i], modeldata)
     es.save_model(modelHolder.id, model_parameters=modelHolder.storeModelParameters(),  model_data=modelHolder.storeModels())
@@ -140,14 +145,7 @@ def calculateHPAModels(metricInfos, modelHolder, metricTypes):
 
 
 
-def calculate_score(diff):
-    score = min(50,diff*10)
-    return score
 
-def calculate_lowscore(diff, mean, stdev):
-    score = ((diff*stdev)/mean)*50
-    logger.warning('*******************',score, diff, mean,stdev)
-    return score
 
 
 
