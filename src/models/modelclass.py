@@ -1,7 +1,7 @@
 
 from metadata.metadata import METRIC_PERIOD
 from datetime import datetime, timezone
-from anaconda_navigator.widgets.dialogs.tests import data
+
 
 class ModelHolder:
     def __init__(self, model_name, model_config=None, model_data=None, period=METRIC_PERIOD.HISTORICAL.value, id='',model_parameters=None):
