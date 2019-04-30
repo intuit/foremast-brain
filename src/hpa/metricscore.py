@@ -48,13 +48,12 @@ def calculateBoundary(hpametricinfoelement, ts):
 		
 
 def getValFromdataframe(df, ts):
-	i = 0
-	for data in df.index.values:
-		if data == ts:
-			return df.y.values[i], ts
-		i=i+1
-	#if failed ththen 
-	return df.y.values[i-1] , df.index.values[i-1] 
+	df1 = df[df.index.isin([ts])]
+	if len(df1) == 0:
+		df.y.values[-1] , df.index.values[-1] 
+	else:
+		return df1.y.values, ts
+
 
 def checkCurrentRange(algorithm, mlmodel,dataframe, ts):
 	value, ts =getValFromdataframe(dataframe, ts)		
