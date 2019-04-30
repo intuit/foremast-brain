@@ -112,26 +112,25 @@ prometheus_request_hpa ={
     "status": "preprocess_inprogress",
     "statusCode": "200",
     "strategy": "hpa",
-    "hpaMetricsConfig": [
-    {
+    "hpaMetricsConfig": {
+     "cpu":   {
     "priority": 3,
-    "name": "cpu",
     "isIncrease": True,
     "isAbsolute": True
     },
+      "tomcat_threads":
     {
     "priority": 2,
-    "name": "tomcat_threads",
     "isIncrease": True,
     "isAbsolute": False
     },
+    "traffic":
     {
     "priority": 1,
-    "name": "traffic",
     "isIncrease": True,
     "isAbsolute": False
     }
-    ],
+    },
     "namespace": "dev-fm-foremast-examples-usw2-dev-dev",
 }
 

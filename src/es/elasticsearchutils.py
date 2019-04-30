@@ -258,7 +258,7 @@ class ESClient:
             logger.exception('Exception when save model {}'.format(jobid))
             return False
 
-    def get_model_config(self, jobid, interval, index_name=MODEL_CONFIG_INDEX_NAME, doc_type=INDEX_TYPE):
+    def get_model_config(self, jobid, interval=8640000, index_name=MODEL_CONFIG_INDEX_NAME, doc_type=INDEX_TYPE):
         """
         Retrieve model config
         :param jobid: application name:namespace:strategy for HPA, uuid for other strategy
@@ -267,7 +267,7 @@ class ESClient:
         """
         return self.__get_data(jobid, 'model_config', interval, index_name, doc_type)
 
-    def get_model_data(self, jobid, interval, index_name=MODEL_DATA_INDEX_NAME, doc_type=INDEX_TYPE):
+    def get_model_data(self, jobid, interval=1800, index_name=MODEL_DATA_INDEX_NAME, doc_type=INDEX_TYPE):
         """
         Retrieve model data
         :param jobid: application name : namespace : strategy
@@ -276,7 +276,7 @@ class ESClient:
         """
         return self.__get_data(jobid, 'model_data', interval, index_name, doc_type)
 
-    def get_model_parameters(self, jobid, interval, index_name=MODEL_PARAMETER_INDEX_NAME, doc_type=INDEX_TYPE):
+    def get_model_parameters(self, jobid, interval=1800, index_name=MODEL_PARAMETER_INDEX_NAME, doc_type=INDEX_TYPE):
         """
         Retrieve model parameters
         :param jobid: application name:namespace:strategy for HPA, uuid for other strategy
