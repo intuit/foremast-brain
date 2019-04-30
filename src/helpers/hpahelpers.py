@@ -136,7 +136,7 @@ def calculateHPAModels(metricInfos, modelHolder, metricTypes):
                                                'threshold':threshold, 'lowerthreshold': lowerthreshold}
         modelHolder.setAllModelParameters(metricTypes[i],modelparametersjson[metricTypes[i]] )
         modelHolder.setModel(metricTypes[i], modeldata)
-    es.save_model(modelHolder.id, model_parameters=modelHolder.storeModelParameters(),  model_data=modelHolder.storeModels())
+    es.save_model(modelHolder.id, model_parameters=modelHolder.loadModelParameters(),  model_data=modelHolder.loadModels())
     return modelHolder
     
 #def fetchPersistedModel(modelHolder):  

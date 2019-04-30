@@ -94,7 +94,7 @@ wavefront_request_hpa ={
 
 
 prometheus_request_hpa ={
-    "id": "3c100dba1da813e4e0be6ca07d88a5bbafe3ac8a0cacd58f1e8bcacfdb2119d1",
+    "id": "hpa-samples:dev-fm-foremast-examples-usw2-dev-dev:hpa",
     "appName": "hpa-samples",
     "created_at": "2019-04-23T18:11:21.823927509Z",
     "startTime": "2019-04-23T18:11:16Z",

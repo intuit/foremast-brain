@@ -250,9 +250,9 @@ def computeHistoricalModel(historicalConfigMap, modelHolder, isProphet = False, 
     if strategy =='hpa':
         modeldata = es.get_model_data(modelHolder.id)
         if modeldata is not None :
-            modelHolder.loadModels(modeldata)
+            modelHolder.storeModels(modeldata)
             modelParameters= es.get_model_parameters(modelHolder.id)
-            modelHolder.ModelParameters(modelParameters)
+            modelHolder.storeModelParameters(modelParameters)
             return modelHolder,msg
         
     for metricType, metricUrl in historicalConfigMap.items():

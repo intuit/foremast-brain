@@ -29,7 +29,7 @@ payload_query_by_job_id = Template('''
             "filter": [{
                 "range": {
                     "modified_at": {
-                        "lte": "now-${pass_sec}s/s"
+                        "gte": "now-${pass_sec}s/s"
                     }
                 }
             }]
@@ -213,7 +213,7 @@ class ESClient:
             logger.exception('Exception when save hpa logs {}'.format(jobid))
             return False
 
-    def save_model(self, jobid, model_parameters={}, model_data={}, model_config={}, index_name=None, doc_type=INDEX_TYPE):
+    def save_model(self, jobid, model_parameters={}, model_data={}, model_config={}):
         """
         Store model that can share with other components
         The parameters, data and config will be stored to different indexes, call API with named arguments is preferred
@@ -229,36 +229,37 @@ class ESClient:
             if model_parameters:
                 model_parameters['modified_at'] = self.__get_now()
                 body['model_parameters'] = model_parameters
-                if not index_name:
-                    index_name = MODEL_PARAMETER_INDEX_NAME
-            elif model_data:
+                self.__save_data(body, jobid, MODEL_PARAMETER_INDEX_NAME)
+                    
+            if model_data:
                 model_data['modified_at'] = self.__get_now()
                 body['model_data'] = model_data
-                if not index_name:
-                    index_name = MODEL_DATA_INDEX_NAME
-            elif model_config:
+                self.__save_data(body, jobid, MODEL_DATA_INDEX_NAME)
+            if model_config:
                 model_config['modified_at'] = self.__get_now()
                 body['model_config'] = model_config
-                if not index_name:
-                    index_name = MODEL_CONFIG_INDEX_NAME
-            res = self.es.search(index_name, doc_type,
-                                 body=payload_query_by_job_id.substitute(jobid=jobid, order='desc', pass_sec=0))
-            cnt, _ = self.parse_result(res)
-            if cnt > 0:
-                # update the doc
-                body['modified_at'] = self.__get_now()
-                self.es.update(index_name, doc_type, res['hits']['hits'][0]['_id'], refresh=True, body={"doc": body})
-            else:
-                # create new doc
-                body['created_at'] = self.__get_now()
-                body['modified_at'] = self.__get_now()
-                self.es.index(index_name, doc_type, refresh=True, body=body)
+                self.__save_data(body, jobid, MODEL_CONFIG_INDEX_NAME)
             return True
         except Exception as e:
             logger.exception('Exception when save model {}'.format(jobid))
             return False
+    
+    def __save_data(self, body, jobid, index_name=None, doc_type=INDEX_TYPE):
+        res = self.es.search(index_name, doc_type,
+                                 body=payload_query_by_job_id.substitute(jobid=jobid, order='desc', pass_sec=0))
+        cnt, _ = self.parse_result(res)
+        if cnt > 0:
+            # update the doc
+            body['modified_at'] = self.__get_now()
+            self.es.update(index_name, doc_type, res['hits']['hits'][0]['_id'], refresh=True, body={"doc": body})
+        else:
+            # create new doc
+            body['created_at'] = self.__get_now()
+            body['modified_at'] = self.__get_now()
+            self.es.index(index_name, doc_type, refresh=True, body=body)
+        
 
-    def get_model_config(self, jobid, interval=8640000, index_name=MODEL_CONFIG_INDEX_NAME, doc_type=INDEX_TYPE):
+    def get_model_config(self, jobid, interval=864000000, index_name=MODEL_CONFIG_INDEX_NAME, doc_type=INDEX_TYPE):
         """
         Retrieve model config
         :param jobid: application name:namespace:strategy for HPA, uuid for other strategy
