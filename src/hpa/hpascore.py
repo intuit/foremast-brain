@@ -34,7 +34,8 @@ def calculateMetricsScore(hpametricinfos, ts,ensuredMetrics= DEFAULT_ENSURE_LIST
             isEnsuredMetric
         boundary, low, high, ts_value, realtrend = calculateBoundary(element, ts, isEnsuredMetric)
         #metricInfo is for log purpose   #current is value
-        metricInfo = {'metricType':element.metricType, 'current':ts_value[1],
+        
+        metricInfo = {'metricType':element.metricType, 'current':float(ts_value[1]),
                               'upper':high, 'lower': low}
         metricDetails.append(metricInfo)
         if i==0 :
