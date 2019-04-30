@@ -375,9 +375,9 @@ def main():
                
             if strategy in [HPA, CONTINUOUS]:
                 # replace start and end time for HPA and continuous strategy
-                start_history_str = 'start={}'.format(time.time() - float(HISTORICAL_CONF_TIME_WINDOW))
-                start_current_str = 'start={}'.format(time.time() - float(CURRENT_CONF_TIME_WINDOW))
-                end_str = 'end={}'.format(time.time())
+                start_history_str = str(time.time() - float(HISTORICAL_CONF_TIME_WINDOW))
+                start_current_str = str(time.time() - float(CURRENT_CONF_TIME_WINDOW))
+                end_str = str(time.time())
                 hpaMetricsConfig = None
                 if strategy == HPA :
                     if "hpaMetricsConfig" in openRequest:
@@ -386,9 +386,6 @@ def main():
     
                 if historicalConfigMap:
                     for metric_type, metric_url in historicalConfigMap.items():
-                        if historicalMetricStore and convertStringToMap(historicalMetricStore)[metric_type] == 'wavefront':
-                            start_history_str = str(time.time() - float(HISTORICAL_CONF_TIME_WINDOW))
-                            end_str = str(time.time())
                         metric_url = metric_url.replace('START_TIME', start_history_str)
                         metric_url = metric_url.replace('END_TIME', end_str)
                         historicalConfigMap[metric_type] = metric_url
@@ -400,9 +397,6 @@ def main():
     
                 if currentConfigMap:
                     for metric_type, metric_url in currentConfigMap.items():
-                        if currentMetricStore and convertStringToMap(currentMetricStore)[metric_type] == 'wavefront':
-                            start_current_str = str(time.time() - float(CURRENT_CONF_TIME_WINDOW))
-                            end_str = str(time.time())
                         metric_url = metric_url.replace('START_TIME', start_current_str)
                         metric_url = metric_url.replace('END_TIME', end_str)
                         currentConfigMap[metric_type] = metric_url
