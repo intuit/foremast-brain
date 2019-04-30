@@ -163,27 +163,17 @@ class hpascoremetrics:
         if not hpascoremetrics.instance:
             hpascoremetrics.instance = hpascoremetrics.__hpascoremetrics()
     def setMetricInfo(self, metricname, labels, time=0):
-        mns =metricname.split(':')
-        metricHPA = metric_domain+mns[0]+"_hpa_score"
-        if (len(mns)>1):
-            metricHPA = metric_domain+mns[0]+":"+"hpa_score"
+        metricHPA = metricname
         newlabeldata = convertDictKey(labels,"-", "_")
+        print("********************"+metricHPA)
         if not (metricHPA in self.instance.metrics ):
             self.instance.metrics[metricHPA] = Gauge(metricHPA, metricHPA+" hpa score",  
                     labelnames=newlabeldata.keys())                                                                                        
                                                    
     def sendMetric(self,metricname, labeldata, value, time=0):
-        mns =metricname.split(':')
-        newMetricName= metric_domain
-        if globalConfig.getValueByKey('METRIC_DESTINATION')=='wavefront':
-            newMetricName = wavefront_domain
-        if (len(mns)>=1):
-            newMetricName = newMetricName+mns[0]+"_hpa_score"
-        if globalConfig.getValueByKey('METRIC_DESTINATION')=='wavefront':
-            newMetricName = wavefront_prefix+ newMetricName
-            return sendMetric(newMetricName, labeldata, value, time) 
+        newMetricName ='namespace_app_pod_hpa_score'
         if not (newMetricName in self.instance.metrics ):
-            self.setMetricInfo(metricname, labeldata)          
+            self.setMetricInfo(newMetricName, labeldata)          
         newlabeldata = convertDictKey(labeldata,"-", "_")
         #print("*****",newMetricName,"*******",newlabeldata,'******',value)
         self.instance.metrics[newMetricName].labels(**newlabeldata).set(value)
