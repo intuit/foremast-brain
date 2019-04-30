@@ -50,12 +50,17 @@ def testRange(value, low, high):
         
 
 
-def calculateHistoricalModel(dataframe, intervalwidth=0.8, predicted_count=35, gprobability=0.8, metricPattern= None):
+def calculateHistoricalModel(dataframe, intervalwidth=0.8, predicted_count=35, threshold=0.8, metricPattern= None, lowerthreshold=None,
+                                                                         minLowerBound=0 ):
+    if lowerthreshold is None:
+        lowerthreshold = threshold
     if metricPattern is None:
         metricPattern, type = suggestedPattern(dataframe, ignoreHourly=True)
     if metricPattern in ['stationary',  'not stationary']:
         mean, deviation = calculateHistoricalParameters(dataframe)
-        return AI_MODEL.MOVING_AVERAGE_ALL.value, [deviation*gprobability-mean, deviation*gprobability+mean, mean, deviation], metricPattern, 0
+        higher = deviation*threshold+mean
+        lower = min(deviation*lowerthreshold-mean,minLowerBound)
+        return AI_MODEL.MOVING_AVERAGE_ALL.value, [ lower, higher , mean, deviation], metricPattern, 0
     else:
         df_prophet = convertToProphetDF(dataframe)
         #current we only predict hourly or daily. prophet only support f

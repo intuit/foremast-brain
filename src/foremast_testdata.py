@@ -116,7 +116,8 @@ prometheus_request_hpa ={
      "cpu":   {
     "priority": 3,
     "isIncrease": True,
-    "isAbsolute": True
+    "isAbsolute": True,
+    "isEnsured":True
     },
       "tomcat_threads":
     {

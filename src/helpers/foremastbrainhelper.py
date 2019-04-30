@@ -234,6 +234,13 @@ def filterEmptyDF(metricInfoList, min_data_points = 0):
     return newList, msg
 
 
+
+def loadModelConfig(jobid):
+    return es.get_model_config(jobid)
+ 
+def storeModelConfig(jobid, modelConfig):
+    es.save_model(jobid, model_config=modelConfig)
+
 def computeHistoricalModel(historicalConfigMap, modelHolder, isProphet = False, historicalMetricStores=None, strategy=None ):
     dataSet = {}
     msg = ''
