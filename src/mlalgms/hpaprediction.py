@@ -80,7 +80,7 @@ def calculateHistoricalModel(dataframe, intervalwidth=0.8, predicted_count=35, t
     if metricPattern in ['stationary',  'not stationary']:
         mean, deviation = calculateHistoricalParameters(dataframe)
         higher = deviation*threshold+mean
-        lower = min(deviation*lowerthreshold-mean,minLowerBound)
+        lower = max(deviation*lowerthreshold-mean,minLowerBound)
         return AI_MODEL.MOVING_AVERAGE_ALL.value, [ lower, higher , mean, deviation], metricPattern, 0
     else:
         df_prophet = convertToProphetDF(dataframe)
