@@ -13,21 +13,12 @@ def resource_es(request):
     es.es.index("test_index", "doc", id="id002", body={"status": "in_test", "modified_at": (
             datetime.now(timezone.utc) - timedelta(days=1)).astimezone()})
     es.es.indices.create("hpalogs_test", ignore=400)
-    es.es.indices.create("model_data_test", ignore=400)
-    es.es.indices.create("model_config_test", ignore=400)
-    es.es.indices.create("model_parameters_test", ignore=400)
     es.es.indices.refresh('test_index', ignore=400)
     es.es.indices.refresh('hpalogs_test', ignore=400)
-    es.es.indices.refresh('model_data_test', ignore=400)
-    es.es.indices.refresh('model_config_test', ignore=400)
-    es.es.indices.refresh('model_parameters_test', ignore=400)
 
     def resource_teardown():
         es.es.indices.delete("test_index")
         es.es.indices.delete("hpalogs_test")
-        es.es.indices.delete("model_data_test")
-        es.es.indices.delete("model_config_test")
-        es.es.indices.delete("model_parameters_test")
 
     request.addfinalizer(resource_teardown)
     return es
@@ -115,39 +106,35 @@ def test_save_model(resource_es):
         }]
     }
 
-    resource_es.save_model('application:namespace:stragegy', model_parameters={"parameter1": "val1"}, index_name="model_parameters_test")
+    resource_es.save_model('application:namespace:stragegy', model_parameters={"parameter1": "val1"})
     res = resource_es.es.search('model_test', 'document', body=qry)
     assert res is not None
     for i in range(10):
-        resource_es.save_model('application:namespace:stragegy', model_parameters={"parameter1": "val1" + str(i)}, index_name="model_parameters_test")
-    res = resource_es.es.search('model_parameters_test', 'document', body=qry)
+        resource_es.save_model('application:namespace:stragegy', model_parameters={"parameter1": "val1" + str(i)})
+    res = resource_es.es.search('model_parameters', 'document', body=qry)
     cnt, list = resource_es.parse_result(res)
     assert cnt == 1
     assert list[0]['model_parameters']['parameter1'] == "val19"
 
-    resource_es.save_model('application:namespace:stragegy', model_data={"data": "val1"},
-                           index_name="model_data_test")
-    res = resource_es.es.search('model_data_test', 'document', body=qry)
+    resource_es.save_model('application:namespace:stragegy', model_data={"data": "val1"})
+    res = resource_es.es.search('model_datas', 'document', body=qry)
     cnt, _ = resource_es.parse_result(res)
     assert cnt == 1
-    resource_es.save_model('application:namespace:stragegy', model_config={"config": "config1"},
-                           index_name="model_config_test")
-    res = resource_es.es.search('model_config_test', 'document', body=qry)
+    resource_es.save_model('application:namespace:stragegy', model_config={"config": "config1"})
+    res = resource_es.es.search('model_configs', 'document', body=qry)
     cnt, _ = resource_es.parse_result(res)
     assert cnt == 1
 
 
 def test_get_model(resource_es):
-    resource_es.save_model('application:namespace:stragegy', model_parameters={"parameter": "param01"},
-                           index_name="model_parameters_test")
-    time.sleep(2)
-    conf = resource_es.get_model_parameters('application:namespace:stragegy', 1, 'model_parameters_test')
+    resource_es.save_model('application:namespace:stragegy', model_parameters={"parameter": "param01"})
+    conf = resource_es.get_model_parameters('application:namespace:stragegy')
     assert conf['parameter'] == 'param01'
 
-    resource_es.save_model('application:namespace:stragegy', model_data={"data": "data01"}, index_name="model_data_test")
-    data = resource_es.get_model_data('application:namespace:stragegy', 0, 'model_data_test')
+    resource_es.save_model('application:namespace:stragegy', model_data={"data": "data01"})
+    data = resource_es.get_model_data('application:namespace:stragegy')
     assert data['data'] == 'data01'
 
-    resource_es.save_model('application:namespace:stragegy', model_config={"config": "conf01"}, index_name="model_config_test")
-    param = resource_es.get_model_config('application:namespace:stragegy', 10, 'model_config_test')
+    resource_es.save_model('application:namespace:stragegy', model_config={"config": "conf01"})
+    param = resource_es.get_model_config('application:namespace:stragegy', 0)
     assert param is None

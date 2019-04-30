@@ -16,8 +16,8 @@ MODEL_DATA_INDEX_NAME = "model_datas"
 MODEL_CONFIG_INDEX_NAME = "model_configs"
 MODEL_PARAMETER_INDEX_NAME = "model_parameters"
 
-# query by job id
-payload_query_by_job_id = Template('''
+# query by job id and last modified
+payload_query_by_job_id_timestamp = Template('''
 {
     "query": {
         "bool": {
@@ -44,6 +44,29 @@ payload_query_by_job_id = Template('''
 }
 '''
 )
+
+# query by job id
+payload_query_by_job_id = Template('''
+{
+    "query": {
+        "bool": {
+            "must": [{
+                "match": {
+                    "job_id": "$jobid"
+                }
+            }]
+        }
+    },
+    "sort": [{
+        "modified_at": {
+            "order": "$order",
+            "unmapped_type": "string"
+        }
+    }]
+}
+'''
+)
+
 
 
 # query by status list
@@ -197,7 +220,7 @@ class ESClient:
         try:
             body = {'job_id': jobid, 'hpalog': log_content, 'timestamp': log_time}
             res = self.es.search(index_name, doc_type,
-                                 body=payload_query_by_job_id.substitute(jobid=jobid, order='asc', pass_sec=0))
+                                 body=payload_query_by_job_id.substitute(jobid=jobid, order='asc'))
             cnt, _ = self.parse_result(res)
             if cnt >= LOG_DOC_COUNT:
                 # update the oldest doc
@@ -246,7 +269,7 @@ class ESClient:
     
     def __save_data(self, body, jobid, index_name=None, doc_type=INDEX_TYPE):
         res = self.es.search(index_name, doc_type,
-                                 body=payload_query_by_job_id.substitute(jobid=jobid, order='desc', pass_sec=0))
+                                 body=payload_query_by_job_id.substitute(jobid=jobid, order='desc'))
         cnt, _ = self.parse_result(res)
         if cnt > 0:
             # update the doc
@@ -312,7 +335,7 @@ class ESClient:
         """
         try:
             res = self.es.search(index_name, doc_type,
-                                 body=payload_query_by_job_id.substitute(jobid=jobid, order='desc', pass_sec=interval))
+                                 body=payload_query_by_job_id_timestamp.substitute(jobid=jobid, order='desc', pass_sec=interval))
             cnt, list = self.parse_result(res)
             if cnt > 0 and key in list[0]:
                 return list[0][key]
