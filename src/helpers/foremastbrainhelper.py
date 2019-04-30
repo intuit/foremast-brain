@@ -216,7 +216,7 @@ def filterEmptyDF(metricInfoList, min_data_points = 0):
         return metricInfoList
     newList =[]
     for element in metricInfoList:
-        if element.metricClass in ['SingleMetricInfo' , 'MultiTypeMetricInfo' ,'MultiKeyMetricInfo'] :
+        if element.metricClass in ['MetricInfo'] :
             #this step will perform data clean up
             #df = element.metricDF
             #df = df[np.isfinite(df).all(1)]
@@ -246,7 +246,7 @@ def computeHistoricalModel(historicalConfigMap, modelHolder, isProphet = False, 
             modelHolder.loadModels(modeldata)
             modelParameters= es.get_model_parameters(modelHolder.id)
             modelHolder.ModelParameters(modelParameters)
-            #return modelHolder,msg
+            return modelHolder,msg
         
     for metricType, metricUrl in historicalConfigMap.items():
         metricStore = 'prometheus'
