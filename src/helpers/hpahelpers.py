@@ -4,7 +4,7 @@ from hpa.metricscore import hpametricinfo
 from models.modelclass import ModelHolder
 from hpa.hpascore import calculateMetricsScore
 import pandas as pd
-
+from hpa.hpascore import DEFAULT_ENSURE_LIST
 from mlalgms.scoreutils import  convertToPvalue
 from metrics.monitoringmetrics import modelmetrics, anomalymetrics, hpascoremetrics
 
@@ -34,6 +34,8 @@ def triggerHPAScoreMetric(metricInfo, score):
     except Exception as e:
         logger.error('triggerHPAScoreMetric '+metricInfo.metricName+' failed ',e )
 
+     
+
 def calculateHPAScore(metricInfoDataset, modelHolder):
     metricTypeSize = len(metricInfoDataset)
     if (metricTypeSize==0):
@@ -42,35 +44,55 @@ def calculateHPAScore(metricInfoDataset, modelHolder):
     hpametricinfolist = []
     hap_metricInfo = None
     ddd = None
+    count = 0
+    metrictypecount = 0
+    maxpriority = 0
+    maxMetricType = None
     for metricType, metricInfoList in metricInfoDataset.items():
+        #short term hardcode.  will add one more parameters
+        if metricType in DEFAULT_ENSURE_LIST:
+            metrictypecount = metrictypecount +1
         for metricInfo in metricInfoList:
                 if hap_metricInfo is None:
                     hap_metricInfo = metricInfo
                 priority = modelHolder.getModelConfigByKey('hpa',metricType,'priority')
+                if priority > maxpriority:
+                    maxpriority = priority
+                    maxMetricType = metricType
                 algorithm = modelHolder.getModelParametersByKey(metricType,'algorithm')
                 mlmodel = modelHolder.getModelByKey(metricType)
                 properties = modelHolder.getModelConfigByKey('hpa',metricType)
                 hpainfo = hpametricinfo(priority, metricType, metricInfo.metricDF, algorithm,  mlmodel, properties)
                 hpametricinfolist.append(hpainfo)
+                count = count +1
                 if ddd is None:
                     ddd = metricInfo.metricDF
                 else:
-                    ddd = pd.merge(ddd,  metricInfo.metricDF, left_on=ddd.index, right_on= metricInfo.metricDF.index)
+                    ddd = pd.merge(ddd,  metricInfo.metricDF,left_index=True, right_index=True)
     #### joined ts
     size=len(ddd)
     ts = 0
     if (size>0):
         #TODO: fetch the max one
         try:
-            ts = ddd.key_0.values[-1]
+            ts = ddd.index.values[-1]
         except Exception as e:
             logger.error("uuid : " + modelHolder.id + " merge dataframe failed "+str(ddd.column), e)
-    score, loginfo = calculateMetricsScore(hpametricinfolist,ts)
+    noMatchPickLast = globalConfig.getValueByKey('NO_MATCH_PICK_LAST')
+    if noMatchPickLast is None or noMatchPickLast!='y':
+        logger.warning('### current metric time stamp is not insync... '+str(modelHolder.id))
+        return
+    score = 0
+    loginfo = None
+    if metrictypecount > 0:
+        score, loginfo = calculateMetricsScore(hpametricinfolist,ts)  
+    else:    
+        score, loginfo = calculateMetricsScore(hpametricinfolist,ts,[maxMetricType]) 
     if loginfo is not None:
+        print(loginfo)
         es.save_reason(modelHolder.id, ts, loginfo)
     hpascore =round(score, 0)
-    print('*****hpascore ',hpascore)
-#    logger.warning(getNowStr()+'###calculated score is '+hpascore )
+    logger.warning('### calculated score is '+str(hpascore) )
     triggerHPAScoreMetric(hap_metricInfo, score)
            
     
@@ -80,12 +102,16 @@ def calculateHPAScore(metricInfoDataset, modelHolder):
 
 def retrieveConfig(metricType, modelHolder):
     threshold = modelHolder.getModelConfigByKey(metricType,THRESHOLD)
-    minLowerBound= modelHolder.getModelConfigByKey(metricType,MIN_LOWER_BOUND)
+    lowerthreshold = modelHolder.getModelConfigByKey(metricType,LOWER_THRESHOLD)
+    minLowerBound = modelHolder.getModelConfigByKey(metricType,MIN_LOWER_BOUND)
+    
     if threshold is None:
-        threshold = globalConfig.getThresholdByKey(metricType,THRESHOLD)
+        threshold =  modelHolder.getModelConfigByKey(THRESHOLD)
+    if lowerthreshold is None:
+        lowerthreshold = modelHolder.getModelConfigByKey(LOWER_THRESHOLD)
     if minLowerBound is None:
-        minLowerBound = globalConfig.getThresholdByKey(metricType,MIN_LOWER_BOUND)  
-    return threshold, minLowerBound   
+        minLowerBound = modelHolder.getModelConfigByKey(MIN_LOWER_BOUND)  
+    return threshold, lowerthreshold, minLowerBound   
 
 
 
@@ -95,11 +121,12 @@ def calculateHPAModels(metricInfos, modelHolder, metricTypes):
     modeldatajson = {}
     modelparametersjson = {}
     size = len(metricInfos)
-    hapinfoList=[]
-    for i in range (len(metricInfos)):
-        threshold, minLowerBound = retrieveConfig(metricTypes[i], modelHolder)
+    for i in range (size):
+        threshold, lowerthreshold, minLowerBound = retrieveConfig(metricTypes[i], modelHolder)
         probability = convertToPvalue(threshold)
-        algm, modeldata, metricpattern, trend = calculateHistoricalModel(metricInfos[i][0].metricDF, intervalwidth=probability , predicted_count=35, gprobability=threshold)
+        algm, modeldata, metricpattern, trend = calculateHistoricalModel(metricInfos[i][0].metricDF, intervalwidth=probability , 
+                                                                         predicted_count=35, threshold=threshold, lowerthreshold =lowerthreshold,
+                                                                         minLowerBound=minLowerBound )
         modeldatajson[metricTypes[i]]= modeldata 
         modelparametersjson[metricTypes[i]] = {'algorithm':algm,'metricpattern':metricpattern, 'trend':trend}
         modelHolder.setAllModelParameters(metricTypes[i],modelparametersjson[metricTypes[i]] )
