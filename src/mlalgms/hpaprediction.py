@@ -4,7 +4,7 @@ from mlalgms.statsmodel import calculateHistoricalParameters, calculateTSTrend
 from mlalgms.fbprophetalgm import prophetPredictUpperLower
 from utils.dfUtils import convertToProphetDF
 from metadata.metadata import AI_MODEL
-from mlalgms.scoreutils import convertToZscore
+from mlalgms.scoreutils import convertToZscore, convertToPvalue
 #from sklearn.preprocessing import MinMaxScaler
 #from mlalgms.kerasdeeplearning import create_datasets,createModel, compileModel, predictModel
 #from mlalgms.evaluator import mape
@@ -22,8 +22,28 @@ def storeAsJson(predictions):
         ret.append(data)
     return ret
 
+def calculateDiff(value, mean,stdev, threshold, lowerthreshold):
+    zscore = (value-mean)/stdev
+    if zscore > threshold:
+        diff = zscore-threshold
+    elif zscore <= threshold and zscore >= lowerthreshold:
+        diff = 0
+    elif zscore < lowerthreshold:
+        diff = zscore-threshold
+        
+        
+def calculateHighScore(upperzscore, threshold):
+   diff= 50/(1-convertToPvalue(threshold))*100
+   return 50 + convertToPvalue(upperzscore-threshold)*diff
 
-       
+    
+def calculateLowerScore(zscore, threshold): 
+    if threshold ==0:
+        x =1
+    x = 50/convertToPvalue(threshold) 
+    newscore = zscore*x
+    return newscore        
+    
 
 def checkHPAAnomaly(timestamp, value, mlmodel, algorithm=AI_MODEL.PROPHET.value):
     if algorithm in [AI_MODEL.MOVING_AVERAGE_ALL.value]:
@@ -33,6 +53,7 @@ def checkHPAAnomaly(timestamp, value, mlmodel, algorithm=AI_MODEL.PROPHET.value)
             preds = mlmodel
             length = len(preds)
             for i in range(length):
+                #assume ts was sorted , find first onel
                 if (timestamp<= preds[i][0]):
                     return testRange(value, preds[i][1],preds[i][2])        
             #unknow
@@ -55,7 +76,7 @@ def calculateHistoricalModel(dataframe, intervalwidth=0.8, predicted_count=35, t
     if lowerthreshold is None:
         lowerthreshold = threshold
     if metricPattern is None:
-        metricPattern, type = suggestedPattern(dataframe, ignoreHourly=True)
+        metricPattern, pattern_type = suggestedPattern(dataframe, ignoreHourly=True)
     if metricPattern in ['stationary',  'not stationary']:
         mean, deviation = calculateHistoricalParameters(dataframe)
         higher = deviation*threshold+mean
@@ -68,7 +89,7 @@ def calculateHistoricalModel(dataframe, intervalwidth=0.8, predicted_count=35, t
         predictedDF= prophetPredictUpperLower(df_prophet, predicted_count, 'T', seasonality_name= 'daily', interval_width=intervalwidth) 
         trend = calculateTSTrend(predictedDF.yhat.values,predictedDF.index.get_values())
         predicted = storeAsJson(predictedDF)
-        return AI_MODEL.PROPHET.value, predicted, metricPattern, trend
+        return AI_MODEL.PROPHET.value, predicted, pattern_type, trend
         
 
 

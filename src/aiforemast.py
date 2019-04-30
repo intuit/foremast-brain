@@ -7,7 +7,7 @@ from es.elasticsearchutils import ESClient
 
 from helpers.foremastbrainhelper import selectRequestToProcess, canRequestProcess,retrieveRequestById, \
 isCompletedStatus,updateESDocStatus,reserveJob, computeHistoricalModel, computeNonHistoricalModel,pairWiseComparson, \
-computeAnomaly
+computeAnomaly,loadModelConfig,storeModelConfig
 from metadata.globalconfig import globalconfig
 
 #from metadata.metadata import REQUEST_STATE, AI_MODEL, METRIC_PERIOD, MIN_DATA_POINTS
@@ -155,10 +155,15 @@ def main():
         os.environ.get("MIN_WILCOXON_DATA_POINTS", str(WILCOXON_MIN_DATA_POINTS)), WILCOXON_MIN_DATA_POINTS)
     MIN_KRUSKAL_DATA_POINTS = convertStrToInt(os.environ.get("MIN_KRUSKAL_DATA_POINTS", str(KRUSKAL_MIN_DATA_POINTS)),
                                               KRUSKAL_MIN_DATA_POINTS)
-    ML_THRESHOLD = convertStrToFloat(os.environ.get(THRESHOLD, str(DEFAULT_THRESHOLD)), DEFAULT_THRESHOLD)
+    
+    
+    #ML_THRESHOLD = convertStrToFloat(os.environ.get(THRESHOLD, str(DEFAULT_THRESHOLD)), DEFAULT_THRESHOLD)
     # lower threshold is for warning.
-    ML_LOWER_THRESHOLD = convertStrToFloat(os.environ.get(LOWER_THRESHOLD, str(DEFAULT_LOWER_THRESHOLD)),
-                                           DEFAULT_LOWER_THRESHOLD)
+    #ML_LOWER_THRESHOLD = convertStrToFloat(os.environ.get(LOWER_THRESHOLD, str(DEFAULT_LOWER_THRESHOLD)),
+    #                                       DEFAULT_LOWER_THRESHOLD)
+    ML_THRESHOLD = convertStrToFloat(os.environ.get(THRESHOLD, str(0.8416212335729143)), 0.8416212335729143)
+    ML_LOWER_THRESHOLD = convertStrToFloat(os.environ.get(LOWER_THRESHOLD, str(0.6744897501960817)), 0.6744897501960817)
+    
     ML_BOUND = convertStrToInt(os.environ.get(BOUND, str(IS_UPPER_BOUND)), IS_UPPER_BOUND)
     ML_MIN_LOWER_BOUND = convertStrToFloat(os.environ.get(MIN_LOWER_BOUND, str(DEFAULT_MIN_LOWER_BOUND)),
                                            DEFAULT_MIN_LOWER_BOUND)
@@ -176,6 +181,11 @@ def main():
     config.setKV("SOURCE_ENV", "ppd")
     MODE_DROP_ANOMALY = os.environ.get('MODE_DROP_ANOMALY', 'y')
     config.setKV('MODE_DROP_ANOMALY', MODE_DROP_ANOMALY)
+    
+    
+    NO_MATCH_PICK_LAST  = os.environ.get('NO_MATCH_PICK_LAST', 'y')
+    config.setKV('NO_MATCH_PICK_LAST', NO_MATCH_PICK_LAST)
+    
     wavefrontEndpoint = os.environ.get('WAVEFRONT_ENDPOINT')
     wavefrontToken = os.environ.get('WAVEFRONT_TOKEN')
 
@@ -258,20 +268,19 @@ def main():
                 openRequest, modelHolder = retrieveCachedRequest()
                 if openRequest == None:
                     logger.warning("No long running preprocess job found .....")
-
-                    time.sleep(1)
                     continue
-
-                    # Test Start########################
                     '''
-                    id='719a1a711bcaa94fff9677b9c0e24bcee67ec27ac67b57532316a3f8a37a8649'
+                    # Test Start########################
+                    
+                    id='3c100dba1da813e4e0be6ca07d88a5bbafe3ac8a0cacd58f1e8bcacfdb2119d1'
                     openRequest = retrieveRequestById(id)
                     if (openRequest==None):
                         print("es is down, will sleep and retry")
                         time.sleep(1)
                         continue
-                    '''
+                    
                     # Test End##########################
+                    '''
             else:
                 uuid = openRequest['id']
                 _, modelHolder = retrieveOneCachedRequest(uuid)
@@ -279,10 +288,8 @@ def main():
         outputMsg = []
         uuid = openRequest['id']
         status = openRequest['status']
-
+        
         updatedStatus = reserveJob(uuid, status)
-
-        #updatedStatus = reserveJob(uuid, status)
         logger.warning("Start to processing job id "+uuid+ " original status:"+ status)
         #strategy
         strategy = openRequest['strategy']
@@ -336,7 +343,7 @@ def main():
         #Need to be removed below line due to baseline is enabled at upstream
         skipCurrent = (currentConfig=='')
 
-        
+        persistModelConfig=False
         try:
             if (skipCurrent):
                 #this should not pick up 
@@ -349,13 +356,17 @@ def main():
 
             #dict  metric name : url , if modelHolder does not have model, give chance to recalculate
             if modelHolder == None:
-                modelConfig={}
+                modelConfig = loadModelConfig (uuid)
                 if strategy == CANARY:
-                    modelConfig = {PAIRWISE_ALGORITHM:ML_PAIRWISE_ALGORITHM,PAIRWISE_THRESHOLD:ML_PAIRWISE_THRESHOLD,BOUND: ML_BOUND}
+                    if modelConfig is None:
+                        modelConfig = {PAIRWISE_ALGORITHM:ML_PAIRWISE_ALGORITHM,PAIRWISE_THRESHOLD:ML_PAIRWISE_THRESHOLD,BOUND: ML_BOUND}
+                        persistModelConfig = True
                     modelHolder = ModelHolder(ML_PAIRWISE_ALGORITHM,modelConfig,{}, METRIC_PERIOD.BASELINE.value, uuid)
                 else:
-                    modelConfig = {THRESHOLD: threshold, LOWER_THRESHOLD: lower_threshold,
-                               MIN_DATA_POINTS: min_historical_data_points, BOUND: ML_BOUND}   
+                    if modelConfig is None:
+                        modelConfig = {THRESHOLD: threshold, LOWER_THRESHOLD: lower_threshold,
+                                   MIN_DATA_POINTS: min_historical_data_points, BOUND: ML_BOUND, MIN_LOWER_BOUND:ML_MIN_LOWER_BOUND}  
+                        persistModelConfig = True 
                     modelHolder = ModelHolder(ML_ALGORITHM,modelConfig,{}, METRIC_PERIOD.HISTORICAL.value, uuid)
 
                 
@@ -407,6 +418,8 @@ def main():
                     isProphet=True
                     modelConfig.setdefault(PROPHET_PERIOD, ML_PROPHET_PERIOD )
                     modelConfig.setdefault(PROPHET_FREQ,ML_PROPHET_FREQ )
+                    if persistModelConfig:
+                        storeModelConfig(uuid, modelHolder.getModelConfigs())
                 # pass stragegy for hpa
                 modelHolder, msg = computeHistoricalModel(historicalConfigMap, modelHolder, isProphet,storeMapHistorical, strategy)
                 cacheModels(modelHolder)
@@ -456,7 +469,7 @@ def main():
             logger.warning("jobid:"+ uuid +" hasCurrent "+ str(hasCurrent)+", hasBaseline "+ str(hasBaseline) )
             
             if hasCurrent == False:
-                if strategy in [HPA, CONTINUOUS]:
+                if strategy in [HPA, 'continuous']:
                     logger.warning("job id: " + uuid + "  not current metric...")
                     continue
                 ret = True
@@ -590,7 +603,7 @@ def main():
                 # measurementMetric.sendMetric(MONITORING_REQUEST_TIME, label_info, calculateDuration(start))
                 continue
 
-            if strategy in [HPA, CONTINUOUS]:
+            if strategy in [HPA, 'continuous']:
                 computeAnomaly(currentDataSet, modelHolder, strategy)
                 ret = update_es_doc(strategy, status, uuid,
                                         REQUEST_STATE.PREPROCESS_INPROGRESS.value,

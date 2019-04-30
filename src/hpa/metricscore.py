@@ -4,13 +4,14 @@ from mlalgms.hpaprediction import checkHPAAnomaly
 
 
 class hpametricinfo(object):
-	def __init__(self, priority, metricType, currentdataframe, algorithm=None,  mlmodel=None, hpaproperties=None):
+	def __init__(self, priority, metricType, currentdataframe, algorithm=None,  mlmodel=None, hpaproperties=None, modelparameters=None):
 		self.priority = priority
 		self.metricType = metricType
 		self.df = currentdataframe
 		self.algorithm = algorithm
 		self.mlmodel = mlmodel
 		self.hpaproperties = hpaproperties
+		self.modelparameters = modelparameters
 	def __eq__(self, other):
 		return self.priority == other.priority and self.metricType == other.metricType
 	def __lt__(self, other):
@@ -24,7 +25,13 @@ class hpametricinfo(object):
 	def __ge__(self, other): 
 		return self.priority >= other.priority
 	def checkCurrent(self, ts):
-		return checkCurrentRange(self.algorithm,self.mlmodel, self.df, ts )
+		return checkCurrentRange(self.algorithm,self.mlmodel, self.df, ts ,self.modelparameters)
+	def getModelParameters(self):
+		return self.modelparameters
+	def getHPAProperties(self):
+		return self.hpaproperties
+	def getMLModel(self):
+		return self.mlmodel
 	
 #	def getCurrentRange(self):
 	
@@ -42,9 +49,9 @@ class hpametricinfo(object):
 		return min(50,max(-50,(50/(0-lower))*(value-lower)))
 		'''
 
-def calculateBoundary(hpametricinfoelement, ts):
-	return checkCurrentRange(hpametricinfoelement.algorithm, hpametricinfoelement.mlmodel, 
-							hpametricinfoelement.df, ts)
+def calculateBoundary(hpametricinfoelement, ts, isEnsuredMetric):
+	return checkCurrentRange(hpametricinfoelement.algorithm, hpametricinfoelement.getMLModel(), 
+							hpametricinfoelement.df, ts, hpametricinfoelement.getModelParameters(), isEnsuredMetric)
 		
 
 def getValFromdataframe(df, ts):
@@ -55,18 +62,24 @@ def getValFromdataframe(df, ts):
 		return df1.y.values, ts
 
 
-def checkCurrentRange(algorithm, mlmodel,dataframe, ts):
-	value, ts =getValFromdataframe(dataframe, ts)		
+def checkCurrentRange(algorithm, mlmodel,dataframe, ts, modelParameters,isEnsuredMetric):
+	value, ts =getValFromdataframe(dataframe, ts)	
+	threshold = modelParameters['threshold']
+	lowerthreshold = modelParameters['lowerthreshold']  	
 	if algorithm in [AI_MODEL.MOVING_AVERAGE_ALL.value]:
-		predicted, low, upper =  checkHPAAnomaly(ts,value , mlmodel, algorithm)
+		predicted, low, upper =  checkHPAAnomaly(ts,value , mlmodel, algorithm)                          
 		return predicted, low, upper,[ts, value], 0
 	elif algorithm in [AI_MODEL.PROPHET.value]:  
-		aret, low,high =  checkHPAAnomaly(ts,value , mlmodel, algorithm)
+		aret, low,high =  checkHPAAnomaly(ts,value , mlmodel, algorithm)  
 		trend = 0
-		if 'trend' in mlmodel:
-			trend = mlmodel['trend']
+		if 'trend' in modelParameters:
+			trend = modelParameters['trend']
 		if  aret>0 or (trend>0 ):
-			return 1, low, high, [ts, value],trend
+			if isEnsuredMetric:
+				if trend>0 and aret <=0:
+					return aret,low, high, [ts, value],trend
+			else:
+				return 1, low, high, [ts, value],trend
 		elif aret<0 or (trend <0 ):
 			return -1, low, high,[ts, value],  trend
 		return 0, low, high, [ts, value], trend

@@ -1,4 +1,10 @@
 from hpa.metricscore import hpametricinfo,calculateBoundary
+from mlalgms.scoreutils import convertToZscore, convertToPvalue
+import logging
+
+# logging
+logging.basicConfig(format='%(asctime)s %(message)s')
+logger = logging.getLogger('hpascore')
 
 
 
@@ -23,8 +29,10 @@ def calculateMetricsScore(hpametricinfos, ts,ensuredMetrics= DEFAULT_ENSURE_LIST
     metricDetails = []
     for i in range(metricSize):
         element = hpametric_sorted[i]
-
-        boundary, low, high, ts_value, realtrend = calculateBoundary(element, ts)
+        isEnsuredMetric = False
+        if element.metricType in ensuredMetrics :
+            isEnsuredMetric
+        boundary, low, high, ts_value, realtrend = calculateBoundary(element, ts, isEnsuredMetric)
         #metricInfo is for log purpose   #current is value
         metricInfo = {'metricType':element.metricType, 'current':ts_value[1],
                               'upper':high, 'lower': low}
@@ -126,6 +134,16 @@ def logReason(score):
     elif score <50:
         return 'hpa is scaling down'
     return None 
+        
+def calculateScoreByDiff(diff, isUpper):
+    score = min(50,diff*10)
+    if isUpper:
+        return 50 + score
+    return 50 - score
+
+def calculateCurrentZscore(value, mean, stdev):
+    ret = (value-mean)/stdev
+    return ret
 
 '''            
         
