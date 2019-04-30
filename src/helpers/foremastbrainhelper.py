@@ -113,7 +113,7 @@ def canRequestProcess(request):
     # find requests updated 30 mins ago for hpa and continuous strategy
     strategy = request['strategy']
     if strategy in ['hpa', 'continuous']:
-        if rateLimitCheck(request['modified_at'], 30*60):
+        if rateLimitCheck(request['modified_at'], 45):
             return request
         return None
     # for other strategies
@@ -250,9 +250,9 @@ def computeHistoricalModel(historicalConfigMap, modelHolder, isProphet = False, 
     if strategy =='hpa':
         modeldata = es.get_model_data(modelHolder.id)
         if modeldata is not None :
-            modelHolder.loadModels(modeldata)
+            modelHolder.storeModels(modeldata)
             modelParameters= es.get_model_parameters(modelHolder.id)
-            modelHolder.ModelParameters(modelParameters)
+            modelHolder.storeModelParameters(modelParameters)
             return modelHolder,msg
         
     for metricType, metricUrl in historicalConfigMap.items():

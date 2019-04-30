@@ -6,7 +6,7 @@ from concurrent.futures import ProcessPoolExecutor
 from es.elasticsearchutils import ESClient
 
 from helpers.foremastbrainhelper import selectRequestToProcess, canRequestProcess,retrieveRequestById, \
-isCompletedStatus,updateESDocStatus,reserveJob, computeHistoricalModel, computeNonHistoricalModel,pairWiseComparson, \
+isCompletedStatus,updateESDocStatus, reserveJob, computeHistoricalModel, computeNonHistoricalModel,pairWiseComparson, \
 computeAnomaly,loadModelConfig,storeModelConfig
 from metadata.globalconfig import globalconfig
 
@@ -49,7 +49,7 @@ CANARY = 'canary'
 
 MAX_CACHE_SIZE = 2000
 CACHE_EXPIRE_TIME = 30 * 60
-DEFAULT_MAX_STUCK_IN_SECONDS = 90
+DEFAULT_MAX_STUCK_IN_SECONDS = 45
 DEFAULT_AGGREGATED_METRIC_SECOND = 60
 DEFAULT_MIN_HISTORICAL_DATA_POINT_TO_MEASURE = 1
 # DEFAULT_ENABLE_CACHE = '0'
@@ -289,7 +289,7 @@ def main():
         uuid = openRequest['id']
         status = openRequest['status']
         
-        updatedStatus = reserveJob(uuid, status)
+        #updatedStatus = reserveJob(uuid, status)
         logger.warning("Start to processing job id "+uuid+ " original status:"+ status)
         #strategy
         strategy = openRequest['strategy']
@@ -418,8 +418,8 @@ def main():
                     isProphet=True
                     modelConfig.setdefault(PROPHET_PERIOD, ML_PROPHET_PERIOD )
                     modelConfig.setdefault(PROPHET_FREQ,ML_PROPHET_FREQ )
-                    if persistModelConfig:
-                        storeModelConfig(uuid, modelHolder.getModelConfigs())
+                if persistModelConfig:
+                    storeModelConfig(uuid, modelHolder.getModelConfigs())
                 # pass stragegy for hpa
                 modelHolder, msg = computeHistoricalModel(historicalConfigMap, modelHolder, isProphet,storeMapHistorical, strategy)
                 cacheModels(modelHolder)
