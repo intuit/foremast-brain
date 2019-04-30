@@ -6,7 +6,7 @@ from concurrent.futures import ProcessPoolExecutor
 from es.elasticsearchutils import ESClient
 
 from helpers.foremastbrainhelper import selectRequestToProcess, canRequestProcess,retrieveRequestById, \
-isCompletedStatus,updateESDocStatus,reserveJob, computeHistoricalModel, computeNonHistoricalModel,pairWiseComparson, \
+isCompletedStatus,updateESDocStatus, reserveJob, computeHistoricalModel, computeNonHistoricalModel,pairWiseComparson, \
 computeAnomaly,loadModelConfig,storeModelConfig
 from metadata.globalconfig import globalconfig
 

@@ -113,7 +113,7 @@ def canRequestProcess(request):
     # find requests updated 30 mins ago for hpa and continuous strategy
     strategy = request['strategy']
     if strategy in ['hpa', 'continuous']:
-        if rateLimitCheck(request['modified_at'], 30*60):
+        if rateLimitCheck(request['modified_at'], 45):
             return request
         return None
     # for other strategies
