@@ -1,5 +1,6 @@
 import pytest
 from es.elasticsearchutils import ESClient
+from es.elasticsearchutils import payload_query_by_job_id
 
 from datetime import timezone, datetime, timedelta
 import time
@@ -19,6 +20,7 @@ def resource_es(request):
     def resource_teardown():
         es.es.indices.delete("test_index")
         es.es.indices.delete("hpalogs_test")
+        es.es.delete_by_query('_all', payload_query_by_job_id.substitute(jobid='application:namespace:stragegy', order='asc'))
 
     request.addfinalizer(resource_teardown)
     return es
@@ -107,7 +109,7 @@ def test_save_model(resource_es):
     }
 
     resource_es.save_model('application:namespace:stragegy', model_parameters={"parameter1": "val1"})
-    res = resource_es.es.search('model_test', 'document', body=qry)
+    res = resource_es.es.search('model_parameters', 'document', body=qry)
     assert res is not None
     for i in range(10):
         resource_es.save_model('application:namespace:stragegy', model_parameters={"parameter1": "val1" + str(i)})
@@ -128,13 +130,14 @@ def test_save_model(resource_es):
 
 def test_get_model(resource_es):
     resource_es.save_model('application:namespace:stragegy', model_parameters={"parameter": "param01"})
-    conf = resource_es.get_model_parameters('application:namespace:stragegy')
-    assert conf['parameter'] == 'param01'
+    param = resource_es.get_model_parameters('application:namespace:stragegy')
+    assert param['parameter'] == 'param01'
 
     resource_es.save_model('application:namespace:stragegy', model_data={"data": "data01"})
     data = resource_es.get_model_data('application:namespace:stragegy')
     assert data['data'] == 'data01'
 
     resource_es.save_model('application:namespace:stragegy', model_config={"config": "conf01"})
-    param = resource_es.get_model_config('application:namespace:stragegy', 0)
-    assert param is None
+    time.sleep(2)
+    conf = resource_es.get_model_config('application:namespace:stragegy', 0)
+    assert conf is None
