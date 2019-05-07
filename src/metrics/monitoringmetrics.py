@@ -171,7 +171,7 @@ class hpascoremetrics:
                     labelnames=newlabeldata.keys())                                                                                        
                                                    
     def sendMetric(self,metricname, labeldata, value, time=0):
-        newMetricName ='namespace_app_pod_hpa_score'
+        newMetricName ='namespace_pod_hpa_score'
         if not (newMetricName in self.instance.metrics ):
             self.setMetricInfo(newMetricName, labeldata)          
         newlabeldata = convertDictKey(labeldata,"-", "_")
