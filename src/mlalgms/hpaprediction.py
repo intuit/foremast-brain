@@ -33,8 +33,8 @@ def calculateDiff(value, mean,stdev, threshold, lowerthreshold):
         
         
 def calculateHighScore(upperzscore, threshold):
-   diff= 50/(1-convertToPvalue(threshold))*100
-   return 50 + convertToPvalue(upperzscore-threshold)*diff
+    diff= 50/(1-convertToPvalue(threshold))*100
+    return 50 + convertToPvalue(upperzscore-threshold)*diff
 
     
 def calculateLowerScore(zscore, threshold): 
@@ -45,23 +45,27 @@ def calculateLowerScore(zscore, threshold):
     return newscore        
     
 
-def checkHPAAnomaly(timestamp, value, mlmodel, algorithm=AI_MODEL.PROPHET.value):
+def checkHPAAnomaly(timestamp, value, mlmodel, algorithm=AI_MODEL.PROPHET.value, minvalue=0):
     if algorithm in [AI_MODEL.MOVING_AVERAGE_ALL.value]:
         #formast will be low, high, mean, stdev
-        return testRange(value, mlmodel[0],mlmodel[1])
+        return testRange(value, mlmodel[0],mlmodel[1], minvalue)
     elif algorithm in [AI_MODEL.PROPHET.value]:
             preds = mlmodel
             length = len(preds)
             for i in range(length):
                 #assume ts was sorted , find first onel
                 if (timestamp<= preds[i][0]):
-                    return testRange(value, preds[i][1],preds[i][2])        
+                    return testRange(value, preds[i][1],preds[i][2],minvalue)        
             #unknow
             return 0,0,0
 
 
 
-def testRange(value, low, high):
+def testRange(value, low, high, minlower):
+    if minlower > low:
+        low = minlower
+    if high < low:
+        high = low
     if value < low:
             return -1, low, high
     elif value > high:
@@ -79,8 +83,10 @@ def calculateHistoricalModel(dataframe, intervalwidth=0.8, predicted_count=35, t
         metricPattern, pattern_type = suggestedPattern(dataframe, ignoreHourly=True)
     if metricPattern in ['stationary',  'not stationary']:
         mean, deviation = calculateHistoricalParameters(dataframe)
-        higher = deviation*threshold+mean
+        higher =deviation*threshold+mean,minLowerBound
         lower = max(deviation*lowerthreshold-mean,minLowerBound)
+        if higher < lower:
+            higher = lower
         return AI_MODEL.MOVING_AVERAGE_ALL.value, [ lower, higher , mean, deviation], metricPattern, 0
     else:
         df_prophet = convertToProphetDF(dataframe)

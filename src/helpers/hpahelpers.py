@@ -133,7 +133,7 @@ def calculateHPAModels(metricInfos, modelHolder, metricTypes):
         if algm==AI_MODEL.PROPHET.value:
             lowerthreshold= threshold
         modelparametersjson[metricTypes[i]] = {'algorithm':algm,'metricpattern':metricpattern, 'trend':trend, 
-                                               'threshold':threshold, 'lowerthreshold': lowerthreshold}
+                                               'threshold':threshold, 'lowerthreshold': lowerthreshold, 'minlowerbound':minLowerBound}
         modelHolder.setAllModelParameters(metricTypes[i],modelparametersjson[metricTypes[i]] )
         modelHolder.setModel(metricTypes[i], modeldata)
     es.save_model(modelHolder.id, model_parameters=modelHolder.loadModelParameters(),  model_data=modelHolder.loadModels())
