@@ -62,15 +62,16 @@ def getValFromdataframe(df, ts):
 		return df1.y.values, ts
 
 
-def checkCurrentRange(algorithm, mlmodel,dataframe, ts, modelParameters,isEnsuredMetric):
+def checkCurrentRange(algorithm, mlmodel, dataframe, ts, modelParameters, isEnsuredMetric):
 	value, ts =getValFromdataframe(dataframe, ts)	
 	threshold = modelParameters['threshold']
-	lowerthreshold = modelParameters['lowerthreshold']  	
+	lowerthreshold = modelParameters['lowerthreshold']  
+	minlowerthreshold = modelParameters['minlowerbound']  	
 	if algorithm in [AI_MODEL.MOVING_AVERAGE_ALL.value]:
-		predicted, low, upper =  checkHPAAnomaly(ts,value , mlmodel, algorithm)                          
+		predicted, low, upper =  checkHPAAnomaly(ts,value , mlmodel, algorithm,minlowerthreshold)                          
 		return predicted, low, upper,[ts, value], 0
 	elif algorithm in [AI_MODEL.PROPHET.value]:  
-		aret, low,high =  checkHPAAnomaly(ts,value , mlmodel, algorithm)  
+		aret, low,high =  checkHPAAnomaly(ts,value , mlmodel, algorithm,minlowerthreshold)  
 		trend = 0
 		if 'trend' in modelParameters:
 			trend = modelParameters['trend']
