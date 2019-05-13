@@ -79,7 +79,8 @@ payload_search_status_list2 = Template('''{
     "sort": [
         {
             "modified_at": {
-                "order": "asc"
+                "order": "asc",
+                "unmapped_type": "string"
             }
         }
     ]
@@ -105,7 +106,8 @@ payload_search_status_with_filter = Template('''{
     },
     "sort": [{
         "modified_at": {
-            "order": "asc"
+            "order": "asc",
+            "unmapped_type": "string"
         }
     }]
 }''')

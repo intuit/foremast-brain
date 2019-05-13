@@ -83,7 +83,7 @@ def calculateHistoricalModel(dataframe, intervalwidth=0.8, predicted_count=35, t
         metricPattern, pattern_type = suggestedPattern(dataframe, ignoreHourly=True)
     if metricPattern in ['stationary',  'not stationary']:
         mean, deviation = calculateHistoricalParameters(dataframe)
-        higher =deviation*threshold+mean,minLowerBound
+        higher = deviation*threshold+mean
         lower = max(deviation*lowerthreshold-mean,minLowerBound)
         if higher < lower:
             higher = lower
