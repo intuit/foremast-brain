@@ -148,7 +148,7 @@ def main():
     # get historical time window
     HISTORICAL_CONF_TIME_WINDOW = os.environ.get('HISTORICAL_CONF_TIME_WINDOW', 7 * 24 * 60 * 60)
     CURRENT_CONF_TIME_WINDOW = os.environ.get('CURRENT_CONF_TIME_WINDOW', 1.75)
-
+    CURRENT_CONF_POD_TIME_WINDOW = os.environ.get('CURRENT_CONF_TIME_WINDOW', 5.75)
     MIN_MANN_WHITE_DATA_POINTS = convertStrToInt(
         os.environ.get("MIN_MANN_WHITE_DATA_POINTS", str(MANN_WHITE_MIN_DATA_POINT)), MANN_WHITE_MIN_DATA_POINT)
     MIN_WILCOXON_DATA_POINTS = convertStrToInt(
@@ -396,6 +396,12 @@ def main():
 
     
                 if currentConfigMap:
+                    podUrl = openRequest['podCountURL']
+                    if podUrl is not None and len(podUrl)> 0:
+                        start_current_pod_str = str(time.time() - float(CURRENT_CONF_POD_TIME_WINDOW))
+                        podUrl = podUrl.replace('START_TIME', start_current_pod_str)
+                        podUrl = podUrl.replace('END_TIME', end_str)
+                        currentConfigMap['hpa_pods'] = podUrl
                     for metric_type, metric_url in currentConfigMap.items():
                         metric_url = metric_url.replace('START_TIME', start_current_str)
                         metric_url = metric_url.replace('END_TIME', end_str)
