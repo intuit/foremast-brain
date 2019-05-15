@@ -1,6 +1,7 @@
 from hpa.metricscore import hpametricinfo,calculateBoundary
 from mlalgms.scoreutils import convertToZscore, convertToPvalue
 import logging
+import math
 
 # logging
 logging.basicConfig(format='%(asctime)s %(message)s')
@@ -16,10 +17,21 @@ BASE_SCORE = 50
 DEFAULT_ENSURE_LIST =['latency']
 
 
-def calculateMetricsScore(hpametricinfos, ts,ensuredMetrics= DEFAULT_ENSURE_LIST ,  mostRecentlyScore = BASE_SCORE):
+def getIncreaseUnit(podCount, change):
+    ret_score =((0.5+podCount)*50)/podCount
+    if change == UP :
+        return math.ceil(ret_score+0.1)
+    elif change == DOWN :
+        return math.ceil(ret_score-0.1)  
+    return 50
+
+def calculateMetricsScore(hpametricinfos, ts,  podCountSeries, ensuredMetrics= DEFAULT_ENSURE_LIST ,  mostRecentlyScore = BASE_SCORE):
     score = mostRecentlyScore
     logJson ={}
-    
+    lastPodCount = 0 
+    if podCountSeries is not None and podCountSeries.shape[0] > 0:
+        nrow = podCountSeries.shape[0]
+        lastPodCount = podCountSeries.iloc[nrow-1, 0]
     hpametric_sorted = sorted(hpametricinfos)
     hand_sorted_order = [c.priority for c in hpametric_sorted]  
     metricSize = len(hand_sorted_order)
@@ -93,20 +105,23 @@ def calculateMetricsScore(hpametricinfos, ts,ensuredMetrics= DEFAULT_ENSURE_LIST
                 elif trend == UP:
                     if element.metricType in ensuredMetrics:
                         ensuredMetricsOcurred = True
-                        score= score + trend*5
+                        score = getIncreaseUnit(lastPodCount, trend)
+                        #score= score + trend*5
                     else:
                         if ensuredMetricsOcurred:
-                            score= score + trend*2.5
+                            #score= score + trend*2.5
+                            score = getIncreaseUnit(lastPodCount, trend)
                     continue              
             else:  #boundary is DOWN
                 if trend == DOWN:
                     if element.metricType in ensuredMetrics:
                         ensuredMetricsOcurred = True
-                        score = score - trend*5
+                        #score = score + trend*5
                     else:
                         if ensuredMetricsOcurred:
                             #TODO
-                            score = score- trend *2.5
+                            #score = score+ trend *2.5
+                            score = getIncreaseUnit(lastPodCount, trend)
                             score, logJson
                         continue
                 elif trend == UP:

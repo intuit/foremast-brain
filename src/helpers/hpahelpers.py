@@ -48,11 +48,15 @@ def calculateHPAScore(metricInfoDataset, modelHolder):
     metrictypecount = 0
     maxpriority = 0
     maxMetricType = None
+    hpaPods = None
     for metricType, metricInfoList in metricInfoDataset.items():
         #short term hardcode.  will add one more parameters
+        if metricType in ['hpa_pods']:
+            hpaPods = metricInfoList[0].metricDF.y
+            continue 
         if metricType in DEFAULT_ENSURE_LIST:
             metrictypecount = metrictypecount +1
-        for metricInfo in metricInfoList:
+        for metricInfo in metricInfoList: 
                 if hap_metricInfo is None:
                     hap_metricInfo = metricInfo
                 priority = modelHolder.getModelConfigByKey('hpa',metricType,'priority')
@@ -87,11 +91,10 @@ def calculateHPAScore(metricInfoDataset, modelHolder):
     score = 0
     loginfo = None
     if metrictypecount > 0:
-        score, loginfo = calculateMetricsScore(hpametricinfolist,ts)  
+        score, loginfo = calculateMetricsScore(hpametricinfolist,ts,hpaPods)  
     else:    
-        score, loginfo = calculateMetricsScore(hpametricinfolist,ts,[maxMetricType]) 
+        score, loginfo = calculateMetricsScore(hpametricinfolist,ts,hpaPods,[maxMetricType]) 
     if loginfo is not None:
-        print(loginfo)
         es.save_reason(modelHolder.id, ts, loginfo)
     hpascore =round(score, 0)
     logger.warning('### calculated score is '+str(hpascore) )
