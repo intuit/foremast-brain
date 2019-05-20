@@ -13,7 +13,7 @@ from metadata.metadata import AI_MODEL, MAE, DEVIATION, THRESHOLD, BOUND,LOWER_B
 from utils.timeutils import getNowStr
 from metadata.globalconfig import globalconfig
 from es.elasticsearchutils import ESClient
-
+from utils.logutils import logit
 
 es = ESClient()
 
@@ -26,7 +26,6 @@ globalConfig =  globalconfig()
 hpascoremetrics = hpascoremetrics()
 
 
-
 def triggerHPAScoreMetric(metricInfo, score):
     logger.warning("## emit score hpa_score ->" +str(metricInfo.metricKeys)+" "+str(score))
     try:
@@ -35,7 +34,7 @@ def triggerHPAScoreMetric(metricInfo, score):
         logger.error('triggerHPAScoreMetric '+metricInfo.metricName+' failed ',e )
 
      
-
+@logit
 def calculateHPAScore(metricInfoDataset, modelHolder):
     metricTypeSize = len(metricInfoDataset)
     if (metricTypeSize==0):
@@ -100,10 +99,6 @@ def calculateHPAScore(metricInfoDataset, modelHolder):
     logger.warning('### calculated score is '+str(hpascore) )
     triggerHPAScoreMetric(hap_metricInfo, score)
            
-    
-
-
-        
 
 def retrieveConfig(metricType, modelHolder):
     threshold = modelHolder.getModelConfigByKey(metricType,THRESHOLD)
@@ -119,9 +114,7 @@ def retrieveConfig(metricType, modelHolder):
     return threshold, lowerthreshold, minLowerBound   
 
 
-
-         
-
+@logit
 def calculateHPAModels(metricInfos, modelHolder, metricTypes):
     modeldatajson = {}
     modelparametersjson = {}

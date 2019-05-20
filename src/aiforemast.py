@@ -177,6 +177,7 @@ def main():
     config.setKV("FLUSH_FREQUENCY", int(FLUSH_FREQUENCY))
     config.setKV("OIM_BUCKET", OIM_BUCKET)
     config.setKV("CACHE_EXPIRE_TIME", os.environ.get('CACHE_EXPIRE_TIME', 30 * 60))
+    config.setKV("REQ_CHECK_INTERVAL", int(os.environ.get('REQ_CHECK_INTERVAL', 45)))
     # Add Metric source env
     config.setKV("SOURCE_ENV", "ppd")
     MODE_DROP_ANOMALY = os.environ.get('MODE_DROP_ANOMALY', 'y')
@@ -267,7 +268,7 @@ def main():
             if openRequest == None:
                 openRequest, modelHolder = retrieveCachedRequest()
                 if openRequest == None:
-                    logger.warning("No long running preprocess job found .....")
+                    #logger.warning("No long running preprocess job found .....")
                     continue
                     '''
                     # Test Start########################
@@ -406,11 +407,8 @@ def main():
                         metric_url = metric_url.replace('START_TIME', start_current_str)
                         metric_url = metric_url.replace('END_TIME', end_str)
                         currentConfigMap[metric_type] = metric_url
-
-
-               
                 
-            if  (not (modelHolder.hasModels or skipHistorical) ):
+            if (not (modelHolder.hasModels or skipHistorical) ):
                 storeMapHistorical = convertStringToMap(historicalMetricStore)
                 # below code only used while use prophet algm
                 isProphet = False

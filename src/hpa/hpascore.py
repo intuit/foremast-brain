@@ -1,4 +1,5 @@
 from hpa.metricscore import hpametricinfo,calculateBoundary
+from utils.logutils import logit
 from mlalgms.scoreutils import convertToZscore, convertToPvalue
 import logging
 import math
@@ -6,8 +7,6 @@ import math
 # logging
 logging.basicConfig(format='%(asctime)s %(message)s')
 logger = logging.getLogger('hpascore')
-
-
 
 UP = 1
 DOWN = -1
@@ -18,20 +17,27 @@ DEFAULT_ENSURE_LIST =['latency']
 
 
 def getIncreaseUnit(podCount, change):
-    ret_score =((0.5+podCount)*50)/podCount
+    ret_score = 50
     if change == UP :
-        return math.ceil(ret_score+0.1)
+        ret_score = ((podCount + 1)/podCount) * 50
+        ret_score = math.trunc(ret_score)
     elif change == DOWN :
-        return math.ceil(ret_score-0.1)  
-    return 50
+        ret_score = ((podCount - 1)/podCount) * 50
+        if ret_score == 0:
+            return 50
+        ret_score = math.trunc(ret_score-1)
+    logger.warning("pod count is %s, trend is %s and score is %s ", podCount, change, ret_score)
+    return ret_score
 
+
+@logit
 def calculateMetricsScore(hpametricinfos, ts,  podCountSeries, ensuredMetrics= DEFAULT_ENSURE_LIST ,  mostRecentlyScore = BASE_SCORE):
     score = mostRecentlyScore
     logJson ={}
     lastPodCount = 0 
     if podCountSeries is not None and podCountSeries.shape[0] > 0:
         nrow = podCountSeries.shape[0]
-        lastPodCount = podCountSeries.iloc[nrow-1, 0]
+        lastPodCount = podCountSeries.iloc[nrow-1]
     hpametric_sorted = sorted(hpametricinfos)
     hand_sorted_order = [c.priority for c in hpametric_sorted]  
     metricSize = len(hand_sorted_order)
@@ -59,7 +65,7 @@ def calculateMetricsScore(hpametricinfos, ts,  podCountSeries, ensuredMetrics= D
             if element.metricType in ensuredMetrics:
                 #TODO: hardcode score now
                 ensuredMetricsOcurred = True
-                score += trend*5
+                getIncreaseUnit(lastPodCount, trend)
         else:
             if boundary == NO_CHANGE:
                 if element.metricType in ensuredMetrics:
@@ -74,7 +80,7 @@ def calculateMetricsScore(hpametricinfos, ts,  podCountSeries, ensuredMetrics= D
                         logJson['details'] =  metricDetails
                         return score, logJson
                     elif trend == DOWN:
-                        score = score - trend*5
+                        score = getIncreaseUnit(lastPodCount, trend)
                         logJson['reason']='hpa is scaling down'
                         logJson['hpascore'] = score
                         logJson['details'] =  metricDetails
@@ -101,6 +107,7 @@ def calculateMetricsScore(hpametricinfos, ts,  podCountSeries, ensuredMetrics= D
                         logJson['details'] =  metricDetails
                         return score, logJson
                     else:
+                        #TODO-> Need to be address
                         return score, None
                 elif trend == UP:
                     if element.metricType in ensuredMetrics:
@@ -117,12 +124,13 @@ def calculateMetricsScore(hpametricinfos, ts,  podCountSeries, ensuredMetrics= D
                     if element.metricType in ensuredMetrics:
                         ensuredMetricsOcurred = True
                         #score = score + trend*5
+                        score = getIncreaseUnit(lastPodCount, trend)
                     else:
                         if ensuredMetricsOcurred:
                             #TODO
                             #score = score+ trend *2.5
                             score = getIncreaseUnit(lastPodCount, trend)
-                            score, logJson
+                            return score, logJson
                         continue
                 elif trend == UP:
                     msg = logReason(score)

@@ -17,6 +17,7 @@ from helpers.hpahelpers import calculateHPAScore,calculateHPAModels
 from wavefront.apis import executeQuery,dequote
 from metrics.monitoringmetrics import getModelUrl
 from metadata.globalconfig import globalconfig
+from utils.logutils import logit
 
 
 from mlalgms.pairwisemodel import TwoDataSetSameDistribution,MultipleDataSetSameDistribution
@@ -110,10 +111,10 @@ def selectRequestToProcess(requests):
 
 
 def canRequestProcess(request):
-    # find requests updated 30 mins ago for hpa and continuous strategy
+    # find requests updated REQ_CHECK_INTERVAL sec ago for hpa and continuous strategy
     strategy = request['strategy']
     if strategy in ['hpa', 'continuous']:
-        if rateLimitCheck(request['modified_at'], 45):
+        if rateLimitCheck(request['modified_at'], config.getValueByKey('REQ_CHECK_INTERVAL')):
             return request
         return None
     # for other strategies
@@ -241,6 +242,7 @@ def loadModelConfig(jobid):
 def storeModelConfig(jobid, modelConfig):
     es.save_model(jobid, model_config=modelConfig)
 
+@logit
 def computeHistoricalModel(historicalConfigMap, modelHolder, isProphet = False, historicalMetricStores=None, strategy=None ):
     dataSet = {}
     msg = ''
@@ -307,11 +309,12 @@ def computeHistoricalModel(historicalConfigMap, modelHolder, isProphet = False, 
 #
 #
 #####################################################
+@logit
 def computeNonHistoricalModel(configMap, period, metricStores=None, strategy=None):
     dataSet = {}
     for metricType, metricUrl in configMap.items():
         metricStore = 'prometheus'
-        if metricStores is not None:
+        if metricStores is not None and metricType in metricStores:
             metricStore = metricStores[metricType]
         metricInfolist = queryData(metricUrl, period, False, metricStore);
         if(len(metricInfolist)==0):
@@ -374,7 +377,7 @@ def pairwiseMetricInfoListValidation(currentMetricInfoList, baselineMetricInfoLi
 
 
 
-
+@logit
 def computeAnomaly(metricInfoDataset, modelHolder, strategy = None):
     metricTypeSize = len(metricInfoDataset)
     if metricTypeSize==0:

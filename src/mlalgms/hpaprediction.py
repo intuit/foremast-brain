@@ -5,6 +5,7 @@ from mlalgms.fbprophetalgm import prophetPredictUpperLower
 from utils.dfUtils import convertToProphetDF
 from metadata.metadata import AI_MODEL
 from mlalgms.scoreutils import convertToZscore, convertToPvalue
+from utils.logutils import logit
 #from sklearn.preprocessing import MinMaxScaler
 #from mlalgms.kerasdeeplearning import create_datasets,createModel, compileModel, predictModel
 #from mlalgms.evaluator import mape
@@ -74,7 +75,7 @@ def testRange(value, low, high, minlower):
             return 0, low, high
         
 
-
+@logit
 def calculateHistoricalModel(dataframe, intervalwidth=0.8, predicted_count=35, threshold=0.8, metricPattern= None, lowerthreshold=None,
                                                                          minLowerBound=0 ):
     if lowerthreshold is None:
