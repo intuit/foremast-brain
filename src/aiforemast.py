@@ -6,7 +6,7 @@ import time
 from es.elasticsearchutils import ESClient
 
 from helpers.foremastbrainhelper import canRequestProcess,retrieveRequestById, \
-isCompletedStatus,updateESDocStatus, reserveJob, computeHistoricalModel, computeNonHistoricalModel, \
+updateESDocStatus, reserveJob, computeHistoricalModel, computeNonHistoricalModel, \
 computeAnomaly,loadModelConfig,storeModelConfig
 from metadata.globalconfig import globalconfig
 
@@ -19,7 +19,6 @@ from mlalgms.statsmodel import IS_UPPER_BOUND
 from models.modelclass import ModelHolder
 from utils.converterutils import convertStringToMap, convertStrToInt, convertStrToFloat
 from utils.strutils import escapeString
-from utils.timeutils import isPast
 from metadata.metadata import REQUEST_STATE,AI_MODEL, METRIC_PERIOD, MIN_DATA_POINTS
 from metadata.metadata import THRESHOLD, LOWER_THRESHOLD, BOUND,MIN_LOWER_BOUND
 from metadata.metadata import PAIRWISE_ALGORITHM,PAIRWISE_THRESHOLD,DEFAULT_MIN_LOWER_BOUND

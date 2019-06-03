@@ -18,7 +18,7 @@ def getNowStr():
     return parse(str(getNow()))
    
   
-  
+'''  
 def isPast(timeToCompareStr, biasInSeconds=30):  
     timeToCompare = parse(timeToCompareStr)
     td = timeToCompare- getNow()
@@ -28,7 +28,6 @@ def isPast(timeToCompareStr, biasInSeconds=30):
     return False
 
 
-'''
 def canProcess(startTimeStr, endTimeStr, past=0.2):
    startTime = parse(startTimeStr)
    endTime = parse(endTimeStr)
