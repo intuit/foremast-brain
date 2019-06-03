@@ -5,8 +5,7 @@ import time
 #from concurrent.futures import ProcessPoolExecutor
 from es.elasticsearchutils import ESClient
 
-from helpers.foremastbrainhelper import canRequestProcess,retrieveRequestById, \
-updateESDocStatus, reserveJob, computeHistoricalModel, computeNonHistoricalModel, \
+from helpers.foremastbrainhelper import updateESDocStatus, reserveJob, computeHistoricalModel, computeNonHistoricalModel, \
 computeAnomaly,loadModelConfig,storeModelConfig
 from metadata.globalconfig import globalconfig
 
@@ -422,10 +421,10 @@ def main():
             hasHistorical =  modelHolder.hasModels
             
             #start baseline             
-            to_do = []
+            #to_do = []
             
             currentDataSet={}
-            baselineDataSet={}
+            #baselineDataSet={}
             
             if not skipCurrent:
                 currentDataSet, _ = computeNonHistoricalModel(currentConfigMap, METRIC_PERIOD.CURRENT.value,convertStringToMap(currentMetricStore), strategy);
