@@ -97,7 +97,7 @@ def queryData(metricUrl, period, isProphet = False, datasource='prometheus'):
             return convertPromesResponseToMetricInfos(djson, period, isProphet, ajson ) 
         return []
 
-
+'''
 def selectRequestToProcess(requests):
     if requests == None or len(requests) == 0:
         return None
@@ -107,7 +107,7 @@ def selectRequestToProcess(requests):
             continue
         return ret
     return None
-
+'''
 
 
 def canRequestProcess(request):
@@ -199,6 +199,7 @@ def updateESDocStatus(uuid, status, info='', reason=''):
 
     return False
 
+'''
 def isCompletedStatus (status):
     if status == REQUEST_STATE.INITIAL.value:
         return False
@@ -209,7 +210,7 @@ def isCompletedStatus (status):
     elif status == REQUEST_STATE.POSTPROCESS.value:
         return False
     return  True
-
+'''
 
 def filterEmptyDF(metricInfoList, min_data_points = 0):
     msg =''
@@ -244,10 +245,8 @@ def storeModelConfig(jobid, modelConfig):
 
 @logit
 def computeHistoricalModel(historicalConfigMap, modelHolder, isProphet = False, historicalMetricStores=None, strategy=None ):
-    dataSet = {}
     msg = ''
-    min_data_points = modelHolder.getModelConfigByKey(MIN_DATA_POINTS)
-    
+
     #TODO Need to pass during by default could be 30 minutes.
     if strategy =='hpa':
         modeldata = es.get_model_data(modelHolder.id)
@@ -256,7 +255,9 @@ def computeHistoricalModel(historicalConfigMap, modelHolder, isProphet = False, 
             modelParameters= es.get_model_parameters(modelHolder.id)
             modelHolder.storeModelParameters(modelParameters)
             return modelHolder,msg
-        
+    
+    dataSet = {}   
+    min_data_points = modelHolder.getModelConfigByKey(MIN_DATA_POINTS)
     for metricType, metricUrl in historicalConfigMap.items():
         metricStore = 'prometheus'
         if historicalMetricStores is not None:
@@ -284,18 +285,18 @@ def computeHistoricalModel(historicalConfigMap, modelHolder, isProphet = False, 
         modelHolder = calculateModel(metricInfos[i][0], modelHolder, metricTypes[i], strategy)
 
 
-    '''
+    
     ##TODO rollback
-    if metricTypeCount == 1 :
-        metricTypes, metricInfos = retrieveKVList(dataSet)
-        #modelHolder  for historical metric there wil be only one
-        #TODO pzou
-        return calculateModel(metricInfos[0][0], modelHolder), msg
-    elif metricTypeCount == 2 :
-        pass
-    else:
-        pass
-    '''
+    #if metricTypeCount == 1 :
+    #    metricTypes, metricInfos = retrieveKVList(dataSet)
+    #    #modelHolder  for historical metric there wil be only one
+    #    #TODO pzou
+    #    return calculateModel(metricInfos[0][0], modelHolder), msg
+    #elif metricTypeCount == 2 :
+    #    pass
+    #else:
+    #    pass
+    
     return modelHolder,msg
 
 
