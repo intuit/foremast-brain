@@ -69,13 +69,13 @@ def cacheModels(modelHolder):
         cachedJobs[uuid] = modelHolder
         jobs.append(uuid)
 '''
-
+'''
 def retrieveOneCachedRequest(jobId):
     if jobId in jobs:
         precessCached(jobId)
     return None, None
-
-
+'''
+'''
 def precessCached(jobId):
     # if not enableCache:
     #    return None, None
@@ -109,8 +109,8 @@ def precessCached(jobId):
     except Exception as e:
         logger.warning("retrieveCachedRequest encount error while retrieving cache ", e)
     return None, None
-
-
+'''
+'''
 def retrieveCachedRequest():
     # if not enableCache:
     #    return None, None
@@ -121,7 +121,7 @@ def retrieveCachedRequest():
         else:
             return openRequest, modelHolder
     return None, None
-
+'''
 
 # not to update es doc status if strategy is HPA or continuous
 def update_es_doc(req_strategy, req_org_status, uuid, to_status, info='', reason=''):
