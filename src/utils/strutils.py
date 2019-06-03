@@ -53,6 +53,3 @@ def strReplace(origstr, startstr, endstr, replacestr):
     return newurl
 
 
-
-
-
