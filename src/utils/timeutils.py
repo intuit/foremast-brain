@@ -27,6 +27,8 @@ def isPast(timeToCompareStr, biasInSeconds=30):
         return True
     return False
 
+
+'''
 def canProcess(startTimeStr, endTimeStr, past=0.2):
    startTime = parse(startTimeStr)
    endTime = parse(endTimeStr)
@@ -49,7 +51,7 @@ def rateLimitCheck(lastModifiedTimeStr, past=5):
        return True
    return False
 
-
+'''
 def calculateDuration(startTime):
     return time.time()-startTime
 

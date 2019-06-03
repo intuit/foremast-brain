@@ -24,7 +24,7 @@ class SingleMetricInfo(MetricInfo):
         return SingleMetricInfo(self.metricName, self.metricKeys,{},None,self.metricCategory, self.metricClass)
   
         
-        
+'''        
 class MultiTypeMetricInfo(MetricInfo):
     def __init__(self, metricNamelist, metricKeys, columnmap, metricDF ,metricTCategorylist,  metricClass='MultiTypeMetricInfo'):
         self.columnmap = columnmap
@@ -58,3 +58,4 @@ class MultiKeyMetricInfo(MetricInfo):
         self.metricClass = metricClass
     def copyConfig(self):
         return MultiKeyMetricInfo (self.metricName, self.metricKeyslist, {}, None, self.metricTCategorylist, self.metricClass )
+'''

@@ -65,7 +65,7 @@ def calculateHistoricalParameters(series):
 #    deviation = np.std(series.iloc[:,0])
     return  mean, deviation
 
-
+'''
 def detectAnomalies(series, mean, deviation, threshold=2, bound=IS_UPPER_BOUND, minvalue=0, returnAnomaliesOnly=True):
     ts = []
     adata = []
@@ -182,7 +182,6 @@ def detectBivariateAnomalies(series,  x_mean,x_deviation,y_mean,y_deviation,xy_c
     return  ts,x_data, y_data, zscores
     
 
-'''
 def trainMovingAverageParameters(series, windowlist, calculateScore=True ):
     minmape = -1
     windowno = 0

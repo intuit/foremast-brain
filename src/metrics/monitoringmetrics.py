@@ -41,7 +41,7 @@ def getModelMetricName(metricname,datasource='prometheus', isUpper=None):
         else:
             newMetricName  += "_lower"
         if datasource=='wavefront':
-             newMetricName  = wavefront_prefix+ newMetricName
+            newMetricName  = wavefront_prefix+ newMetricName
         return newMetricName
 
         
@@ -120,7 +120,7 @@ class measurementmetrics:
 
 
     
-    
+'''    
 class anomalymetrics:
     class __anomalymetrics:
         def __init__(self):
@@ -150,7 +150,7 @@ class anomalymetrics:
             self.setMetricInfo(metricname, labeldata)  
         newlabeldata = convertDictKey(labeldata,"-", "_")         
         self.instance.metrics[newMetricName].labels(**newlabeldata).set(value)
-        
+'''       
         
 class hpascoremetrics:
     class __hpascoremetrics:

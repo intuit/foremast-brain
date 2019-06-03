@@ -15,12 +15,12 @@ def buildUrl(endpoint, startInSec, endInSec,queryString, steps):
 
 
 def retrieveMetricName(url):
-   origMetricName = findSubStr(url, 'query_range?query=', '%7B')
-   if origMetricName is None:
-       origMetricName = findSubStr(url, 'query_range?query=', '{')
-   if origMetricName is None:
-       origMetricName = findSubStr(url, 'query_range?query=', '&start=')
-   return origMetricName
+    origMetricName = findSubStr(url, 'query_range?query=', '%7B')
+    if origMetricName is None:
+        origMetricName = findSubStr(url, 'query_range?query=', '{')
+    if origMetricName is None:
+        origMetricName = findSubStr(url, 'query_range?query=', '&start=')
+    return origMetricName
 
 
    

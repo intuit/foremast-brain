@@ -7,6 +7,7 @@ def convertToZscore(pvalue):
 def convertToPvalue(zscore):
     return  norm.cdf(zscore)
 
+'''
 def uniVariantScore(zscore):
     probability = 1- norm.cdf(zscore)
     return zscore*10, probability
@@ -37,7 +38,7 @@ def multiVariantScore(zscoremap, weightmap):
         else:
             score += value*unit
     return score 
-        
+'''        
     
             
         
