@@ -4,8 +4,8 @@ import logging
 from sklearn.metrics import mean_absolute_error, mean_squared_log_error
 #from utils.converterutils import addHeader
 from scipy.optimize import minimize
-from mlalgms.evaluator import tsCrossValidationScore, mean_absolute_percentage_error
-from mlalgms.calcutils import exponential_smoothing,double_exponential_smoothing
+#from mlalgms.evaluator import tsCrossValidationScore, mean_absolute_percentage_error
+#from mlalgms.calcutils import exponential_smoothing,double_exponential_smoothing
 
 
 logging.basicConfig(format='%(asctime)s %(message)s')
@@ -46,57 +46,14 @@ def calculateTSTrend(y_series, ts_series=None):
     return b
 
 
-    
-def calculateBivariateParameters(x, y, isCovCorOnly=False):  
-    
-    x_mean = np.mean(x[:])
-    y_mean = np.mean(y[:])  
-    x_deviation = np.std(x[:])
-    y_deviation = np.std(y[:])
-    size = len(x)
-    sum_xy = 0
-    for i in (range(size)):
-        sum_xy += (x[i]-x_mean)*(y[i]-y_mean)
-    xy_cov = sum_xy/(size -1)
-    xy_corr = 0
-    if  x_deviation!=0 and y_deviation!=0:
-        xy_corr = xy_cov/(x_deviation*y_deviation)
-    if(isCovCorOnly):
-        return xy_cov, xy_corr
-    return  x_mean, x_deviation, y_mean, y_deviation, xy_cov,xy_corr
+
 
 def computeZScore(x, y, x_mean,x_deviation,y_mean,y_deviation,xy_cov):
     z = math.sqrt((x-x_mean)/x_deviation)+math.sqrt((y-y_mean)/y_deviation)- 2*((xy_cov)*(x-x_mean)*(y-y_mean))/(x_deviation*y_deviation)
     return z
 
-
-def detectBivariateAnomalies(series,  x_mean,x_deviation,y_mean,y_deviation,xy_cov, threshold = 2 , bound =IS_UPPER_BOUND):
-    ts=[]
-    x_data=[]
-    y_data=[]
-    zscores=[]
-    nrow = series.shape[0]
-    for i in range (nrow):
-        zscore = computeZScore(series.iloc[i,1],series.iloc[i,2], x_mean,x_deviation,y_mean,y_deviation,xy_cov)
-        zscores.append(zscore)
-        if bound==IS_UPPER_BOUND:
-            if zscore > threshold:
-                ts.append(series.index[i])
-                x_data.append(series.iloc[i,1]) 
-                y_data.append(series.iloc[i,2])             
-        elif bound==IS_LOWER_BOUND:
-            if zscore< -threshold:
-                ts.append(series.index[i])
-                x_data.append(series.iloc[i,1]) 
-                y_data.append(series.iloc[i,2])          
-        else:
-            if zscore > threshold  or zscore < -threshold:
-                ts.append(series.index[i])
-                x_data.append(series.iloc[i,1]) 
-                y_data.append(series.iloc[i,2])         
-    #return  ts,x_data, y_data, zscore  
-    return  ts,x_data, y_data, zscores
     
+
     
     
     
@@ -179,6 +136,53 @@ def detectAnomalies(series, mean, deviation, threshold=2, bound=IS_UPPER_BOUND, 
 
 
 
+def calculateBivariateParameters(x, y, isCovCorOnly=False):  
+    
+    x_mean = np.mean(x[:])
+    y_mean = np.mean(y[:])  
+    x_deviation = np.std(x[:])
+    y_deviation = np.std(y[:])
+    size = len(x)
+    sum_xy = 0
+    for i in (range(size)):
+        sum_xy += (x[i]-x_mean)*(y[i]-y_mean)
+    xy_cov = sum_xy/(size -1)
+    xy_corr = 0
+    if  x_deviation!=0 and y_deviation!=0:
+        xy_corr = xy_cov/(x_deviation*y_deviation)
+    if(isCovCorOnly):
+        return xy_cov, xy_corr
+    return  x_mean, x_deviation, y_mean, y_deviation, xy_cov,xy_corr
+
+def detectBivariateAnomalies(series,  x_mean,x_deviation,y_mean,y_deviation,xy_cov, threshold = 2 , bound =IS_UPPER_BOUND):
+    ts=[]
+    x_data=[]
+    y_data=[]
+    zscores=[]
+    nrow = series.shape[0]
+    for i in range (nrow):
+        zscore = computeZScore(series.iloc[i,1],series.iloc[i,2], x_mean,x_deviation,y_mean,y_deviation,xy_cov)
+        zscores.append(zscore)
+        if bound==IS_UPPER_BOUND:
+            if zscore > threshold:
+                ts.append(series.index[i])
+                x_data.append(series.iloc[i,1]) 
+                y_data.append(series.iloc[i,2])             
+        elif bound==IS_LOWER_BOUND:
+            if zscore< -threshold:
+                ts.append(series.index[i])
+                x_data.append(series.iloc[i,1]) 
+                y_data.append(series.iloc[i,2])          
+        else:
+            if zscore > threshold  or zscore < -threshold:
+                ts.append(series.index[i])
+                x_data.append(series.iloc[i,1]) 
+                y_data.append(series.iloc[i,2])         
+    #return  ts,x_data, y_data, zscore  
+    return  ts,x_data, y_data, zscores
+    
+
+'''
 def trainMovingAverageParameters(series, windowlist, calculateScore=True ):
     minmape = -1
     windowno = 0
@@ -221,21 +225,6 @@ def calculateMovingAverageParameters(series, window=0, threshold=2.0, calculateS
 #    return hlower_bound.y.values[len(llower_bound)-1], hupper_bound.y.values[len(hupper_bound)-1], other_models
     return llower_bound.y.values[len(llower_bound)-1], hupper_bound.y.values[len(hupper_bound)-1]
 
-    '''
-    originalWindow = window
-    series_size = len(series)
-    if window == 0 or window > series_size or window < -series_size:
-        window = series_size
-    rolling_mean = series.rolling(window=window).mean()    
-    # calculate confidence intervals for smoothed values
-    if originalWindow == 0:
-        mae = mean_absolute_error(series[0:,1], rolling_mean[0:])      
-        deviation = np.std(series[0:,1] - rolling_mean[0:])
-    else:    
-        mae = mean_absolute_error(series[window:,1], rolling_mean[window:])      
-        deviation = np.std(series[window:,1] - rolling_mean[window:])
-    return  mae, deviation
-    '''
 
 """
 #Name : detectMovingAverageAnomalies
@@ -514,7 +503,7 @@ def detectDoubleExponentialSmoothingAnomalies(series, y, alpha, beta, threshold=
 
 
 
-
+'''
 
 
 def retrieveSaveModelData(series, model):

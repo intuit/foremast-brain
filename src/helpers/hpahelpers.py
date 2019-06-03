@@ -6,11 +6,10 @@ from hpa.hpascore import calculateMetricsScore
 import pandas as pd
 from hpa.hpascore import DEFAULT_ENSURE_LIST
 from mlalgms.scoreutils import  convertToPvalue
-from metrics.monitoringmetrics import modelmetrics, anomalymetrics, hpascoremetrics
+from metrics.monitoringmetrics import modelmetrics,  hpascoremetrics
 
-from metadata.metadata import AI_MODEL, MAE, DEVIATION, THRESHOLD, BOUND,LOWER_BOUND,UPPER_BOUND,LOWER_THRESHOLD, MIN_LOWER_BOUND
+from metadata.metadata import AI_MODEL, THRESHOLD, LOWER_THRESHOLD, MIN_LOWER_BOUND
 
-from utils.timeutils import getNowStr
 from metadata.globalconfig import globalconfig
 from es.elasticsearchutils import ESClient
 from utils.logutils import logit

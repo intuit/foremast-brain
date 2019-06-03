@@ -157,7 +157,7 @@ def TwoDataSetSameDistribution(dataset1, dataset2, alpha=DEFAULT_PAIRWISE_THRESH
               return True, 0, MANN_WHITE, size>=config.getValueByKey("MIN_MANN_WHITE_DATA_POINTS", MANN_WHITE_MIN_DATA_POINT)                 
   return True,  0, ERROR,  size>=config.getValueByKey("MIN_MANN_WHITE_DATA_POINTS", MANN_WHITE_MIN_DATA_POINT)
   
-  
+'''  
   
 def MultipleDataSetSameDistribution(list,  alpha = DEFAULT_PAIRWISE_THRESHOLD, algorithm=KRUSKAL): 
     stat=0
@@ -211,7 +211,6 @@ def minSize(list):
         
      
 
-'''
  
 def MultipleDataSetSameDistribution(*dataset,algorithm=KRUSKAL, alpha = DEFAULT_PAIRWISE_THRESHOLD):
     if algorithm == FRIED_MANCHI_SQUARE:
@@ -227,4 +226,4 @@ def MultipleDataSetSameDistribution(*dataset,algorithm=KRUSKAL, alpha = DEFAULT_
           else:
               return False,p
     return False,p   
-    ''' 
+ '''
