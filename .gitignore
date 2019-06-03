@@ -2,4 +2,5 @@ src/*/__pycache__/
 foremast-brain.iml
 venv
 .idea/*.xml
-.vscode/*
+.vscode
+*.pyc
