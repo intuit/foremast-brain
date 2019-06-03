@@ -12,7 +12,8 @@ from prometheus.metric import convertPromesResponseToMetricInfos,urlEndNow
 from wavefront.metric import convertResponseToMetricInfos  #parseQueryData
 from utils.urlutils import dorequest
 from utils.dictutils import retrieveKVList
-from helpers.modelhelpers import calculateModel,detectAnomalyData
+#from helpers.modelhelpers import calculateModel,detectAnomalyData
+from helpers.modelhelpers import calculateModel
 from helpers.hpahelpers import calculateHPAScore,calculateHPAModels
 from wavefront.apis import executeQuery,dequote
 from metrics.monitoringmetrics import getModelUrl
@@ -20,7 +21,8 @@ from metadata.globalconfig import globalconfig
 from utils.logutils import logit
 
 
-from mlalgms.pairwisemodel import TwoDataSetSameDistribution,MultipleDataSetSameDistribution
+
+#from mlalgms.pairwisemodel import TwoDataSetSameDistribution,MultipleDataSetSameDistribution
 
 ### TODO comment remove line below
 #from helpers.foremastbrainhelper_test import getBaselinejson, getCurrentjson,getHistoricaljson
@@ -341,7 +343,7 @@ def computeNonHistoricalModel(configMap, period, metricStores=None, strategy=Non
 
 
 
-
+'''
 def pairWiseComparson(currentDataSet, baselineDataSet, model , threshold, bound ):
     #check already done outside
     checkResults={}
@@ -375,7 +377,7 @@ def pairwiseMetricInfoListValidation(currentMetricInfoList, baselineMetricInfoLi
         ret, p, algm, meetSize = MultipleDataSetSameDistribution(list, threshold)
         return ret, p, algm, meetSize
     return  True, 0, "error", False
-
+'''
 
 
 @logit
@@ -386,6 +388,7 @@ def computeAnomaly(metricInfoDataset, modelHolder, strategy = None):
     #hpa strategy
     if (strategy=='hpa'):
         return calculateHPAScore( metricInfoDataset, modelHolder)
+    '''
     anomalieDisplay =[]
     isFirstTime = True
     if (metricTypeSize>0):
@@ -413,3 +416,4 @@ def computeAnomaly(metricInfoDataset, modelHolder, strategy = None):
     else:
         pass
     return (not isFirstTime), ''.join(anomalieDisplay)
+    '''
