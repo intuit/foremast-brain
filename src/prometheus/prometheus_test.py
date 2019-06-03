@@ -1,4 +1,5 @@
-from prometheus.metric import convertPromesResponseToMetricInfos,mergeMetrics
+from prometheus.metric import convertPromesResponseToMetricInfos\
+#,mergeMetrics
 
 
  

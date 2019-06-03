@@ -9,9 +9,10 @@ from utils.converterutils import addHeader
 from utils.strutils import strcat
 from utils.timeutils import getNowInSeconds
 from utils.strutils import strReplace
-from metrics.metricclass import MetricInfo, SingleMetricInfo,MultiKeyMetricInfo
+from metrics.metricclass import MetricInfo, SingleMetricInfo
+#,MultiKeyMetricInfo
 
-from metrics.metricmerges import SingleMergeSingle,MultiKeyMergeSingle,mergeMetrics
+#from metrics.metricmerges import SingleMergeSingle,MultiKeyMergeSingle,mergeMetrics
 from metadata.globalconfig import globalconfig
 
 
