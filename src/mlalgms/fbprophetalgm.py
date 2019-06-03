@@ -117,5 +117,3 @@ def calculate_errors(dataframe, prediction_size):
     
     return {'MAPE': error_mean('p'), 'MAE': error_mean('e')}
 
-	
-	

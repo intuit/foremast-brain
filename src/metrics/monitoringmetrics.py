@@ -4,7 +4,6 @@ from wavefront.metric import parseQueryData
 from prometheus.apis import retrieveMetricName
 from metadata.globalconfig import globalconfig
 from utils.dictutils import convertDictKey
-from asn1crypto._ffi import null
 
 
 metric_domain = "foremast:"
@@ -25,7 +24,7 @@ def getModelUrl(url,datasource='prometheus', isUpper=None):
     if datasource == 'prometheus':   
         origMetricName = retrieveMetricName(url)
     elif datasource == 'wavefront':
-        origMetricName, others = parseQueryData(url)
+        origMetricName, others = parseQueryData(url, False)
     newMetricName = getModelMetricName(origMetricName,datasource,isUpper)
     return url.replace(origMetricName, newMetricName)
 
@@ -67,7 +66,7 @@ class modelmetrics:
             self.instance.metrics[metricNameUpper] = Gauge(metricNameUpper, metricNameUpper+" model upper bound",  
                                                   labelnames=newlabeldata.keys())
         if not (metricNameLower in self.instance.metrics ):
-            self.instance.metrics[metricNameLower] = Gauge(metricNameLower, metricNameLower+" model upper bound", 
+            self.instance.metrics[metricNameLower] = Gauge(metricNameLower, metricNameLower+" model lower bound",
                                                    labelnames=newlabeldata.keys())                                     
                                                    
     def sendMetric(self,metricname, labeldata, value, isUpper = True, time=0):
@@ -162,28 +161,19 @@ class hpascoremetrics:
     instance = None
     def __init__(self):
         if not hpascoremetrics.instance:
-           hpascoremetrics.instance = hpascoremetrics.__hpascoremetrics()
+            hpascoremetrics.instance = hpascoremetrics.__hpascoremetrics()
     def setMetricInfo(self, metricname, labels, time=0):
-        mns =metricname.split(':')
-        metricHPA = metric_domain+mns[0]+"_hpa_score"
-        if (len(mns)>1):
-            metricHPA = metric_domain+mns[0]+":"+"hpa_score"
+        metricHPA = metricname
         newlabeldata = convertDictKey(labels,"-", "_")
+        print("********************"+metricHPA)
         if not (metricHPA in self.instance.metrics ):
             self.instance.metrics[metricHPA] = Gauge(metricHPA, metricHPA+" hpa score",  
                     labelnames=newlabeldata.keys())                                                                                        
                                                    
     def sendMetric(self,metricname, labeldata, value, time=0):
-        mns =metricname.split(':')
-        newMetricName= metric_domain
-        if globalConfig.getValueByKey('METRIC_DESTINATION')=='wavefront':
-            newMetricName = wavefront_domain
-        if (len(mns)>1):
-           newMetricName = newMetricName+mns[0]+"_hpa_score"
-        if globalConfig.getValueByKey('METRIC_DESTINATION')=='wavefront':
-            newMetricName = wavefront_prefix+ newMetricName
-            return sendMetric(newMetricName, labeldata, value, time) 
+        newMetricName ='namespace_pod_hpa_score'
         if not (newMetricName in self.instance.metrics ):
-            self.setMetricInfo(metricname, labeldata)          
+            self.setMetricInfo(newMetricName, labeldata)          
         newlabeldata = convertDictKey(labeldata,"-", "_")
+        #print("*****",newMetricName,"*******",newlabeldata,'******',value)
         self.instance.metrics[newMetricName].labels(**newlabeldata).set(value)

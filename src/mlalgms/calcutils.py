@@ -1,8 +1,5 @@
 import numpy as np
 
-
-
-
 """
 #moving avg 
 #Parameters
@@ -11,8 +8,6 @@ import numpy as np
 """
 def moving_average(series, n):
     return np.average(series[-n:])
-
-
 
 #exponential_smoothing(df, 0.25)
 #usually the oldes take less weightage 
@@ -56,9 +51,6 @@ def double_exponential_smoothing(values, alpha, beta):
         trend = beta*(level-last_level) + (1-beta)*trend
         result.append(level+trend)
     return result
-
-
-
 
 #use defined for small data set only (last n of weights size)
 #weighted_average(series, [0.7, 0.2, 0.1])

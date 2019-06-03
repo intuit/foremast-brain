@@ -1,4 +1,4 @@
-from metric import convertPromesResponseToMetricInfos,mergeMetrics
+from prometheus.metric import convertPromesResponseToMetricInfos,mergeMetrics
 
 
  
@@ -143,28 +143,21 @@ json3={
 '''
 a1, ret = convertPromesResponseToMetricInfos(json1)
 print(a1[0].metricDF)
-
 a2,ret = convertPromesResponseToMetricInfos(json2)
 print(a2[0].metricDF)
-
 a3, ret = convertPromesResponseToMetricInfos(json3)
 print(a3[0].metricDF)
-
 dd = mergeMetrics(a1[0],a2[0])
 print(type(dd))
 print(dd.metricType)
 print(dd.metricDF)
 print(dd.columnmap)
-
-
 dd1 = mergeMetrics(a1[0],dd)
 print(type(dd1))
 print(dd1.metricType)
 print(dd1.columnmap)
-
 df1= dd.metricDF
 print(df1)
-
 s_copy = df1.copy()
 sc= s_copy.drop('ds', axis=1)
 print(sc.cov())
@@ -172,7 +165,4 @@ print(sc.cov())
 #dddd = sc.ix[:,0].corr(sc.ix[:,1])
 
 #print(dddd)
-
-
-
 

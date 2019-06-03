@@ -159,16 +159,10 @@ def mergeMetrics(sMetricInfo1, sMetricInfo2):
     elif isinstance(sMetricInfo1, SingleMetricInfo) and  isinstance(sMetricInfo2, MultiTypeMetricInfo):   
         return SingleMergeMultiType(sMetricInfo1, sMetricInfo2)
     elif isinstance(sMetricInfo1, MultiKeyMetricInfo) and  isinstance(sMetricInfo2, MultiKeyMetricInfo):   
-        MultiKeyMergeMultiKey(sMetricInfo1, sMetricInfo2)
-    elif isinstance(sMetricInfo1, MultiTypeMetricInfo) and  isinstance(sMetricInfo2, MultiTypeMetricInfo):  
-        MultiTypeMergeMultiKey(sMetricInfo1, sMetricInfo2) 
+        return MultiKeyMergeMultiKey(sMetricInfo1, sMetricInfo2)
     elif isinstance(sMetricInfo2, SingleMetricInfo) and  isinstance(sMetricInfo1, MultiKeyMetricInfo):
         return SingleMergeMultiKey(sMetricInfo2, sMetricInfo1)
     elif isinstance(sMetricInfo2, SingleMetricInfo) and  isinstance(sMetricInfo1, MultiTypeMetricInfo):   
         return SingleMergeMultiType(sMetricInfo2, sMetricInfo1)  
     return MetricInfo()
-    
-
-    
-    
-    
+        

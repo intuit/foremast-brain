@@ -1,10 +1,8 @@
 import numpy as np  
-import pandas as pd 
 import math
 import logging
 from sklearn.metrics import mean_absolute_error, mean_squared_log_error
-from utils.converterutils import addHeader
-from mlalgms.holtwinters import  HoltWinters 
+#from utils.converterutils import addHeader
 from scipy.optimize import minimize
 from mlalgms.evaluator import tsCrossValidationScore, mean_absolute_percentage_error
 from mlalgms.calcutils import exponential_smoothing,double_exponential_smoothing
@@ -24,6 +22,29 @@ STD_UPPER= 'std_upper'
 STD_LOWER = 'std_lower'
 PREDIT_UPPERS = 'predict_upper'
 PREDIT_LOWERS = 'predict_lower'
+
+def calculateTSTrend(y_series, ts_series=None):
+    sum_x = 0
+    sum_y = 0
+    sum_xy = 0
+    sum_x_2 = 0 
+    size = 0 
+    if ts_series is None:
+        size = len(y_series)
+    else:
+        size = min(len(y_series),len(ts_series))
+    for i in range(len(y_series)):
+        sum_x += y_series[i]
+        if ts_series is None:
+            sum_y += i
+            sum_xy += y_series[i]*i
+        else:
+            sum_y += ts_series[i]
+            sum_xy += y_series[i]*ts_series[i]
+        sum_x_2 = y_series[i]*y_series[i]
+    b = (sum_xy - (sum_x*sum_y)/size)/(sum_x_2 - (sum_x*sum_x)/size)
+    return b
+
 
     
 def calculateBivariateParameters(x, y, isCovCorOnly=False):  
@@ -88,73 +109,71 @@ def calculateHistoricalParameters(series):
     return  mean, deviation
 
 
-
-def detectAnomalies(series, mean, deviation, threshold = 2 , bound=IS_UPPER_BOUND, minvalue=0, returnAnomaliesOnly= True): 
-    ts=[]
-    adata=[]
-    anomalies=[]
-    nrow =  series.shape[0]
-    i=0
-    upper = mean + threshold*deviation
-    lower = mean - threshold*deviation
-    zscore=[]
+def detectAnomalies(series, mean, deviation, threshold=2, bound=IS_UPPER_BOUND, minvalue=0, returnAnomaliesOnly=True):
+    ts = []
+    adata = []
+    anomalies = []
+    nrow = series.shape[0]
+    i = 0
+    upper = mean + threshold * deviation
+    lower = mean - threshold * deviation
+    zscore = []
     zscore_upper_diff = []
     zscore_lower_diff = []
     for i in range(nrow):
-        if (deviation !=0):
-            z = (series.iloc[i,0] - mean)/deviation  
+        isAnomaly = False
+        if (deviation != 0):
+            z = (series.iloc[i, 0] - mean) / deviation
         else:
-            z=0 
-        isAnomaly = False     
-        if series.iloc[i,0]>minvalue:
-   
+            z = 0
+        if series.iloc[i, 0] > minvalue:
             if (not returnAnomaliesOnly):
                 ts.append(series.index[i])
-                adata.append(series.iloc[i,0])
-            if bound==IS_UPPER_BOUND:
-                if series.iloc[i,0] > upper:
+                adata.append(series.iloc[i, 0])
+            if bound == IS_UPPER_BOUND:
+                if series.iloc[i, 0] > upper:
                     if returnAnomaliesOnly:
                         ts.append(series.index[i])
-                        adata.append(series.iloc[i,0])
+                        adata.append(series.iloc[i, 0])
                     isAnomaly = True
-                    zscore_upper_diff.append(z-threshold)
+                    zscore_upper_diff.append(z - threshold)
                     zscore_lower_diff.append(0)
-    
-            elif bound==IS_LOWER_BOUND:
-                if series.iloc[i,0] < lower:
+
+            elif bound == IS_LOWER_BOUND:
+                if series.iloc[i, 0] < lower:
                     if returnAnomaliesOnly:
                         ts.append(series.index[i])
-                        adata.append(series.iloc[i,0])  
-                    isAnomaly = True  
+                        adata.append(series.iloc[i, 0])
+                    isAnomaly = True
                     zscore_upper_diff.append(0)
-                    zscore_lower_diff.append(-z+threshold)      
+                    zscore_lower_diff.append(-z + threshold)
             else:
-                if (series.iloc[i,0] > upper   or series.iloc[i,0] < lower):
+                if (series.iloc[i, 0] > upper or series.iloc[i, 0] < lower):
                     if returnAnomaliesOnly:
                         ts.append(series.index[i])
-                        adata.append(series.iloc[i,0])
-                    isAnomaly = True  
-                    if series.iloc[i,0] > upper:
-                        zscore_upper_diff.append(z-threshold)
+                        adata.append(series.iloc[i, 0])
+                    isAnomaly = True
+                    if series.iloc[i, 0] > upper:
+                        zscore_upper_diff.append(z - threshold)
                         zscore_lower_diff.append(0)
-                    if eries.iloc[i,0] < lower :
+                    if series.iloc[i, 0] < lower:
                         zscore_upper_diff.append(0)
-                        zscore_lower_diff.append(-z+threshold) 
-        if returnAnomaliesOnly :
-                if isAnomaly:
-                    anomalies.append(isAnomaly)
-                    zscore.append(z)
-        else:
-                anomalies.append(isAnomaly) 
+                        zscore_lower_diff.append(-z + threshold)
+        if returnAnomaliesOnly:
+            if isAnomaly:
+                anomalies.append(isAnomaly)
                 zscore.append(z)
-                if not isAnomaly:
-                    zscore_upper_diff.append(z-threshold)
-                    zscore_lower_diff.append(-z+threshold)
-                 
-    if returnAnomaliesOnly :
-        return ts,adata,zscore
-    #return  ts,adata,anomalies, zscore
-    return  ts,adata,anomalies,zscore
+        else:
+            anomalies.append(isAnomaly)
+            zscore.append(z)
+            if not isAnomaly:
+                zscore_upper_diff.append(z - threshold)
+                zscore_lower_diff.append(-z + threshold)
+
+    if returnAnomaliesOnly:
+        return ts, adata, zscore
+    # return  ts,adata,anomalies, zscore
+    return ts, adata, anomalies, zscore
 
 
 
@@ -198,9 +217,9 @@ def calculateMovingAverageParameters(series, window=0, threshold=2.0, calculateS
     other_models[STD_UPPER]=std_upper
     other_models[STD_LOWER]= std_lower
     other_models[PREDIT_UPPERS]= llower_bound
-    other_models[PREDIT_LOWERS]= hupper_upper
+    other_models[PREDIT_LOWERS]= hupper_bound
 #    return hlower_bound.y.values[len(llower_bound)-1], hupper_bound.y.values[len(hupper_bound)-1], other_models
-    return hlower_bound.y.values[len(llower_bound)-1], hupper_bound.y.values[len(hupper_bound)-1]
+    return llower_bound.y.values[len(llower_bound)-1], hupper_bound.y.values[len(hupper_bound)-1]
 
     '''
     originalWindow = window
@@ -227,7 +246,6 @@ def calculateMovingAverageParameters(series, window=0, threshold=2.0, calculateS
         calculateScore :calculate mae, mape used during debug/training time.
 #Returns:    
         anomalies : show anomalies 
-
 """
 def detectLowerUpperAnomalies(series, lower_bound, upper_bound , bound=IS_UPPER_BOUND, returnAnomaliesOnly= True):
 
@@ -434,7 +452,6 @@ def calculateDoubleExponentialSmoothingParameters( series, alpha=0.95, beta=0.05
         calculateScore :calculate mae, mape used during debug/training time.
     #Returns:    
         anomalies : show anomalies 
-
 """
 
 def detectDoubleExponentialSmoothingAnomalies(series, y, alpha, beta, threshold=2, mae = 0, deviation= 0, bound=IS_UPPER_BOUND, calculateScore=False, debug=False, returnAnomaliesOnly= True):
@@ -499,36 +516,6 @@ def detectDoubleExponentialSmoothingAnomalies(series, y, alpha, beta, threshold=
 
 
 
-###############################
-# HoltWinter Model
-###############################
-#slen -length of a season
-#threshold - sets the width of the confidence interval by Brutlag (usually takes values from 2 to 3)
-
-def createHoltWintersModel(series, nextPredictHours=1, threshold=2, slen=1):
-    y= series.y 
-    x = [0, 0, 0] 
-    # Minimizing the loss function 
-    ret = None
-    alpha_final, beta_final, gamma_final = 0.1,0.002,0.06
-    try:
-        ret = minimize(tsCrossValidationScore, x0=x, args=(y, mean_squared_log_error), 
-                    method="TNC", bounds = ((0, 1), (0, 1), (0, 1)) ) 
-    
-        alpha_final, beta_final, gamma_final = ret.x
-    except Exception as e:
-        logging.error("Data is not seasonality model", e)
-
-    
-    model = HoltWinters(y, slen = slen, 
-                    alpha = alpha_final, 
-                    beta = beta_final, 
-                    gamma = gamma_final, 
-                    n_preds = nextPredictHours, scaling_factor = threshold)
-    
-    model.triple_exponential_smoothing()
-    
-    return model
 
 def retrieveSaveModelData(series, model):
     y = series.y
@@ -536,74 +523,10 @@ def retrieveSaveModelData(series, model):
     model_size = model.result.shape[0]
     return model.UpperBond[original_size:model_size-1], model.LowerBond[original_size:model_size-1]
     
-def retrieveHW_Anomalies( y, upperBond, lowerBond, bound=IS_UPPER_BOUND,  returnAnomaliesOnly= True):
-    ts=[]
-    adata=[]
-    anomlies=[]
-    myshape = y.shape
-    nrow = myshape[0]
-    for i in range(nrow):
-        isAnomaly = False
-        if (not returnAnomaliesOnly):
-            ts.append(y.index[i])
-            adata.append(y[i])
-        if bound==IS_UPPER_BOUND:
-            if y[i] > upperBond[i] :
-                if (returnAnomaliesOnly):
-                    ts.append(y.index[i])
-                    adata.append(y[i])
-                isAnomaly = True
-        elif bound==IS_LOWER_BOUND:
-            if y[i] < lowerBond[i]:
-                if (returnAnomaliesOnly):
-                    ts.append(y.index[i])
-                    adata.append(y[i])
-                isAnomaly = True
-        else:
-            if y[i] > upperBond[i] or y[i] < lowerBond[i]:
-                if (returnAnomaliesOnly):
-                    ts.append(y.index[i])
-                    adata.append(y[i])
-                isAnomaly = True
-        if returnAnomaliesOnly:
-            if isAnomaly:
-                anomalies.append(True)
-        else:
-            anomalies.append(isAnomaly)
-    #return addHeader(ts,adata)
-    return ts,adata ,anomalies
-    
-def retrieveHW_AnomaliesByModel( y, model,bound=IS_UPPER_BOUND):  
-    return retrieveHW_Anomalies(y, model.UpperBond, model.LowerBond, bound)
 
 
 
 
-def retrieveHW_MAPE(y, model):
-    error = mean_absolute_percentage_error(y.values, model.result[:len(y)])
-    return error
-
-
-
-"""
-#Name : detectHoltWinderAnomalies
-
-#Parameters
-       y  --- metric value with index as ts
-       predictHours --- future predict hours
-       threshold --- threshold 
-       slen --- seasonality days
-       calculateScore  -- use for debug to calculate score accuracy
-       
-#Results:
-    anomalies data point with date
-"""
-
-def detectHoltWinderAnomalies( y, predictHours=1, threshold=2, slen=24, bound=IS_UPPER_BOUND, calculateScore=False):
-    model = createHoltWintersModel(y, predictHours,threshold, slen)
-    if calculateScore==True:
-        logging.info(retrieveHW_MAPE(y, model))
-    return retrieveHW_AnomaliesModel( y, model, bound)
 
 #ddd = detectHoltWinderAnomalies(ads.Ads, 2, threshold=3,slen=7, calculateScore=True)
 #ddd = detectHoltWinderAnomalies(ads.Ads, 2, threshold=3,slen=24, calculateScore=True)

@@ -24,8 +24,6 @@ class monitoringmetrics_test(unittest.TestCase):
         newUrl = getModelUrl(self.url_prometheus,'prometheus')
         expected_result = 'http://prometheus-k8s.dev-containers-prometheus-operator-usw2-dev-dev.svc.cluster.local:9090/api/v1/query_range?query=foremast:namespace_app_per_pod%3Acpu_usage_seconds_total_anomaly%7Bnamespace%3D%22dev-containers-foremast-examples-usw2-dev-dev%22%2Capp%3D%22demo%22%7D&start=1553278200&end=1553883000&step=60'
         self.assertEqual(newUrl, expected_result)
-        
-
 
 if __name__ == '__main__':
     # begin the unittest.main()

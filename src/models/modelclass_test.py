@@ -1,4 +1,4 @@
-from modelclass import  ModelHolder   
+from models.modelclass import ModelHolder   
 modelHolder = ModelHolder('testMetric',{'threshold':5,'model':'model1'}, {'mean':5,'std':8})
 print(modelHolder)
 

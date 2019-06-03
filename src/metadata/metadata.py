@@ -1,7 +1,6 @@
 from enum import Enum
 
-
-
+#define all the constants
 MAE = "mae"
 DEVIATION = "deviation"
 
@@ -14,21 +13,16 @@ UPPER_BOUND = "upper_bound"
 MIN_DATA_POINTS = "min_data_points"
 LOWER_THRESHOLD = "lower_threshold"
 
-
-
 DEFAULT_MIN_LOWER_BOUND = 0
 
 LLOWER_BOUND = "llower_bound"
 LUPPER_BOUND = "lupper_bound"
-
 
 DEFAULT_THRESHOLD = 2
 DEFAULT_LOWER_THRESHOLD =1.75
 
 PAIRWISE_ALGORITHM = 'PAIRWISE_ALGORITHM'
 PAIRWISE_THRESHOLD = 'PAIRWISE_THRESHOLD'
-
-
 
 class REQUEST_STATE(Enum):
     COMPLETED_HEALTH = 'completed_health'
