@@ -290,7 +290,7 @@ def main():
         uuid = openRequest['id']
         status = openRequest['status']
         
-        #updatedStatus = reserveJob(uuid, status)
+        updatedStatus = reserveJob(uuid, status)
         logger.warning("Start to processing job id "+uuid+ " original status:"+ status)
         #strategy
         strategy = openRequest['strategy']
