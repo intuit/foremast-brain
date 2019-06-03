@@ -1,9 +1,10 @@
-import json
 import logging
+from datetime import datetime as dt
 from utils.converterutils import addHeader
-from utils.strutils import strcat
-from metrics.metricclass import MetricInfo, SingleMetricInfo, MultiKeyMetricInfo
-from metrics.metricmerges import SingleMergeSingle, MultiKeyMergeSingle, mergeMetrics
+#from utils.strutils import strcat
+from metrics.metricclass import MetricInfo, SingleMetricInfo
+#, MultiKeyMetricInfo
+#from metrics.metricmerges import SingleMergeSingle, MultiKeyMergeSingle, mergeMetrics
 from metadata.globalconfig import globalconfig
 
 
@@ -13,8 +14,8 @@ logger = logging.getLogger('wavefront.metric')
 globalConfig =  globalconfig()
 
 
-def processTextResponse(content):
-    return processResponse(json.loads(content))
+#def processTextResponse(content):
+#    return processResponse(json.loads(content))
 
 
 def formatData(result, isProphet):
@@ -35,7 +36,7 @@ def formatData(result, isProphet):
     return df
 
 
-def convertResponseToMetricInfos(result, metricPeriod,  isProphet=False, aresult=None):
+def convertResponseToMetricInfos(result, metricPeriod,  isProphet=False, aresult=None, isDestWaveFront=True):
     metricInfos = []
     if result.timeseries is None:
         logger.error("error: wavefront response does not have timeseries")
@@ -55,7 +56,7 @@ def convertResponseToMetricInfos(result, metricPeriod,  isProphet=False, aresult
 
             except Exception as e:
                 logger.error(e.__cause__)
-    name, kvs = parseQueryData(result.query)  
+    name, kvs = parseQueryData(result.query, (not isDestWaveFront))
     jMetric = kvs
     kvs['name'] = name
     gMetric = kvs
@@ -75,8 +76,7 @@ def convertResponseToMetricInfos(result, metricPeriod,  isProphet=False, aresult
 #                   prometheus supported name
 
 def urlclearup(data):
-    url = getdecoder(data)
-    return url.replace("+"," ")
+    return data.replace("+"," ")
 
 def parseQueryData(data, isPrometheus=True):
     data1 = data.split("ts(")
@@ -84,7 +84,7 @@ def parseQueryData(data, isPrometheus=True):
         return "", {}
     data2 = data1[1].split(",")
     #if isPrometheus:
-    if globalConfig.getValueByKey('METRIC_DESTINATION')=='prometheus':    
+    if isPrometheus:
         name = data2[0].replace(".", "_")
     else:
         name = data2[0].replace(":", ".")
@@ -99,7 +99,7 @@ def parseQueryData(data, isPrometheus=True):
             continue
         else:
             #if isPrometheus :
-            if globalConfig.getValueByKey('METRIC_DESTINATION')=='prometheus':
+            if isPrometheus:
                 kvs[kv[0].replace(".", "_")] = kv[1]
             else:
                 kvs[kv[0]] = kv[1]

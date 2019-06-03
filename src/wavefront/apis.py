@@ -1,11 +1,11 @@
 import wavefront_api_client as wave_api
 from wavefront_sdk import WavefrontDirectClient
-import datetime as dt
 import logging
 from metadata.globalconfig import globalconfig
 import urllib.parse
 from utils.timeutils import getNowInSeconds
 import os
+import wavefront.wavefront_send as wf
 # logging
 logging.basicConfig(format='%(asctime)s %(message)s')
 logger = logging.getLogger('apis')
@@ -75,24 +75,43 @@ def executeQuery( query, start_time, query_granularity, end_time):
     return result
 
 def sendMetric(metricName, tags, value,  timestamp=0,source=None):
-    flushFrequency = globalConfig.getValueByKey("FLUSH_FREQUENCY")
-    ts = timestamp
-    if timestamp==0:
-        ts = getNowInSeconds()
-    if sendClient is None:
-        createSendWavefrontClient()
-    global cacheCount
-    cacheCount  = cacheCount+ 1
-    if source is None:
-        source = globalEnv
-    sendClient.send_metric(metricName,value, ts,source, tags)
-    print(metricName, " send metric buffer ", sendClient._metrics_buffer.qsize(), "failure ", sendClient.get_failure_count())
-    logger.warning(metricName + " send metric buffer " + str(sendClient._metrics_buffer.qsize()) + "failure " + str(sendClient.get_failure_count()))
-    print("metricName", metricName, "tags", tags, "value", value, "timestamp", timestamp)
-    if (cacheCount %flushFrequency == 0):
-        flushNow()
-        #print(metricName + " after flush send metric buffer " + str(sendClient._metrics_buffer.qsize()) + "failure " + str(sendClient.get_failure_count()))
-        logger.warning(metricName + " after flush send metric buffer " + str(sendClient._metrics_buffer.qsize()) + "failure " + str(sendClient.get_failure_count()))
+    if os.environ.get("INTERNAL_WAVEFRONT"):
+        connect_oim = wf.OimSend("prd", "s3", "aws", globalConfig.getValueByKey("OIM_BUCKET"))
+        # print([k+"="+tags[k] for k in tags])
+        stringtags = " ".join([k + "=" + tags[k] for k in tags])
+        # stringtags = "app=" + tags["app"]
+        global sendlist
+        sendlist.append(metricName + " " + str(value) + " " + stringtags)
+        print("sendlist", sendlist)
+        if len(sendlist) > 5:
+            print("sending to oim s3")
+            result = connect_oim.send_wave(sendlist)
+            print("send_wave result:", result, connect_oim.wavefrontproxy, connect_oim.port, connect_oim.send_s3,
+                  connect_oim.s3_bucket, connect_oim.location)
+            sendlist = []
+    else:
+        flushFrequency = globalConfig.getValueByKey("FLUSH_FREQUENCY")
+        if flushFrequency is None:
+            flushFrequency =5
+        ts = timestamp
+        if timestamp==0:
+            ts = getNowInSeconds()
+        if sendClient is None:
+            createSendWavefrontClient()
+        global cacheCount
+        cacheCount  = cacheCount+ 1
+        if source is None:
+            source = globalEnv
+        sendClient.send_metric(metricName,value, ts,source, tags)
+        print(metricName, " send metric buffer ", sendClient._metrics_buffer.qsize(), "failure ", sendClient.get_failure_count())
+        logger.warning(metricName + " send metric buffer " + str(sendClient._metrics_buffer.qsize()) + "failure " + str(sendClient.get_failure_count()))
+        # print("metricName", metricName, "tags", tags, "value", value, "timestamp", timestamp)
+        if (cacheCount %flushFrequency == 0):
+            flushNow()
+            #print(metricName + " after flush send metric buffer " + str(sendClient._metrics_buffer.qsize()) + "failure " + str(sendClient.get_failure_count()))
+            logger.warning(metricName + " after flush send metric buffer " + str(sendClient._metrics_buffer.qsize()) + "failure " + str(sendClient.get_failure_count()))
+
+
 
 
 
@@ -104,7 +123,7 @@ def sendDeltaCounter(metricName, tags, value, source=None):
     cacheCount = cacheCount+ 1
     if source is None:
         source = globalEnv
-    sendClient.send_delta_counter(name, value, source, tags)
+    sendClient.send_delta_counter(metricName, value, source, tags)
     #print("send delta buffer ", sendClient._metrics_buffer.qsize(), "failure ", sendClient.get_failure_count())
     if (cacheCount%flushFrequency == 0):
         flushNow()
@@ -115,6 +134,11 @@ def sendDeltaCounter(metricName, tags, value, source=None):
 def flushNow():
     sendClient.flush_now()
 
+
+#def sendMetric():
+
+
+#def sendMetrics():
 
 
 ##############
