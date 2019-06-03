@@ -63,32 +63,32 @@ def convertPromesResponseToMetricInfos(json, metricPeriod, isProphet=False, ajso
     rdata = json['data']['result']
 
     for element in rdata:
-       gMetric = element['metric']
-       jKeys = set(element['metric'].keys()) - {KEY_NAME}
-       jMetric  = {label: gMetric[label] for label in jKeys if label in gMetric}
-       df = None
-       if isProphet:
-          df= convertTSToDataFrame(element['values'],True, 'y', isProphet) 
-       else:
-           df= convertTSToDataFrame(element['values'])
-       if adata is not None and  len(adata)>0:
-          for es in adata:
-               ret = comparsionlableValue(element['metric'], es['metric'])
-               if ret :
-                 df_a = None
-                 if isProphet:
-                   df_a= convertTSToDataFrame(es['values'],True, 'y', isProphet) 
-                 else:
-                   df_a= convertTSToDataFrame(es['values'])
-                 try:
-                     df.drop(df_a.index, inplace=True, errors='ignore')
-                 except Exception as e:
-                     logger.error(e.__cause__)
+        gMetric = element['metric']
+        jKeys = set(element['metric'].keys()) - {KEY_NAME}
+        jMetric  = {label: gMetric[label] for label in jKeys if label in gMetric}
+        df = None
+        if isProphet:
+            df= convertTSToDataFrame(element['values'],True, 'y', isProphet) 
+        else:
+            df= convertTSToDataFrame(element['values'])
+        if adata is not None and  len(adata)>0:
+            for es in adata:
+                ret = comparsionlableValue(element['metric'], es['metric'])
+                if ret :
+                    df_a = None
+                if isProphet:
+                    df_a= convertTSToDataFrame(es['values'],True, 'y', isProphet) 
+                else:
+                    df_a= convertTSToDataFrame(es['values'])
+                try:
+                    df.drop(df_a.index, inplace=True, errors='ignore')
+                except Exception as e:
+                    logger.error(e.__cause__)
                       
-       if globalConfig.getValueByKey('METRIC_DESTINATION')=='wavefront':
-           gMetric[KEY_NAME] = gMetric[KEY_NAME].replace(":", ".")
-       metricInfo = SingleMetricInfo(str(gMetric[KEY_NAME]), jMetric,{'y':gMetric}, df, metricPeriod)
-       metricInfos.append(metricInfo)
+        if globalConfig.getValueByKey('METRIC_DESTINATION')=='wavefront':
+            gMetric[KEY_NAME] = gMetric[KEY_NAME].replace(":", ".")
+        metricInfo = SingleMetricInfo(str(gMetric[KEY_NAME]), jMetric,{'y':gMetric}, df, metricPeriod)
+        metricInfos.append(metricInfo)
     return metricInfos
 
 
@@ -118,16 +118,16 @@ def convertTSToDataFrame(valuesList, convertTime = False,  metricName='y',isProp
     for i in range(valueslength ):
         if convertTime:
             if isModel:
-               ts.append(dt.utcfromtimestamp(int(valuesList[i][1])))
+                ts.append(dt.utcfromtimestamp(int(valuesList[i][1])))
             else:
-               ts.append(dt.utcfromtimestamp(int(valuesList[i][0])))
+                ts.append(dt.utcfromtimestamp(int(valuesList[i][0])))
         if isModel:
             ts_idx.append(valuesList[i][1])
         else:
             ts_idx.append(valuesList[i][0])
         vals.append(float(valuesList[i][1]))
     if isProphet:
-       return  addHeader(ts_idx,vals,ts, False)
+        return  addHeader(ts_idx,vals,ts, False)
     return  addHeader(ts_idx,vals) 
 
 def urlEndNow(url):

@@ -502,7 +502,7 @@ def detectDoubleExponentialSmoothingAnomalies(series, y, alpha, beta, threshold=
 
 
 
-'''
+
 
 
 def retrieveSaveModelData(series, model):
@@ -511,7 +511,7 @@ def retrieveSaveModelData(series, model):
     model_size = model.result.shape[0]
     return model.UpperBond[original_size:model_size-1], model.LowerBond[original_size:model_size-1]
     
-
+'''
 
 
 
