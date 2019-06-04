@@ -1,4 +1,5 @@
-import numpy as np
+
+#import numpy as np
 
 """
 #moving avg 
@@ -6,5 +7,5 @@ import numpy as np
     array of ts value
 #Returns moving avg
 """
-def moving_average(series, n):
-    return np.average(series[-n:])
+#def moving_average(series, n):
+#    return np.average(series[-n:])
