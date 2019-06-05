@@ -1,6 +1,7 @@
-from scipy.stats import mannwhitneyu, wilcoxon,kruskal,friedmanchisquare
+from scipy.stats import mannwhitneyu
+#, wilcoxon,kruskal,friedmanchisquare
 from metadata.globalconfig import globalconfig
-from mlalgms.statsmodel import IS_UPPER_BOUND,IS_UPPER_O_LOWER_BOUND,IS_LOWER_BOUND
+from mlalgms.statsmodel import IS_UPPER_BOUND,IS_LOWER_BOUND #,IS_UPPER_O_LOWER_BOUND
 import warnings                                  
 warnings.filterwarnings('ignore')
 
@@ -15,10 +16,10 @@ warnings.filterwarnings('ignore')
 
 
 MANN_WHITE = "mannwhitneyu"
-WILCOXON = "wilcoxon"
-KRUSKAL = "kruskal"
-FRIED_MANCHI_SQUARE = "friedmanchisquare"
-ALL = "all"
+#WILCOXON = "wilcoxon"
+#KRUSKAL = "kruskal"
+#FRIED_MANCHI_SQUARE = "friedmanchisquare"
+#ALL = "all"
 ANY = "any"
 ERROR = "error"
 
