@@ -5,7 +5,7 @@ import time
 
 #from scipy.stats import mannwhitneyu, wilcoxon,kruskal,friedmanchisquare
 
-from utils.timeutils import  canProcess, rateLimitCheck
+#from utils.timeutils import  canProcess, rateLimitCheck
 from es.elasticsearchutils import ESClient
 from metadata.metadata import REQUEST_STATE, METRIC_PERIOD, MIN_DATA_POINTS
 from prometheus.metric import convertPromesResponseToMetricInfos,urlEndNow
@@ -13,7 +13,7 @@ from wavefront.metric import convertResponseToMetricInfos  #parseQueryData
 from utils.urlutils import dorequest
 from utils.dictutils import retrieveKVList
 #from helpers.modelhelpers import calculateModel,detectAnomalyData
-from helpers.modelhelpers import calculateModel
+#from helpers.modelhelpers import calculateModel
 from helpers.hpahelpers import calculateHPAScore,calculateHPAModels
 from wavefront.apis import executeQuery,dequote
 from metrics.monitoringmetrics import getModelUrl
@@ -111,7 +111,7 @@ def selectRequestToProcess(requests):
     return None
 '''
 
-
+'''
 def canRequestProcess(request):
     # find requests updated REQ_CHECK_INTERVAL sec ago for hpa and continuous strategy
     strategy = request['strategy']
@@ -126,7 +126,7 @@ def canRequestProcess(request):
         if rateLimitCheck(request['modified_at']):
             return request
     return None
-
+'''
 
 def retrieveRequestById(id):
     resp = es.search_by_id(id)
@@ -283,9 +283,10 @@ def computeHistoricalModel(historicalConfigMap, modelHolder, isProphet = False, 
     if strategy=='hpa':
         modelHolder = calculateHPAModels(metricInfos, modelHolder, metricTypes)
         return modelHolder,msg
+    '''
     for i in range (metricTypeCount):
         modelHolder = calculateModel(metricInfos[i][0], modelHolder, metricTypes[i], strategy)
-
+    '''
 
     
     ##TODO rollback
