@@ -29,6 +29,27 @@ KRUSKAL_MIN_DATA_POINTS = 5
 DEFAULT_PAIRWISE_THRESHOLD = 0.05
 config = globalconfig()
 
+
+def TwoDataSetSameDistribution(dataset1, dataset2, alpha=DEFAULT_PAIRWISE_THRESHOLD, algorithm=ANY, bound= IS_UPPER_BOUND):  
+  size = min(len(dataset1),len(dataset2))
+  p = 0
+  try:
+    if (bound== IS_UPPER_BOUND):
+        stat, p = mannwhitneyu(dataset1, dataset2,True, 'greater')
+    elif bound == IS_LOWER_BOUND :
+        stat, p = mannwhitneyu(dataset1, dataset2,True, 'less')
+    else:
+        stat, p = mannwhitneyu(dataset1, dataset2,True, 'two-sided')
+    if p >= alpha:
+        return True, p , MANN_WHITE, size>=config.getValueByKey("MIN_MANN_WHITE_DATA_POINTS", MANN_WHITE_MIN_DATA_POINT)  
+    else:
+        return False, p,  MANN_WHITE, size>=config.getValueByKey("MIN_MANN_WHITE_DATA_POINTS", MANN_WHITE_MIN_DATA_POINT) 
+  except Exception as e:
+        if str(e) ==  "All numbers are identical in mannwhitneyu" :
+            return True, 0, MANN_WHITE, size>=config.getValueByKey("MIN_MANN_WHITE_DATA_POINTS", MANN_WHITE_MIN_DATA_POINT)     
+  return True,  0, ERROR,  size>=config.getValueByKey("MIN_MANN_WHITE_DATA_POINTS", MANN_WHITE_MIN_DATA_POINT)
+  
+'''
 def TwoDataSetSameDistribution(dataset1, dataset2, alpha=DEFAULT_PAIRWISE_THRESHOLD, algorithm=ANY, bound= IS_UPPER_BOUND):  
   size = min(len(dataset1),len(dataset2))
   p = 0
@@ -157,7 +178,7 @@ def TwoDataSetSameDistribution(dataset1, dataset2, alpha=DEFAULT_PAIRWISE_THRESH
               return True, 0, MANN_WHITE, size>=config.getValueByKey("MIN_MANN_WHITE_DATA_POINTS", MANN_WHITE_MIN_DATA_POINT)                 
   return True,  0, ERROR,  size>=config.getValueByKey("MIN_MANN_WHITE_DATA_POINTS", MANN_WHITE_MIN_DATA_POINT)
   
-'''  
+
   
 def MultipleDataSetSameDistribution(list,  alpha = DEFAULT_PAIRWISE_THRESHOLD, algorithm=KRUSKAL): 
     stat=0
