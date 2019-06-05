@@ -28,7 +28,7 @@ def getDataFrame(dataframe, needDisplay=False):
 def mergeDF(left, right):   
     return pandas.merge(left, right,how='outer', on='ds') 
                
-        
+'''        
 def mergeColumnmap(leftColumnmap, rightColumnmap, mergedColumnlist):  
     columnmap={}
     count =1
@@ -43,7 +43,7 @@ def mergeColumnmap(leftColumnmap, rightColumnmap, mergedColumnlist):
         columnmap[mergedColumnlist[count]]= value
         count +=1  
     return columnmap
-
+'''
 
 
 # dataframe summary. Can be used on notebook

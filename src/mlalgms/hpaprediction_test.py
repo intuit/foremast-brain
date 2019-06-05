@@ -8,7 +8,7 @@ from metadata.metadata import AI_MODEL
 class HPAPredictionMethods(unittest.TestCase):
     
     def testalgm(self):
-        fds = pd.read_csv('../../test_data/fds_seasonality.csv')
+        fds = pd.read_csv('../../test_data/seasonality.csv')
         lstm, lstm_display = getDataFrame(fds, True)  
         modelType , otherdata, metricPattern, trend= calculateHistoricalModel(lstm)
         if modelType in [AI_MODEL.MOVING_AVERAGE_ALL.value]:
