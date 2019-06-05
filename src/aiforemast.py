@@ -130,7 +130,7 @@ def update_es_doc(req_strategy, req_org_status, uuid, to_status, info='', reason
 
 def main():
     # Default Parameters can be overwrite by environments
-    max_cache = convertStrToInt(os.environ.get("MAX_CACHE_SIZE", str(MAX_CACHE_SIZE)), MAX_CACHE_SIZE)
+    #max_cache = convertStrToInt(os.environ.get("MAX_CACHE_SIZE", str(MAX_CACHE_SIZE)), MAX_CACHE_SIZE)
     ML_ALGORITHM = os.environ.get('ML_ALGORITHM', AI_MODEL.MOVING_AVERAGE_ALL.value)
     FLUSH_FREQUENCY = os.environ.get('FLUSH_FREQUENCY', 5)
     OIM_BUCKET = os.environ.get("OIM_BUCKET")
@@ -139,12 +139,13 @@ def main():
     HISTORICAL_CONF_TIME_WINDOW = os.environ.get('HISTORICAL_CONF_TIME_WINDOW', 7 * 24 * 60 * 60)
     CURRENT_CONF_TIME_WINDOW = os.environ.get('CURRENT_CONF_TIME_WINDOW', 1.75)
     CURRENT_CONF_POD_TIME_WINDOW = os.environ.get('CURRENT_CONF_TIME_WINDOW', 5.75)
+    
     MIN_MANN_WHITE_DATA_POINTS = convertStrToInt(
         os.environ.get("MIN_MANN_WHITE_DATA_POINTS", str(MANN_WHITE_MIN_DATA_POINT)), MANN_WHITE_MIN_DATA_POINT)
-    MIN_WILCOXON_DATA_POINTS = convertStrToInt(
-        os.environ.get("MIN_WILCOXON_DATA_POINTS", str(WILCOXON_MIN_DATA_POINTS)), WILCOXON_MIN_DATA_POINTS)
-    MIN_KRUSKAL_DATA_POINTS = convertStrToInt(os.environ.get("MIN_KRUSKAL_DATA_POINTS", str(KRUSKAL_MIN_DATA_POINTS)),
-                                              KRUSKAL_MIN_DATA_POINTS)
+    #MIN_WILCOXON_DATA_POINTS = convertStrToInt(
+    #    os.environ.get("MIN_WILCOXON_DATA_POINTS", str(WILCOXON_MIN_DATA_POINTS)), WILCOXON_MIN_DATA_POINTS)
+    #MIN_KRUSKAL_DATA_POINTS = convertStrToInt(os.environ.get("MIN_KRUSKAL_DATA_POINTS", str(KRUSKAL_MIN_DATA_POINTS)),
+    #                                          KRUSKAL_MIN_DATA_POINTS)
     
     
     #ML_THRESHOLD = convertStrToFloat(os.environ.get(THRESHOLD, str(DEFAULT_THRESHOLD)), DEFAULT_THRESHOLD)
@@ -159,16 +160,18 @@ def main():
                                            DEFAULT_MIN_LOWER_BOUND)
     # this is for pairwise algorithem which is used for canary deployment anomaly detetion.
     config.setKV("MIN_MANN_WHITE_DATA_POINTS", MIN_MANN_WHITE_DATA_POINTS)
-    config.setKV("MIN_WILCOXON_DATA_POINTS", MIN_WILCOXON_DATA_POINTS)
-    config.setKV("MIN_KRUSKAL_DATA_POINTS", MIN_KRUSKAL_DATA_POINTS)
+    #config.setKV("MIN_WILCOXON_DATA_POINTS", MIN_WILCOXON_DATA_POINTS)
+    #config.setKV("MIN_KRUSKAL_DATA_POINTS", MIN_KRUSKAL_DATA_POINTS)
     config.setKV(THRESHOLD, ML_THRESHOLD)
     config.setKV(BOUND, ML_BOUND)
     config.setKV(MIN_LOWER_BOUND, ML_MIN_LOWER_BOUND)
+    
     config.setKV("FLUSH_FREQUENCY", int(FLUSH_FREQUENCY))
     config.setKV("OIM_BUCKET", OIM_BUCKET)
     config.setKV("CACHE_EXPIRE_TIME", os.environ.get('CACHE_EXPIRE_TIME', 30 * 60))
-    config.setKV("REQ_CHECK_INTERVAL", int(os.environ.get('REQ_CHECK_INTERVAL', 45)))
+    #config.setKV("REQ_CHECK_INTERVAL", int(os.environ.get('REQ_CHECK_INTERVAL', 45)))
     # Add Metric source env
+    
     config.setKV("SOURCE_ENV", "ppd")
     MODE_DROP_ANOMALY = os.environ.get('MODE_DROP_ANOMALY', 'y')
     config.setKV('MODE_DROP_ANOMALY', MODE_DROP_ANOMALY)
@@ -192,6 +195,7 @@ def main():
     else:
         logger.error(
             "WAVEFRONT_TOKEN is null!!! foremat-brain will throw exception is you consumer wavefront metric...")
+    
     if metricDestation is not None:
         config.setKV('METRIC_DESTINATION', metricDestation)
     else:
@@ -221,12 +225,12 @@ def main():
     ML_PROPHET_FREQ = os.environ.get(PROPHET_FREQ, DEFAULT_PROPHET_FREQ)
     # prophet algm parameters end
 
-    ML_PAIRWISE_ALGORITHM = os.environ.get(PAIRWISE_ALGORITHM, ALL)
-    ML_PAIRWISE_THRESHOLD = convertStrToFloat(os.environ.get(PAIRWISE_THRESHOLD, str(DEFAULT_PAIRWISE_THRESHOLD)),
-                                              DEFAULT_PAIRWISE_THRESHOLD)
+    #ML_PAIRWISE_ALGORITHM = os.environ.get(PAIRWISE_ALGORITHM, ALL)
+    #ML_PAIRWISE_THRESHOLD = convertStrToFloat(os.environ.get(PAIRWISE_THRESHOLD, str(DEFAULT_PAIRWISE_THRESHOLD)),
+    #                                          DEFAULT_PAIRWISE_THRESHOLD)
 
-    MAX_STUCK_IN_SECONDS = convertStrToInt(os.environ.get('MAX_STUCK_IN_SECONDS', str(DEFAULT_MAX_STUCK_IN_SECONDS)),
-                                           DEFAULT_MAX_STUCK_IN_SECONDS)
+    #MAX_STUCK_IN_SECONDS = convertStrToInt(os.environ.get('MAX_STUCK_IN_SECONDS', str(DEFAULT_MAX_STUCK_IN_SECONDS)),
+    #                                       DEFAULT_MAX_STUCK_IN_SECONDS)
     min_historical_data_points = convertStrToInt(
         os.environ.get('MIN_HISTORICAL_DATA_POINT_TO_MEASURE', str(DEFAULT_MIN_HISTORICAL_DATA_POINT_TO_MEASURE)),
         DEFAULT_MIN_HISTORICAL_DATA_POINT_TO_MEASURE)
@@ -236,8 +240,8 @@ def main():
     # Start up the server to expose the metrics.
     start_http_server(8000)
     # measurementMetric=  measurementmetrics()
-    label_info = {'jobId': '', 'calcuHistorical': 'False', 'hasCurrent': 'True'}
-    MONITORING_REQUEST_TIME = "request_process_time"
+    #label_info = {'jobId': '', 'calcuHistorical': 'False', 'hasCurrent': 'True'}
+    #MONITORING_REQUEST_TIME = "request_process_time"
 
     while True:
         resp = ''
@@ -261,6 +265,8 @@ def main():
         logger.warning("Start to processing job id "+uuid+ " original status:"+ status)
         #strategy
         strategy = openRequest['strategy']
+        #historical or realtime
+        action = openRequest['action']
         start = time.time()
 
         historicalConfig = None
@@ -315,11 +321,11 @@ def main():
         #TODO: Make sure skipHistorical or skipCurrent one is True one is False
         
         try:
-            if (skipCurrent and skipHistorical):
+            if (skipCurrent and skipHistorical) or (not skipCurrent and action=='realtime') or (not skipHistorical and action=='historical') :
                 #this should not pick up 
                 ret = update_es_doc(strategy, status, uuid,
-                                    REQUEST_STATE.COMPLETED_UNKNOWN.value, "Error: no current config")
-                logger.warning("request error : jobid  "+uuid+" updateESDocStatus  is :"+ str(ret)+ " current config is empty. make status unknown")
+                                    REQUEST_STATE.PREPROCESS_FAILED.value, "Error: request configuration error ")
+                logger.warning("request error : jobid  "+uuid+" has  configuration error")
                 #measurementmetrics.sendMetric(MONITORING_REQUEST_TIME, label_info, calculateDuration(start))
                 continue
 
@@ -401,7 +407,7 @@ def main():
                 # pass stragegy for hpa
                 modelHolder, msg = computeHistoricalModel(historicalConfigMap, modelHolder, isProphet,storeMapHistorical, strategy)
                 #cacheModels(modelHolder)
-                label_info['calcuHistorical'] ='True' 
+                #label_info['calcuHistorical'] ='True' 
                 if (msg!=''):
                     outputMsg.append(msg)
                 if (not modelHolder.hasModels):
@@ -455,7 +461,7 @@ def main():
             currentLen = len(currentDataSet)
             baselineLen= 0 #len(baselineDataSet)
             hasCurrent = currentLen>0
-            label_info['hasCurrent'] =hasCurrent 
+            #label_info['hasCurrent'] =hasCurrent 
             
             hasBaseline = baselineLen>0
             logger.warning("jobid:"+ uuid +" hasCurrent "+ str(hasCurrent)+", hasBaseline "+ str(hasBaseline) )
