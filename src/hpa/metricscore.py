@@ -66,7 +66,8 @@ def checkCurrentRange(algorithm, mlmodel, dataframe, ts, modelParameters, isEnsu
     value, ts =getValFromdataframe(dataframe, ts)    
     threshold = modelParameters['threshold']
     lowerthreshold = modelParameters['lowerthreshold']  
-    minlowerthreshold = modelParameters['minlowerbound']      
+    minlowerthreshold = modelParameters['minlowerbound']  
+    #TODO:WHY ONLYminlowbound ???  -- ask sin    
     if algorithm in [AI_MODEL.MOVING_AVERAGE_ALL.value]:
         predicted, low, upper =  checkHPAAnomaly(ts,value , mlmodel, algorithm,minlowerthreshold)                          
         return predicted, low, upper,[ts, value], 0
