@@ -50,9 +50,10 @@ def rateLimitCheck(lastModifiedTimeStr, past=5):
        return True
    return False
 
-'''
+
 def calculateDuration(startTime):
     return time.time()-startTime
 
 def parseTime(x):
     return datetime.strptime(x, '%Y %m %d %H')
+'''
