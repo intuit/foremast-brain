@@ -1,4 +1,6 @@
-from mlalgms.statsmodel import calculateTSTrend
+from mlalgms.statsmodel import calculateTSTrend,calculateHistoricalParameters
+
+from utils.converterutils import  addHeader
 import unittest
 
 class statModelMethods(unittest.TestCase):
@@ -13,6 +15,11 @@ class statModelMethods(unittest.TestCase):
         test_data2 = [1,3,5,7,9]
         ret = calculateTSTrend(test_data, test_data2) 
         self.assertEqual(ret, -0.013596792817572038)
+        
+    def testcalculateHistoricalParameters(self):
+        sample = [1,2,3,4,5,6,7,8,9,10]
+        data = addHeader(sample, sample)
+        ret1, ret2= calculateHistoricalParameters(data) 
 
 if __name__ == '__main__':
     unittest.main()

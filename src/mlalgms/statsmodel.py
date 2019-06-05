@@ -47,11 +47,11 @@ def calculateTSTrend(y_series, ts_series=None):
 
 
 
-
+'''
 def computeZScore(x, y, x_mean,x_deviation,y_mean,y_deviation,xy_cov):
     z = math.sqrt((x-x_mean)/x_deviation)+math.sqrt((y-y_mean)/y_deviation)- 2*((xy_cov)*(x-x_mean)*(y-y_mean))/(x_deviation*y_deviation)
     return z
-
+'''
     
 
     
