@@ -246,12 +246,12 @@ def storeModelConfig(jobid, modelConfig):
     es.save_model(jobid, model_config=modelConfig)
 
 @logit
-def computeHistoricalModel(historicalConfigMap, modelHolder, isProphet = False, historicalMetricStores=None, strategy=None ):
+def computeHistoricalModel(historicalConfigMap, modelHolder, isProphet = False, historicalMetricStores=None, strategy=None, recompute=False ):
     msg = ''
 
     #TODO Need to pass during by default could be 30 minutes.
-    if strategy =='hpa':
-        modeldata = es.get_model_data(modelHolder.id)
+    if strategy =='hpa' and (not recompute):
+        modeldata = es.get_model_data(modelHolder.id,interval=3600)
         if modeldata is not None :
             modelHolder.storeModels(modeldata)
             modelParameters= es.get_model_parameters(modelHolder.id)

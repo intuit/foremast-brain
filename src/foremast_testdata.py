@@ -164,6 +164,40 @@ prometheus_request_hpa ={
     "namespace": "dev-fm-foremast-examples-usw2-dev-dev"
 }
 
+
+new_hpa_current = {
+"id": "hpa-test:hpa-test:hpa",
+"appName" : "hpa-test",
+"created_at": "2019-06-05T17:21:37.51369744Z",
+"startTime": "2019-06-05T17:21:37Z",
+"endTime": "2019-06-05T17:21:37Z",
+"modified_at": "2019-06-05T17:33:44.305815Z",
+"strategy": "hpa",
+"currentConfig": "traffic== http://prometheus.iks-system.svc.cluster.local:9090/api/v1/query_range?query=namespace_app_pod_hpatest_traffic%7Bnamespace%3D%22hpa-test%22%2Capp%3D%22hpa-test%22%7D&start=START_TIME&end=END_TIME&step=60 ||latency== http://prometheus.iks-system.svc.cluster.local:9090/api/v1/query_range?query=namespace_app_pod_hpatest_latency%7Bnamespace%3D%22hpa-test%22%2Capp%3D%22hpa-test%22%7D&start=START_TIME&end=END_TIME&step=60",
+"currentMetricStore": "traffic== prometheus ||latency== prometheus",
+"status": "initial",
+"statusCode": "200",
+"hpaMetricsConfig": {
+"latency": {
+"priority": 2,
+"isIncrease": False,
+"isAbsolute": False
+},
+"traffic": {
+"priority": 1,
+"isIncrease": False,
+"isAbsolute": False
+}
+},
+"namespace": "hpa-test",
+"action": "historical",
+"podCountURL": "http://prometheus.iks-system.svc.cluster.local:9090/api/v1/query_range?query=namespace_app_pod_count%7Bnamespace%3D%22hpa-test%22%2Capp%3D%22hpa-test%22%7D&start=START_TIME&end=END_TIME&step=60"
+}
+
+
+def getNewHPA():
+    return new_hpa_current
+
 def getTestRequest(metricstore='prometheus', strategy = "continuous"):
   if metricstore=='prometheus':
       if strategy == "continuous":
