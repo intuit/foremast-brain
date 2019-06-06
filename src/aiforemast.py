@@ -24,7 +24,7 @@ from metadata.metadata import DEFAULT_MIN_LOWER_BOUND
 
 from prometheus_client import start_http_server
 from utils.urlutils import dorequest
-import foremast_testdata
+
 
 #from utils.timeutils import calculateDuration
 
@@ -40,9 +40,9 @@ CONTINUOUS = 'continuous'
 CANARY = 'canary'
 
 
-MAX_CACHE_SIZE = 2000
-CACHE_EXPIRE_TIME = 30 * 60
-DEFAULT_MAX_STUCK_IN_SECONDS = 45
+#MAX_CACHE_SIZE = 2000
+#CACHE_EXPIRE_TIME = 30 * 60
+#DEFAULT_MAX_STUCK_IN_SECONDS = 45
 DEFAULT_AGGREGATED_METRIC_SECOND = 60
 DEFAULT_MIN_HISTORICAL_DATA_POINT_TO_MEASURE = 1
 # DEFAULT_ENABLE_CACHE = '0'
@@ -266,10 +266,14 @@ def main():
         print(type(openRequest))
 
         outputMsg = []
+        if "statusCode" in openRequest or  (not ("id"  in openRequest)):
+            logger.warning("Error find status code and not id "+resp)
+            time.sleep(1)
+            continue
         uuid = openRequest['id']
         status = openRequest['status']
         
-        updatedStatus = reserveJob(uuid, status)
+        reserveJob(uuid, status)
         logger.warning("Start to processing job id "+uuid+ " original status:"+ status)
         #strategy
         strategy = openRequest['strategy']
@@ -334,7 +338,7 @@ def main():
         #TODO: Make sure skipHistorical or skipCurrent one is True one is False
         
         try:
-            if (skipCurrent and skipHistorical)  :
+            if skipHistorical  :
                 #this should not pick up 
                 ret = update_es_doc(strategy, status, uuid,
                                     REQUEST_STATE.PREPROCESS_FAILED.value, "Error: request configuration error ")
