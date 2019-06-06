@@ -1,6 +1,7 @@
 import logging
 import os
 import time
+import json
 #from concurrent import futures
 #from concurrent.futures import ProcessPoolExecutor
 from es.elasticsearchutils import ESClient
@@ -22,6 +23,9 @@ from metadata.metadata import THRESHOLD, LOWER_THRESHOLD, BOUND,MIN_LOWER_BOUND
 from metadata.metadata import DEFAULT_MIN_LOWER_BOUND
 
 from prometheus_client import start_http_server
+from utils.urlutils import dorequest
+import foremast_testdata
+
 #from utils.timeutils import calculateDuration
 
 
@@ -139,6 +143,8 @@ def main():
     CURRENT_CONF_TIME_WINDOW = os.environ.get('CURRENT_CONF_TIME_WINDOW', 1.75)
     CURRENT_CONF_POD_TIME_WINDOW = os.environ.get('CURRENT_CONF_TIME_WINDOW', 5.75)
     
+    FOREMAST_SERVICE_URL=   os.environ.get('FOREMAST_SERVICE_URL', "http://localhost:8099/api/v1/getrequest")  
+    
     MIN_MANN_WHITE_DATA_POINTS = convertStrToInt(
         os.environ.get("MIN_MANN_WHITE_DATA_POINTS", str(MANN_WHITE_MIN_DATA_POINT)), MANN_WHITE_MIN_DATA_POINT)
     #MIN_WILCOXON_DATA_POINTS = convertStrToInt(
@@ -243,18 +249,21 @@ def main():
     #MONITORING_REQUEST_TIME = "request_process_time"
 
     while True:
-        resp = ''
         modelHolder = None
-
         threshold = ML_THRESHOLD
         lower_threshold = ML_LOWER_THRESHOLD
 
-
-        openRequest = ''# get request from foremast-service 
-
-        if openRequest == None:
+        #openRequest = foremast_testdata.getNewHPA()
+        resp = dorequest(FOREMAST_SERVICE_URL)# get request from foremast-service 
+        print(resp)
+        print(type(resp))
+        if (resp==''):
             time.sleep(1)
             continue
+        resps = [resp]
+        #todo try catch
+        openRequest = json.loads(resps[0])
+        print(type(openRequest))
 
         outputMsg = []
         uuid = openRequest['id']
@@ -308,19 +317,24 @@ def main():
 
         skipHistorical = ( historicalConfig=='') or (strategy == CANARY)
         # only canary deploymebnt requires baseline
-        skipBaseline = strategy != CANARY
+        #skipBaseline = strategy != CANARY
 
-        endTime = openRequest['endTime']
+        #endTime = openRequest['endTime']
         
         #Need to be removed below line due to baseline is enabled at upstream
-        skipCurrent = (currentConfig=='')
+        skipCurrent = (currentConfig=='') 
+        if action is not None :
+            if action =='historical':
+                skipCurrent = True
+            elif action =='realtime':
+                skipCurrent = False
 
         persistModelConfig=False
         
         #TODO: Make sure skipHistorical or skipCurrent one is True one is False
         
         try:
-            if (skipCurrent and skipHistorical) or (not skipCurrent and action=='realtime') or (not skipHistorical and action=='historical') :
+            if (skipCurrent and skipHistorical)  :
                 #this should not pick up 
                 ret = update_es_doc(strategy, status, uuid,
                                     REQUEST_STATE.PREPROCESS_FAILED.value, "Error: request configuration error ")
@@ -328,11 +342,7 @@ def main():
                 #measurementmetrics.sendMetric(MONITORING_REQUEST_TIME, label_info, calculateDuration(start))
                 continue
 
-            #TODO :  check Sen
-            if skipHistorical==False:
-                skipCurrent = True
-            else:
-                skipCurrent = False
+
             
             #dict  metric name : url , if modelHolder does not have model, give chance to recalculate
             if modelHolder == None:
@@ -397,14 +407,16 @@ def main():
                 storeMapHistorical = convertStringToMap(historicalMetricStore)
                 # below code only used while use prophet algm
                 isProphet = False
+                '''
                 if (ML_ALGORITHM==AI_MODEL.PROPHET.value):
                     isProphet=True
                     modelConfig.setdefault(PROPHET_PERIOD, ML_PROPHET_PERIOD )
                     modelConfig.setdefault(PROPHET_FREQ,ML_PROPHET_FREQ )
+                '''
                 if persistModelConfig:
                     storeModelConfig(uuid, modelHolder.getModelConfigs())
                 # pass stragegy for hpa
-                modelHolder, msg = computeHistoricalModel(historicalConfigMap, modelHolder, isProphet,storeMapHistorical, strategy)
+                modelHolder, msg = computeHistoricalModel(historicalConfigMap, modelHolder, isProphet,storeMapHistorical, strategy, action=='historical')
                 #cacheModels(modelHolder)
                 #label_info['calcuHistorical'] ='True' 
                 if (msg!=''):
@@ -413,14 +425,6 @@ def main():
                     outputMsg.append("No historical Data and model ")
                     #print(getNowStr(), ": Warning: No historical: "+str(modelHolder))
                 if (skipCurrent):
-                        ret = update_es_doc(strategy, status, uuid,
-                                            REQUEST_STATE.PREPROCESS_INPROGRESS.value,
-                                            "Finished historical")
-                        logger.warning(
-                            "job id :" + uuid + " inprogress , historical finished :" + str(
-                                ret))
-                        #TODO : add end time
-                        
                         continue
                                 
             hasHistorical =  modelHolder.hasModels
@@ -462,8 +466,8 @@ def main():
             hasCurrent = currentLen>0
             #label_info['hasCurrent'] =hasCurrent 
             
-            hasBaseline = baselineLen>0
-            logger.warning("jobid:"+ uuid +" hasCurrent "+ str(hasCurrent)+", hasBaseline "+ str(hasBaseline) )
+            #hasBaseline = baselineLen>0
+            #logger.warning("jobid:"+ uuid +" hasCurrent "+ str(hasCurrent)+", hasBaseline "+ str(hasBaseline) )
             
             if hasCurrent == False:
                 if strategy in [HPA, 'continuous']:
