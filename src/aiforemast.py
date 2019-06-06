@@ -258,7 +258,6 @@ def main():
         print(resp)
         print(type(resp))
         if (resp==''):
-            time.sleep(1)
             continue
         resps = [resp]
         #todo try catch
@@ -269,7 +268,6 @@ def main():
         if openRequest['statusCode']!= '200':
             #handl situation 
             logger.warning("There is no available request "+resp)
-            time.sleep(1)
             continue
         uuid = openRequest['id']
         status = openRequest['status']
