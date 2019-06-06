@@ -266,8 +266,9 @@ def main():
         print(type(openRequest))
 
         outputMsg = []
-        if "statusCode" in openRequest or  (not ("id"  in openRequest)):
-            logger.warning("Error find status code and not id "+resp)
+        if openRequest['statusCode']!= '200':
+            #handl situation 
+            logger.warning("There is no available request "+resp)
             time.sleep(1)
             continue
         uuid = openRequest['id']

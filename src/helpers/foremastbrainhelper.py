@@ -147,6 +147,32 @@ def retrieveRequestById(id):
 
 def reserveJob(uuid, status):
     for i in range(RETRY_COUNT):
+        try:
+            if status == REQUEST_STATE.INITIAL.value :
+                updatedStatus = REQUEST_STATE.PREPROCESS_INPROGRESS.value
+                es.update_doc_status(uuid, updatedStatus)
+            else:
+                #leave this for test
+                updatedStatus = status
+                es.update_doc_status(uuid, updatedStatus)
+            openRequest = retrieveRequestById(uuid)
+            if openRequest == None:
+                logger.error("failed to find uuid "+uuid)
+                continue
+            new_status = openRequest['status']
+            if new_status == updatedStatus:
+                return  updatedStatus
+            else:
+                if i == 2 :
+                    logger.error("failed to update uuid  "+uuid+"  from "+status +" to "+updatedStatus)
+                continue
+        except Exception as e:
+            logger.warning("uuid : " + uuid + ", status " + status, e)
+    return status
+
+'''
+def reserveJob(uuid, status):
+    for i in range(RETRY_COUNT):
         if status == REQUEST_STATE.INITIAL.value :
             updatedStatus = REQUEST_STATE.PREPROCESS_INPROGRESS.value
             es.update_doc_status(uuid, updatedStatus)
@@ -172,7 +198,7 @@ def reserveJob(uuid, status):
                 logger.error("failed to update uuid  "+uuid+"  from "+status +" to "+updatedStatus)
             continue
     return status
-
+'''
 
 
 def updateESDocStatus(uuid, status, info='', reason=''):
