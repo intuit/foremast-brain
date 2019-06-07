@@ -134,6 +134,9 @@ def retrieveRequestById(id):
         return resp['_source']
     return None
 
+def getes():
+    return es
+
 
 #############################################
 # Name : reserveJob
@@ -170,6 +173,10 @@ def reserveJob(uuid, status):
             logger.warning("uuid : " + uuid + ", status " + status, e)
     return status
 
+def update_es_doc(req_strategy, req_org_status, uuid, to_status, info='', reason=''):
+    if req_strategy in ["hpa", 'continuous']:
+        to_status = req_org_status
+    return updateESDocStatus(uuid, to_status, info, reason)
 '''
 def reserveJob(uuid, status):
     for i in range(RETRY_COUNT):

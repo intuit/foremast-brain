@@ -4,10 +4,8 @@ import time
 import json
 #from concurrent import futures
 #from concurrent.futures import ProcessPoolExecutor
-from es.elasticsearchutils import ESClient
-
-from helpers.foremastbrainhelper import updateESDocStatus, reserveJob, computeHistoricalModel, computeNonHistoricalModel, \
-computeAnomaly,loadModelConfig,storeModelConfig
+from helpers.foremastbrainhelper import  reserveJob, computeHistoricalModel, computeNonHistoricalModel, \
+computeAnomaly,loadModelConfig,storeModelConfig,update_es_doc
 from metadata.globalconfig import globalconfig
 
 #from metadata.metadata import REQUEST_STATE, AI_MODEL, METRIC_PERIOD, MIN_DATA_POINTS
@@ -53,82 +51,6 @@ cachedJobs = {}
 jobs = []
 
 config = globalconfig()
-
-'''
-def cacheModels(modelHolder):
-    #if not enableCache:
-    #    return
-    if (len(jobs) == MAX_CACHE_SIZE):
-        # always remove the lst one because rate limiting.
-        jobId = jobs[MAX_CACHE_SIZE - 1]
-        cachedJobs.pop(jobId)
-        jobs.remove(jobId)
-    uuid = modelHolder.id
-    if uuid in cachedJobs:
-        cachedJobs[uuid] = modelHolder
-    else:
-        cachedJobs[uuid] = modelHolder
-        jobs.append(uuid)
-'''
-'''
-def retrieveOneCachedRequest(jobId):
-    if jobId in jobs:
-        precessCached(jobId)
-    return None, None
-'''
-'''
-def precessCached(jobId):
-    # if not enableCache:
-    #    return None, None
-    try:
-        modelHolder = cachedJobs[jobId]
-        if (modelHolder == None):
-            # this should never happen
-            jobs.remove(jobId)
-            del cachedJobs[jobId]
-        else:
-            # remove model from cache if expired
-            if isPast(modelHolder.timestamp, config.getValueByKey("CACHE_EXPIRE_TIME")):
-                jobs.remove(jobId)
-                del cachedJobs[jobId]
-                return None, None
-        openRequest = retrieveRequestById(jobId)
-        if openRequest == None:
-            jobs.remove(jobId)
-            del cachedJobs[jobId]
-            return None, None
-        if isCompletedStatus(openRequest['status']):
-            jobs.remove(jobId)
-            del cachedJobs[jobId]
-            return None, None
-        ret = canRequestProcess(openRequest)
-        if (ret == None):
-            return None, None
-        jobs.remove(jobId)
-        del cachedJobs[jobId]
-        return openRequest, modelHolder
-    except Exception as e:
-        logger.warning("retrieveCachedRequest encount error while retrieving cache ", e)
-    return None, None
-'''
-'''
-def retrieveCachedRequest():
-    # if not enableCache:
-    #    return None, None
-    for jobId in jobs:
-        openRequest, modelHolder = retrieveOneCachedRequest(jobId)
-        if (openRequest == None):
-            continue
-        else:
-            return openRequest, modelHolder
-    return None, None
-'''
-
-# not to update es doc status if strategy is HPA or continuous
-def update_es_doc(req_strategy, req_org_status, uuid, to_status, info='', reason=''):
-    if req_strategy in [HPA, CONTINUOUS]:
-        to_status = req_org_status
-    return updateESDocStatus(uuid, to_status, info, reason)
 
 
 def main():
@@ -239,8 +161,6 @@ def main():
     min_historical_data_points = convertStrToInt(
         os.environ.get('MIN_HISTORICAL_DATA_POINT_TO_MEASURE', str(DEFAULT_MIN_HISTORICAL_DATA_POINT_TO_MEASURE)),
         DEFAULT_MIN_HISTORICAL_DATA_POINT_TO_MEASURE)
-
-    es = ESClient()
 
     # Start up the server to expose the metrics.
     start_http_server(8000)

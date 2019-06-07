@@ -118,15 +118,15 @@ class ESClient:
         """Initial to create necessary indexes, ignore if exist"""
         self.es = Elasticsearch(os.environ.get('ES_ENDPOINT', 'http://localhost:9200'))
         if not self.es.indices.exists(REQ_INDEX_NAME):
-            self.es.indices.create(index=REQ_INDEX_NAME, ignore=400)
+                self.es.indices.create(index=REQ_INDEX_NAME, ignore=400)
         if not self.es.indices.exists(LOG_INDEX_NAME):
-            self.es.indices.create(index=LOG_INDEX_NAME, ignore=400)
+                self.es.indices.create(index=LOG_INDEX_NAME, ignore=400)
         if not self.es.indices.exists(MODEL_DATA_INDEX_NAME):
-            self.es.indices.create(index=MODEL_DATA_INDEX_NAME, ignore=400)
+                self.es.indices.create(index=MODEL_DATA_INDEX_NAME, ignore=400)
         if not self.es.indices.exists(MODEL_PARAMETER_INDEX_NAME):
-            self.es.indices.create(index=MODEL_PARAMETER_INDEX_NAME, ignore=400)
+                self.es.indices.create(index=MODEL_PARAMETER_INDEX_NAME, ignore=400)
         if not self.es.indices.exists(MODEL_CONFIG_INDEX_NAME):
-            self.es.indices.create(index=MODEL_CONFIG_INDEX_NAME, ignore=400)
+                self.es.indices.create(index=MODEL_CONFIG_INDEX_NAME, ignore=400)
 
     def search_by_id(self, id, index_name=REQ_INDEX_NAME, doc_type=INDEX_TYPE):
         """
