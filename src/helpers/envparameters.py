@@ -28,17 +28,17 @@ class envparameters:
     def __init__(self):
         # Default Parameters can be overwrite by environments
         #max_cache = convertStrToInt(os.environ.get("MAX_CACHE_SIZE", str(MAX_CACHE_SIZE)), MAX_CACHE_SIZE)
-        _ML_ALGORITHM = os.environ.get('ML_ALGORITHM', AI_MODEL.MOVING_AVERAGE_ALL.value)
+        self._ML_ALGORITHM = os.environ.get('ML_ALGORITHM', AI_MODEL.MOVING_AVERAGE_ALL.value)
         #this is wavefront parameter
         FLUSH_FREQUENCY = os.environ.get('FLUSH_FREQUENCY', 5)
         OIM_BUCKET = os.environ.get("OIM_BUCKET")
     
         # get historical time window
-        _HISTORICAL_CONF_TIME_WINDOW = os.environ.get('HISTORICAL_CONF_TIME_WINDOW', 7 * 24 * 60 * 60)
-        _CURRENT_CONF_TIME_WINDOW = os.environ.get('CURRENT_CONF_TIME_WINDOW', 1.75)
-        _CURRENT_CONF_POD_TIME_WINDOW = os.environ.get('CURRENT_CONF_TIME_WINDOW', 5.75)
+        self._HISTORICAL_CONF_TIME_WINDOW = os.environ.get('HISTORICAL_CONF_TIME_WINDOW', 7 * 24 * 60 * 60)
+        self._CURRENT_CONF_TIME_WINDOW = os.environ.get('CURRENT_CONF_TIME_WINDOW', 1.75)
+        self._CURRENT_CONF_POD_TIME_WINDOW = os.environ.get('CURRENT_CONF_TIME_WINDOW', 5.75)
         #this is foremast-service url
-        _FOREMAST_SERVICE_URL=   os.environ.get('FOREMAST_SERVICE_URL', "http://localhost:8099/api/v1/getrequest")  
+        self._FOREMAST_SERVICE_URL=   os.environ.get('FOREMAST_SERVICE_URL', "http://localhost:8099/api/v1/getrequest")  
         
         #this is mainly pairwised algorithm.
         MIN_MANN_WHITE_DATA_POINTS = convertStrToInt(
@@ -52,19 +52,19 @@ class envparameters:
         # lower threshold is for warning.
         #ML_LOWER_THRESHOLD = convertStrToFloat(os.environ.get(LOWER_THRESHOLD, str(DEFAULT_LOWER_THRESHOLD)),
         #                                       DEFAULT_LOWER_THRESHOLD)
-        _ML_THRESHOLD = convertStrToFloat(os.environ.get(THRESHOLD, str(0.8416212335729143)), 0.8416212335729143)
-        _ML_LOWER_THRESHOLD = convertStrToFloat(os.environ.get(LOWER_THRESHOLD, str(0.6744897501960817)), 0.6744897501960817)
+        self._ML_THRESHOLD = convertStrToFloat(os.environ.get(THRESHOLD, str(0.8416212335729143)), 0.8416212335729143)
+        self._ML_LOWER_THRESHOLD = convertStrToFloat(os.environ.get(LOWER_THRESHOLD, str(0.6744897501960817)), 0.6744897501960817)
         
-        _ML_BOUND = convertStrToInt(os.environ.get(BOUND, str(IS_UPPER_BOUND)), IS_UPPER_BOUND)
-        _ML_MIN_LOWER_BOUND = convertStrToFloat(os.environ.get(MIN_LOWER_BOUND, str(DEFAULT_MIN_LOWER_BOUND)),
+        self._ML_BOUND = convertStrToInt(os.environ.get(BOUND, str(IS_UPPER_BOUND)), IS_UPPER_BOUND)
+        self._ML_MIN_LOWER_BOUND = convertStrToFloat(os.environ.get(MIN_LOWER_BOUND, str(DEFAULT_MIN_LOWER_BOUND)),
                                                DEFAULT_MIN_LOWER_BOUND)
         # this is for pairwise algorithem which is used for canary deployment anomaly detetion.
         config.setKV("MIN_MANN_WHITE_DATA_POINTS", MIN_MANN_WHITE_DATA_POINTS)
         #config.setKV("MIN_WILCOXON_DATA_POINTS", MIN_WILCOXON_DATA_POINTS)
         #config.setKV("MIN_KRUSKAL_DATA_POINTS", MIN_KRUSKAL_DATA_POINTS)
-        config.setKV(THRESHOLD, _ML_THRESHOLD)
-        config.setKV(BOUND, _ML_BOUND)
-        config.setKV(MIN_LOWER_BOUND, _ML_MIN_LOWER_BOUND)
+        config.setKV(THRESHOLD, self._ML_THRESHOLD)
+        config.setKV(BOUND, self._ML_BOUND)
+        config.setKV(MIN_LOWER_BOUND, self._ML_MIN_LOWER_BOUND)
         
         config.setKV("FLUSH_FREQUENCY", int(FLUSH_FREQUENCY))
         config.setKV("OIM_BUCKET", OIM_BUCKET)
@@ -105,24 +105,24 @@ class envparameters:
         else:
             config.setKV("FOREMAST_ENV", foremastEnv)
     
-        _metric_threshold_count = convertStrToInt(os.environ.get(METRIC_TYPE_THRESHOLD_COUNT, -1),
+        self._metric_threshold_count = convertStrToInt(os.environ.get(METRIC_TYPE_THRESHOLD_COUNT, -1),
                                                  METRIC_TYPE_THRESHOLD_COUNT)
-        if _metric_threshold_count >= 0:
-            for i in range(_metric_threshold_count):
+        if self._metric_threshold_count >= 0:
+            for i in range(self._metric_threshold_count):
                 istr = str(i)
                 mtype = os.environ.get(METRIC_TYPE + istr, '')
                 if mtype != '':
-                    mthreshold = convertStrToFloat(os.environ.get(THRESHOLD + istr, str(_ML_THRESHOLD)), _ML_THRESHOLD)
-                    mbound = convertStrToInt(os.environ.get(BOUND + istr, str(_ML_BOUND)), _ML_BOUND)
-                    mminlowerbound = convertStrToInt(os.environ.get(MIN_LOWER_BOUND + istr, str(_ML_MIN_LOWER_BOUND)),
-                                                     _ML_MIN_LOWER_BOUND)
+                    mthreshold = convertStrToFloat(os.environ.get(THRESHOLD + istr, str(self._ML_THRESHOLD)), self._ML_THRESHOLD)
+                    mbound = convertStrToInt(os.environ.get(BOUND + istr, str(self._ML_BOUND)), self._ML_BOUND)
+                    mminlowerbound = convertStrToInt(os.environ.get(MIN_LOWER_BOUND + istr, str(self._ML_MIN_LOWER_BOUND)),
+                                                     self._ML_MIN_LOWER_BOUND)
                     config.setThresholdKV(mtype, THRESHOLD, mthreshold)
                     config.setThresholdKV(mtype, BOUND, mbound)
                     config.setThresholdKV(mtype, MIN_LOWER_BOUND, mminlowerbound)
     
-        _ML_PROPHET_PERIOD = convertStrToInt(os.environ.get(PROPHET_PERIOD, str(DEFAULT_PROPHET_PERIOD)),
+        self._ML_PROPHET_PERIOD = convertStrToInt(os.environ.get(PROPHET_PERIOD, str(DEFAULT_PROPHET_PERIOD)),
                                             DEFAULT_PROPHET_PERIOD)
-        _ML_PROPHET_FREQ = os.environ.get(PROPHET_FREQ, DEFAULT_PROPHET_FREQ)
+        self._ML_PROPHET_FREQ = os.environ.get(PROPHET_FREQ, DEFAULT_PROPHET_FREQ)
         # prophet algm parameters end
     
         #ML_PAIRWISE_ALGORITHM = os.environ.get(PAIRWISE_ALGORITHM, ALL)
@@ -131,7 +131,7 @@ class envparameters:
     
         #MAX_STUCK_IN_SECONDS = convertStrToInt(os.environ.get('MAX_STUCK_IN_SECONDS', str(DEFAULT_MAX_STUCK_IN_SECONDS)),
         #                                       DEFAULT_MAX_STUCK_IN_SECONDS)
-        _min_historical_data_points = convertStrToInt(
+        self._min_historical_data_points = convertStrToInt(
             os.environ.get('MIN_HISTORICAL_DATA_POINT_TO_MEASURE', str(DEFAULT_MIN_HISTORICAL_DATA_POINT_TO_MEASURE)),
             DEFAULT_MIN_HISTORICAL_DATA_POINT_TO_MEASURE)
         

@@ -1,11 +1,11 @@
-from unittest import TestCase
+import unittest 
 
 from helpers.envparameters import envparameters
 
 
-class envparametersMethods(TestCase):
+class envparametersMethods(unittest.TestCase):
     envs = envparameters()
-    def runenvtests(self):
+    def testrunenvtests(self):
         self.envs.min_historical_data_points
         self.envs.ML_PROPHET_FREQ
         self.envs.ML_PROPHET_PERIOD
@@ -17,7 +17,14 @@ class envparametersMethods(TestCase):
         self.envs.HISTORICAL_CONF_TIME_WINDOW
         self.envs.CURRENT_CONF_TIME_WINDOW
         self.envs.ML_BOUND
-        self.denvs.ML_MIN_LOWER_BOUND
+        self.envs.ML_MIN_LOWER_BOUND
 
 
+    
+    
+        
+if __name__ == '__main__':
+    # begin the unittest.main()
+    unittest.main()   
+         
     
