@@ -1,5 +1,7 @@
 from hpa.metricscore import hpametricinfo
 
+
+
 import unittest
 
 
@@ -14,6 +16,8 @@ class metriccore_test(unittest.TestCase):
         for i in range(len(hand_sorted_order)):
             ll.append(hand_sorted_order[i])
         self.assertEqual(ll, [1, 3, 5, 7])
+
+        
         
 if __name__ == '__main__':
     # begin the unittest.main()
