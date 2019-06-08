@@ -12,3 +12,8 @@ class timeutilsMethods(unittest.TestCase):
     def testgetNowStr(self):
         getNowStr()
    
+   
+   
+if __name__ == '__main__':
+    # begin the unittest.main()
+    unittest.main()    

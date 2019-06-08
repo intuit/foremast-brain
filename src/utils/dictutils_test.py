@@ -12,3 +12,7 @@ class dictutilsMethods(unittest.TestCase):#TODO:
         data ={'a':1,'b':2}
         convertDictKey(data,'a','c')
         
+        
+if __name__ == '__main__':
+    # begin the unittest.main()
+    unittest.main()            

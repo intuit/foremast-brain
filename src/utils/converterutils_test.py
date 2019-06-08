@@ -29,3 +29,7 @@ class converterutilsMethods(unittest.TestCase):
         fds = pd.read_csv('../../test_data/seasonality.csv')
         lstm1, lstm_display1 = getDataFrame(fds, True)  
         lstm2, lstm_display2 = getDataFrame(fds, False)  
+        
+if __name__ == '__main__':
+    # begin the unittest.main()
+    unittest.main()            
