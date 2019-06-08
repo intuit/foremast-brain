@@ -21,7 +21,7 @@ class SingleMetricInfo(MetricInfo):
         self.metricTCategory =  metricTCategory
         self.metricClass = metricClass
     def copyConfig(self):
-        return SingleMetricInfo(self.metricName, self.metricKeys,{},None,self.metricCategory, self.metricClass)
+        return SingleMetricInfo(self.metricName, self.metricKeys,{},None,self.metricTCategory, self.metricClass)
   
         
 '''        
