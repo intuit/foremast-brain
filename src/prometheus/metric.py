@@ -24,8 +24,6 @@ globalConfig =  globalconfig()
 KEY_NAME = '__name__'
 
 
-def processTextPromesResponse(content):
-    return processPromesResponse(json.loads(content))
 
 
 

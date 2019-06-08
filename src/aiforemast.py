@@ -64,7 +64,6 @@ def main():
         threshold = envs.ML_THRESHOLD
         lower_threshold = envs.ML_LOWER_THRESHOLD
 
-        #openRequest = foremast_testdata.getNewHPA()
         resp = dorequest(envs.FOREMAST_SERVICE_URL)# get request from foremast-service 
         print(resp)
         print(type(resp))
