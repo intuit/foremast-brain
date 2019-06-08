@@ -9,10 +9,12 @@ def dorequest(url, data = '', method = 'GET'):
         if method == 'GET':
             resp = http.request(
                 'GET',url)
+            #print(resp)
             return resp.data.decode('utf-8')
         else: 
             resp = http.request(
                 'POST',url,fields=data.encode('ascii')) 
+            #print(resp)
             return resp.data.decode('utf-8')  
     except Exception as e:
         print("dorequest error",url,"  error ",str(e))
