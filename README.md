@@ -1,5 +1,6 @@
 # Foremast Brain
 [![Build Status](https://api.travis-ci.org/intuit/foremast-brain.svg?branch=master)](https://www.travis-ci.org/intuit/foremast-brain)
+[![Coverage Status](https://coveralls.io/repos/github/sandeepbhojwani/foremast-brain/badge.svg?branch=refector)](https://coveralls.io/github/sandeepbhojwani/foremast-brain?branch=refector)
 [![Slack Chat](https://img.shields.io/badge/slack-live-orange.svg)](https://foremastio.slack.com/)
 
 ![](https://github.com/intuit/foremast/blob/master/docs/assets/images/logos/Foremast/foremast-logo-blue.png)

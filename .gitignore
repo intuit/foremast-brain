@@ -4,3 +4,4 @@ venv
 .idea/*.xml
 .vscode
 *.pyc
+.coverage
