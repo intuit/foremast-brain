@@ -8,7 +8,7 @@ from metadata.metadata import AI_MODEL
 class HPAPredictionMethods(unittest.TestCase):
     
     def testalgm(self):
-        fds = pd.read_csv('seasonality.csv')
+        fds = pd.read_csv('../../test_data/seasonality.csv')
         #fds = pd.read_csv('../../test_data/test.csv')
         lstm, lstm_display = getDataFrame(fds, True)     
         
