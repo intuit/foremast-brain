@@ -103,7 +103,7 @@ def suggestedPattern(dataframe, ignoreHourly=False):
         else:
             unstableCount +=1
         startDate = endDate 
-    if (stableCount >= unstableCount or stableCount > 2):
+    if (stableCount >= unstableCount):
         return 'stationary',None  
     if ignoreHourly:
         ret =checkSeasonality(dataframe,beginningDate,lastDate, time_diff_unit=ONE_HOUR, loops = loopshour) 
