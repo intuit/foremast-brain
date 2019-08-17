@@ -7,10 +7,3 @@ def retrieveKVList(dicts):
         keys.append(key)
         values.append(value)
     return keys, values
-
-
-    
-def convertDictKey(mydict,replacefrom, replaceto):
-    for key in mydict:
-        mydict[key.replace(replacefrom,replaceto)] = mydict.pop(key)
-    return mydict

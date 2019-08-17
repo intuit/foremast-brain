@@ -1,6 +1,7 @@
+import pandas as pd
 from fbprophet import Prophet
-from mlalgms.statsmodel import IS_UPPER_BOUND,IS_LOWER_BOUND
-#import logging
+from mlalgms.statsmodel import IS_UPPER_BOUND
+import logging
 import numpy as np
 
 PROPHET_PERIOD = 'period'
@@ -10,22 +11,20 @@ DEFAULT_PROPHET_FREQ  ='T'
   
 
 
-def predictProphet(timeseries, period=1 ,frequence ='T', seasonality_name='', pscale=0.1, columnPosition=0, interval_width=0.8 ):
+def predictProphet(timeseries, period=1 ,frequence ='T', seasonality_name='', prior_scale=0.1, columnPosition=0):
     prophet = Prophet()
     if seasonality_name=='daily':
-        prophet = Prophet(daily_seasonality=True,interval_width=interval_width)
-        prophet.add_seasonality('daily', 1, fourier_order=1, prior_scale=pscale)
+        prophet.add_seasonality('daily', 1, fourier_order=1, prior_scale=prior_scale)
     elif seasonality_name=='weekly':
-        prophet.add_seasonality('weekly', 7, fourier_order=3, prior_scale=pscale)
+        prophet.add_seasonality('weekly', 7, fourier_order=3, prior_scale=prior_scale)
     elif seasonality_name=='monthly':
-        prophet = Prophet(weekly_seasonality=False,interval_width=interval_width)
-        prophet.add_seasonality('monthly', 30.5, fourier_order=5,prior_scale=pscale)
+        prophet = Prophet(weekly_seasonality=False)
+        prophet.add_seasonality('monthly', 30.5, fourier_order=5,prior_scale=prior_scale)
     elif seasonality_name=='yearly':
-        prophet.add_seasonality('yearly', 365, fourier_order=10,prior_scale=pscale)    
+        prophet.add_seasonality('yearly', 365, fourier_order=10,prior_scale=prior_scale)    
     prophet.fit(timeseries)
     future = prophet.make_future_dataframe(periods=period,freq=frequence)
     forecast = prophet.predict(future)
-    print(forecast.head()  )
     if columnPosition == 0 :
         return forecast[['ds', 'yhat', 'yhat_lower', 'yhat_upper']]
     else :
@@ -33,26 +32,18 @@ def predictProphet(timeseries, period=1 ,frequence ='T', seasonality_name='', ps
     
 
 
-def prophetPredictUpperLower(timeseries, period=1,frequence ='T', zscore= 2, seasonality_name='',prior_scale=0.1, columnPosition=0, interval_width=0.8):
+def prophetPredictUpperLower(timeseries, period=1,frequence ='T', zscore = 2,seasonality_name='',prior_scale=0.1, columnPosition=0):
     df = timeseries.copy()
     df.dropna()
-    mean = 0
-    std = 0
     orig_len = len(timeseries)
-    fc = predictProphet(df, period, frequence,seasonality_name, prior_scale,columnPosition,interval_width=interval_width)
-    #print(fc)
-    #after_len = len(fc)
-    #print(orig_len ,'  ', after_len)
+    fc = predictProphet(df, period, frequence,seasonality_name, prior_scale,columnPosition)
+    after_len = len(fc)
+    print(orig_len ,'  ', after_len)
     if seasonality_name=='':  
-        lmean = fc[orig_len:].yhat_lower.mean()
-        lstd = fc[orig_len:].yhat_lower.std()
-        umean = fc[orig_len:].yhat_upper.mean()
-        ustd = fc[orig_len:].yhat_upper.std()
-        llower = zscore*lstd -lmean
-        uupper = zscore*ustd +umean
-        return llower, uupper
-   
-    return fc[['ds','yhat_lower','yhat_upper','yhat']][orig_len:]
+        mean = fc[orig_len:].yhat_lower.mean()
+        std = fc[orig_len:].yhat_lower.std()
+        return mean-zscore*std, mean+zscore*std
+    return fc[['ds','yhat_lower','yhat_upper']][orig_len:]
 
 
 def detectAnomalies(df , bound=IS_UPPER_BOUND, returnAnomaliesOnly= True):
@@ -62,42 +53,44 @@ def detectAnomalies(df , bound=IS_UPPER_BOUND, returnAnomaliesOnly= True):
     myshape = df.shape
     nrow = myshape[0]
     for i in range(nrow):  
-        isAnomaly = False
-        if (not returnAnomaliesOnly):
+         isAnomaly = False
+         if (not returnAnomaliesOnly):
             ts.append(df['ds'][i])
             adata.append(df['y'][i])
-        if bound==IS_UPPER_BOUND:
+         if bound==IS_UPPER_BOUND:
             if df['y'][i] > df['yhat_upper'][i]:
                 if returnAnomaliesOnly:
                     ts.append(df['ds'][i])
                     adata.append(df['y'][i])
                 isAnomaly = True
-        elif bound==IS_LOWER_BOUND:
+         elif bound==IS_LOWER_BOUND:
             if df['y'][i] < df['yhat_lower'][i]:
                 if returnAnomaliesOnly:
                     ts.append(df['ds'][i])
                     adata.append(df['y'][i])
                 isAnomaly = True            
-        else:   
+         else:   
             if df['y'][i] > df['yhat_upper'][i] or df['y'][i] < df['yhat_lower'][i]:
                 if returnAnomaliesOnly:
                     ts.append(df['ds'][i])
                     adata.append(df['y'][i])
                 isAnomaly = True
                     
-        if returnAnomaliesOnly:
+         if returnAnomaliesOnly:
             if isAnomaly:
                 anomalies.append(True)
-        else:
+         else:
             anomalies.append(isAnomaly)             
     #return  mae, deviation,addHeader(ts,adata)
     return  ts,adata, anomalies
 
 
 
+		
 def merge_dataframe(historical, forecast):
-    return forecast.set_index('ds')[['yhat', 'yhat_lower', 'yhat_upper']].join(historical.set_index('ds'))
-
+	return forecast.set_index('ds')[['yhat', 'yhat_lower', 'yhat_upper']].join(historical.set_index('ds'))
+		
+		
 def calculate_errors(dataframe, prediction_size):    
     # Make a copy
     df = dataframe.copy();
@@ -116,4 +109,12 @@ def calculate_errors(dataframe, prediction_size):
     error_mean = lambda error_name: np.mean(np.abs(predicted_part[error_name]))
     
     return {'MAPE': error_mean('p'), 'MAE': error_mean('e')}
-
+		
+	
+	
+	
+	
+	
+	
+	
+	

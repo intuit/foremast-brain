@@ -11,9 +11,6 @@ import time
 def getNow():
     return datetime.now(timezone.utc).astimezone()
 
-def getNowInSeconds():
-    return int(round(time.time()))
-
 def getNowStr():
     return parse(str(getNow()))
    

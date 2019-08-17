@@ -1,11 +1,11 @@
 from scipy.stats import norm
 
 
-def convertToZscore(pvalue):
-    return  norm.ppf(pvalue)
 
-def convertToPvalue(zscore):
-    return  norm.cdf(zscore)
+#print(norm.ppf(0.01))
+#print(1-norm.cdf(0))
+#print(1-norm.cdf(0.1))
+
 
 def uniVariantScore(zscore):
     probability = 1- norm.cdf(zscore)
@@ -40,5 +40,6 @@ def multiVariantScore(zscoremap, weightmap):
         
     
             
- 
+        
+    
 

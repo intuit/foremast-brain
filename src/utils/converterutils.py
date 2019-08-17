@@ -1,7 +1,7 @@
 import json
 import pandas as pd
 from datetime import datetime as dt
-
+from _ast import Try
 
 
 
@@ -37,7 +37,7 @@ def addHeader(ts_idx, values, ts=[], isTSIndexOnly=True, tsname='ds', valname='y
 
 
 def convertStringToMap(mystr, sep1=CONFIG_SEPARATE, sep2=KV_SEPARATE):
-    if mystr is None or mystr=='':
+    if mystr=='':
         return None
     list = mystr.split(sep1)
     #below code is backward compatible (will remove once sheldon upgraded

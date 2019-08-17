@@ -1,5 +1,4 @@
-from utils.strutils import findSubStr   
-
+   
 def buildUrl(endpoint, startInSec, endInSec,queryString, steps):
     sb = []
     sb.append(endpoint)
@@ -12,16 +11,6 @@ def buildUrl(endpoint, startInSec, endInSec,queryString, steps):
     sb.append("&step=")
     sb.append(str(steps))
     return ''.join(sb)
-
-
-def retrieveMetricName(url):
-   origMetricName = findSubStr(url, 'query_range?query=', '%7B')
-   if origMetricName is None:
-       origMetricName = findSubStr(url, 'query_range?query=', '{')
-   if origMetricName is None:
-       origMetricName = findSubStr(url, 'query_range?query=', '&start=')
-   return origMetricName
-
 
    
    
