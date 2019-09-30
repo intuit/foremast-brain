@@ -3,8 +3,7 @@ import mxnet as mx
 from mxnet import nd, autograd
 from mxnet import gluon
 import numpy as np
-import pandas as pd
-import numpy as np
+
 import warnings; warnings.simplefilter('ignore')
 
 L = gluon.loss.L2Loss()
