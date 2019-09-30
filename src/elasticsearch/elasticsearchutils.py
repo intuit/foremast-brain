@@ -32,6 +32,7 @@ payload_update_by_query = {
   }
  },
  "script" : {
+  "source" : "ctx._source.status=params.status ; ctx._source.modified_at=params.modified",
   "params" : {
     "status": '<STATUS>',
     "modified": '<MODIFIED_AT>'
