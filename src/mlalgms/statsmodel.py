@@ -1,9 +1,8 @@
 import numpy as np  
-import pandas as pd 
 import math
 import logging
 from sklearn.metrics import mean_absolute_error, mean_squared_log_error
-from utils.converterutils import addHeader
+#from utils.converterutils import addHeader
 from mlalgms.holtwinters import  HoltWinters 
 from scipy.optimize import minimize
 from mlalgms.evaluator import tsCrossValidationScore, mean_absolute_percentage_error
@@ -18,8 +17,39 @@ IS_UPPER_BOUND = 1
 IS_UPPER_O_LOWER_BOUND=0
 IS_LOWER_BOUND = -1
 
+MEAN_UPPER = 'mean_upper'
+MEAN_LOWER= 'mean_lower'
+STD_UPPER= 'std_upper'
+STD_LOWER = 'std_lower'
+PREDIT_UPPERS = 'predict_upper'
+PREDIT_LOWERS = 'predict_lower'
+
+def calculateTSTrend(y_series, ts_series=None):
+    sum_x = 0
+    sum_y = 0
+    sum_xy = 0
+    sum_x_2 = 0 
+    size = 0 
+    if ts_series is None:
+        size = len(y_series)
+    else:
+        size = min(len(y_series),len(ts_series))
+    for i in range(len(y_series)):
+        sum_x += y_series[i]
+        if ts_series is None:
+            sum_y += i
+            sum_xy += y_series[i]*i
+        else:
+            sum_y += ts_series[i]
+            sum_xy += y_series[i]*ts_series[i]
+        sum_x_2 = y_series[i]*y_series[i]
+    b = (sum_xy - (sum_x*sum_y)/size)/(sum_x_2 - (sum_x*sum_x)/size)
+    return b
+
+
     
-def calculateBivariateParameters(x, y ):  
+def calculateBivariateParameters(x, y, isCovCorOnly=False):  
+    
     x_mean = np.mean(x[:])
     y_mean = np.mean(y[:])  
     x_deviation = np.std(x[:])
@@ -29,7 +59,12 @@ def calculateBivariateParameters(x, y ):
     for i in (range(size)):
         sum_xy += (x[i]-x_mean)*(y[i]-y_mean)
     xy_cov = sum_xy/(size -1)
-    return  x_mean, x_deviation, y_mean, y_deviation, xy_cov 
+    xy_corr = 0
+    if  x_deviation!=0 and y_deviation!=0:
+        xy_corr = xy_cov/(x_deviation*y_deviation)
+    if(isCovCorOnly):
+        return xy_cov, xy_corr
+    return  x_mean, x_deviation, y_mean, y_deviation, xy_cov,xy_corr
 
 def computeZScore(x, y, x_mean,x_deviation,y_mean,y_deviation,xy_cov):
     z = math.sqrt((x-x_mean)/x_deviation)+math.sqrt((y-y_mean)/y_deviation)- 2*((xy_cov)*(x-x_mean)*(y-y_mean))/(x_deviation*y_deviation)
@@ -40,9 +75,11 @@ def detectBivariateAnomalies(series,  x_mean,x_deviation,y_mean,y_deviation,xy_c
     ts=[]
     x_data=[]
     y_data=[]
+    zscores=[]
     nrow = series.shape[0]
     for i in range (nrow):
         zscore = computeZScore(series.iloc[i,1],series.iloc[i,2], x_mean,x_deviation,y_mean,y_deviation,xy_cov)
+        zscores.append(zscore)
         if bound==IS_UPPER_BOUND:
             if zscore > threshold:
                 ts.append(series.index[i])
@@ -59,7 +96,7 @@ def detectBivariateAnomalies(series,  x_mean,x_deviation,y_mean,y_deviation,xy_c
                 x_data.append(series.iloc[i,1]) 
                 y_data.append(series.iloc[i,2])         
     #return  ts,x_data, y_data, zscore  
-    return  ts,x_data, y_data
+    return  ts,x_data, y_data, zscores
     
     
     
@@ -73,51 +110,71 @@ def calculateHistoricalParameters(series):
     return  mean, deviation
 
 
-
-def detectAnomalies(series, mean, deviation, threshold = 2 , bound=IS_UPPER_BOUND, minvalue=0, returnAnomaliesOnly= True): 
-    ts=[]
-    adata=[]
-    anomalies=[]
-    nrow =  series.shape[0]
-    i=0
-    upper = mean + threshold*deviation
-    lower = mean - threshold*deviation
-    zscore=[]
+def detectAnomalies(series, mean, deviation, threshold=2, bound=IS_UPPER_BOUND, minvalue=0, returnAnomaliesOnly=True):
+    ts = []
+    adata = []
+    anomalies = []
+    nrow = series.shape[0]
+    i = 0
+    upper = mean + threshold * deviation
+    lower = mean - threshold * deviation
+    zscore = []
+    zscore_upper_diff = []
+    zscore_lower_diff = []
     for i in range(nrow):
-    	if series.iloc[i,0]>minvalue:
-            isAnomaly = False
-            z = abs((series.iloc[i,0] - mean)/deviation)
-            zscore.append(z)
+        isAnomaly = False
+        if (deviation != 0):
+            z = (series.iloc[i, 0] - mean) / deviation
+        else:
+            z = 0
+        if series.iloc[i, 0] > minvalue:
             if (not returnAnomaliesOnly):
                 ts.append(series.index[i])
-                adata.append(series.iloc[i,0])
-        
-            if bound==IS_UPPER_BOUND:
-                if series.iloc[i,0] > upper:
+                adata.append(series.iloc[i, 0])
+            if bound == IS_UPPER_BOUND:
+                if series.iloc[i, 0] > upper:
                     if returnAnomaliesOnly:
                         ts.append(series.index[i])
-                        adata.append(series.iloc[i,0])
+                        adata.append(series.iloc[i, 0])
                     isAnomaly = True
+                    zscore_upper_diff.append(z - threshold)
+                    zscore_lower_diff.append(0)
 
-            elif bound==IS_LOWER_BOUND:
-                if series.iloc[i,0] < lower:
+            elif bound == IS_LOWER_BOUND:
+                if series.iloc[i, 0] < lower:
                     if returnAnomaliesOnly:
                         ts.append(series.index[i])
-                        adata.append(series.iloc[i,0])  
-                    isAnomaly = True        
+                        adata.append(series.iloc[i, 0])
+                    isAnomaly = True
+                    zscore_upper_diff.append(0)
+                    zscore_lower_diff.append(-z + threshold)
             else:
-                if (series.iloc[i,0] > upper   or series.iloc[i,0] < lower):
+                if (series.iloc[i, 0] > upper or series.iloc[i, 0] < lower):
                     if returnAnomaliesOnly:
                         ts.append(series.index[i])
-                        adata.append(series.iloc[i,0])
-                    isAnomaly = True   
-            if returnAnomaliesOnly :
-                if isAnomaly:
-                    anomalies.append(True)
-            else:
-                anomalies.append(isAnomaly)    
-    #return  ts,adata,anomalies, zscore
-    return  ts,adata,anomalies
+                        adata.append(series.iloc[i, 0])
+                    isAnomaly = True
+                    if series.iloc[i, 0] > upper:
+                        zscore_upper_diff.append(z - threshold)
+                        zscore_lower_diff.append(0)
+                    if series.iloc[i, 0] < lower:
+                        zscore_upper_diff.append(0)
+                        zscore_lower_diff.append(-z + threshold)
+        if returnAnomaliesOnly:
+            if isAnomaly:
+                anomalies.append(isAnomaly)
+                zscore.append(z)
+        else:
+            anomalies.append(isAnomaly)
+            zscore.append(z)
+            if not isAnomaly:
+                zscore_upper_diff.append(z - threshold)
+                zscore_lower_diff.append(-z + threshold)
+
+    if returnAnomaliesOnly:
+        return ts, adata, zscore
+    # return  ts,adata,anomalies, zscore
+    return ts, adata, anomalies, zscore
 
 
 
@@ -149,10 +206,22 @@ def calculateMovingAverageParameters(series, window=0, threshold=2.0, calculateS
         mape = mean_absolute_percentage_error(series.iloc[window-1:,:], rolling_mean.iloc[window-1:,:])
         logging.info("Mean absolute error is "+str(mae)+",  Mean absolute percentage_error is "+str(mape)+"%")
      
-    hlower_bound = rolling_mean - (mae + threshold * deviation)
+    llower_bound = rolling_mean - (mae + threshold * deviation)
     hupper_bound = rolling_mean + (mae + threshold * deviation)
+    
+    mean_upper, std_upper = calculateHistoricalParameters(hupper_bound)
+    mean_lower, std_lower = calculateHistoricalParameters(llower_bound)
+    #add other models for different use case
+    other_models = {}
+    other_models[MEAN_UPPER]=mean_upper
+    other_models[MEAN_LOWER]=mean_lower
+    other_models[STD_UPPER]=std_upper
+    other_models[STD_LOWER]= std_lower
+    other_models[PREDIT_UPPERS]= llower_bound
+    other_models[PREDIT_LOWERS]= hupper_bound
+#    return hlower_bound.y.values[len(llower_bound)-1], hupper_bound.y.values[len(hupper_bound)-1], other_models
+    return llower_bound.y.values[len(llower_bound)-1], hupper_bound.y.values[len(hupper_bound)-1]
 
-    return hlower_bound.y.values[len(hlower_bound)-1], hupper_bound.y.values[len(hupper_bound)-1]
     '''
     originalWindow = window
     series_size = len(series)
@@ -518,11 +587,11 @@ def retrieveHW_Anomalies( y, upperBond, lowerBond, bound=IS_UPPER_BOUND,  return
                 isAnomaly = True
         if returnAnomaliesOnly:
             if isAnomaly:
-                anomalies.append(True)
+                anomlies.append(True)
         else:
-            anomalies.append(isAnomaly)
+            anomlies.append(isAnomaly)
     #return addHeader(ts,adata)
-    return ts,adata ,anomalies
+    return ts,adata ,anomlies
     
 def retrieveHW_AnomaliesByModel( y, model,bound=IS_UPPER_BOUND):  
     return retrieveHW_Anomalies(y, model.UpperBond, model.LowerBond, bound)
@@ -554,7 +623,7 @@ def detectHoltWinderAnomalies( y, predictHours=1, threshold=2, slen=24, bound=IS
     model = createHoltWintersModel(y, predictHours,threshold, slen)
     if calculateScore==True:
         logging.info(retrieveHW_MAPE(y, model))
-    return retrieveHW_AnomaliesModel( y, model, bound)
+    return retrieveHW_AnomaliesByModel( y, model, bound)
 
 #ddd = detectHoltWinderAnomalies(ads.Ads, 2, threshold=3,slen=7, calculateScore=True)
 #ddd = detectHoltWinderAnomalies(ads.Ads, 2, threshold=3,slen=24, calculateScore=True)

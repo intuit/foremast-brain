@@ -1,5 +1,8 @@
-from timeutils import isPast, canProcess, rateLimitCheck, getNow
+from utils.timeutils import isPast, canProcess, rateLimitCheck, getNow,getNowInSeconds
 from dateutil.parser import parse
+
+
+print(getNowInSeconds())
 
 date1 = '2018-11-09T15:55:35-08:00'
 date2 = '2018-11-09T15:58:35-08:00'
