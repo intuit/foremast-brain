@@ -2,7 +2,6 @@ import urllib3
 
 
 
-
 def dorequest(url, data = '', method = 'GET'):
   http = urllib3.PoolManager(timeout=urllib3.Timeout(connect=10.0, read=10.0))
   try:
@@ -20,8 +19,6 @@ def dorequest(url, data = '', method = 'GET'):
   except Exception as e:
     print("dorequest error",url,"  error ",str(e))
   return '' 
-  
-
 
 '''
 from urllib import request, error
