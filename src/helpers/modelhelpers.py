@@ -160,6 +160,11 @@ def calculateSingleMetricModel(metricInfo, modelHolder, metricType, strategy=Non
     triggerModelMetric(metricInfo, modelHolder.getModelByKey(metricType,LOWER_BOUND), modelHolder.getModelByKey(metricType,UPPER_BOUND))
     return modelHolder
 
+
+
+
+
+
 def detectSignalAnomalyData( metricInfo, modelHolder, metricType, strategy=None):
     series = metricInfo.metricDF
     bound = modelHolder.getModelConfigByKey(BOUND)
