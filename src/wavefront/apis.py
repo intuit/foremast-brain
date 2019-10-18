@@ -2,7 +2,7 @@ import wavefront_api_client as wave_api
 from wavefront_sdk import WavefrontDirectClient
 import datetime as dt
 import logging
-from metadata.globalconfig import globalconfig
+from metadata.globalconfig import globalconfig 
 import urllib.parse
 from utils.timeutils import getNowInSeconds
 import os
@@ -28,14 +28,14 @@ def dequote(url):
 
 
 def createWavefrontClient():
-    config = wave_api.Configuration()
+    config = wave_api.Configuration()    
     config.host = globalConfig.getValueByKey('WAVEFRONT_ENDPOINT')
     token = globalConfig.getValueByKey('WAVEFRONT_TOKEN')
     if (config.host=='' or token==''):
         logger.error("wavefront endpoint or token is null")
         return None
     try:
-        global client
+        global client 
         client = wave_api.ApiClient(configuration=config, header_name='Authorization', header_value='Bearer ' + token)
         return client
     except Exception as e:
@@ -142,8 +142,10 @@ def flushNow():
 #def sendMetrics():
 
 
+
+
 ##############
-#test
+#test 
 #endpoint ="http://localhost:9090/api/v1/query_range"
 #filterStr = "namespace_pod:http_server_requests_latency"
 #start=1540245142.746
