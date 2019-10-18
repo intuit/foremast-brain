@@ -1,5 +1,5 @@
 # Foremast Brain
-[![Build Status](https://api.travis-ci.org/joegattnet/joegattnet_v3.png?branch=dev)]
+[![Build Status](https://api.travis-ci.org/intuit/foremast_brain.png?branch=test)]
 [![Slack Chat](https://img.shields.io/badge/slack-live-orange.svg)](https://foremastio.slack.com/)
 
 ![](https://github.com/intuit/foremast/blob/master/docs/assets/images/logos/Foremast/foremast-logo-blue.png)
