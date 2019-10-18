@@ -127,5 +127,3 @@ def convertTSToDataFrame(valuesList, convertTime = False,  metricName='y',isProp
 
 def urlEndNow(url):
     return strReplace(url, '&end=', '&step=', str(getNowInSeconds()))
-
-    
