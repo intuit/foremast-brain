@@ -41,5 +41,5 @@ def multiVariantScore(zscoremap, weightmap):
     
             
         
- 
+    
 
