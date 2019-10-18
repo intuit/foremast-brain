@@ -95,8 +95,8 @@ payload_search_status_with_filter = {
       ],
       "filter": [
         {
-          "range":{
-               "modified_at":{
+          "range":{  
+               "modified_at":{  
                   "lt":"now-<PAST_SECOND>s/s"
                }
             }
