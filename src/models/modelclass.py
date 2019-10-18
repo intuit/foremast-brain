@@ -23,10 +23,10 @@ class ModelHolder:
     '''
     def getModelByKey(self, key):
         return self._model_data.get(key)
- 
+
     def setModelKV(self, key, value):
         self._model_data.setdefault(key, value)
-    '''
+    ''' 
     def getModelByKey(self, metricType, key=None):
         data = self.getModelsByKey1(metricType)
         if data is None:
@@ -168,12 +168,12 @@ class ModelHolder:
     @property
     def hasModels(self):
         return len(self._model_data) > 0
-
+    
     @property
     def hasModel(self, metricType):
         return len(self._model_data[metricType]) > 0
-
-
+    
+    
     @property
     def id(self):
         return self._id
