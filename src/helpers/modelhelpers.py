@@ -202,7 +202,7 @@ def detectSignalAnomalyData( metricInfo, modelHolder, metricType, strategy=None)
             return [],[]
             #TODO: raise error
         #threshold = modelHolder.getModelConfigByKey(THRESHOLD)
-        threshold = globalConfig.getThresholdByKey(metricType,THRESHOLD)
+        threshold = globalConfig.getThresholdByKey(metricType,THRESHOLD) 
         if threshold == None:
             threshold = DEFAULT_THRESHOLD
         #TODO:  need to make sure return all df
