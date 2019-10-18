@@ -110,15 +110,16 @@ def calculateHistoricalParameters(series):
     return  mean, deviation
 
 
-def detectAnomalies(series, mean, deviation, threshold=2, bound=IS_UPPER_BOUND, minvalue=0, returnAnomaliesOnly=True):
-    ts = []
-    adata = []
-    anomalies = []
-    nrow = series.shape[0]
-    i = 0
-    upper = mean + threshold * deviation
-    lower = mean - threshold * deviation
-    zscore = []
+
+def detectAnomalies(series, mean, deviation, threshold = 2 , bound=IS_UPPER_BOUND, minvalue=0, returnAnomaliesOnly= True): 
+    ts=[]
+    adata=[]
+    anomalies=[]
+    nrow =  series.shape[0]
+    i=0
+    upper = mean + threshold*deviation
+    lower = mean - threshold*deviation
+    zscore=[]
     zscore_upper_diff = []
     zscore_lower_diff = []
     for i in range(nrow):
