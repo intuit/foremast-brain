@@ -80,7 +80,7 @@ def triggerAnomalyMetric(metricInfo, ts, data):
 
 def calculateSingleMetricModel(metricInfo, modelHolder, metricType, strategy=None):
     series = metricInfo.metricDF
-    threshold = globalConfig.getThresholdByKey(metricType,THRESHOLD)
+    threshold = globalConfig.getThresholdByKey(metricType,THRESHOLD) 
     minLowerBound = globalConfig.getThresholdByKey(metricType,MIN_LOWER_BOUND)
     #if strategy == 'hpa':    
     #    calculateHistoricalModel(series, interval_width=0.8, predicted_count=35, gprobability=0.8, metricPattern= None)
@@ -88,7 +88,7 @@ def calculateSingleMetricModel(metricInfo, modelHolder, metricType, strategy=Non
     if modelHolder.model_name == AI_MODEL.MOVING_AVERAGE.value:
         window = modelHolder.getModelConfigByKey(WINDOW)
         if window == None:
-            window = 0
+            window = 0  
         lower_bound, upper_bound = calculateMovingAverageParameters(series, window, threshold)
         if lower_bound<minLowerBound:
             lower_bound = minLowerBound
@@ -122,7 +122,7 @@ def calculateSingleMetricModel(metricInfo, modelHolder, metricType, strategy=Non
             nextPredictHours = 1 
         slen = modelHolder.getModelConfigByKey('slen')
         if slen == None:
-             slen = 1      
+             slen = 1                   
         lmodel = createHoltWintersModel(series, nextPredictHours, threshold, slen)
         lower_bound, upper_bound = retrieveSaveModelData(series, lmodel)
         if lower_bound<minLowerBound:
