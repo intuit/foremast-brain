@@ -1,5 +1,6 @@
 
 
+
 def strcat(str0,str1,str2=''):
     output = []
     output.append(str0)
