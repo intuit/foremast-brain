@@ -5,7 +5,6 @@ from sklearn.metrics import mean_squared_error
 
 
 
-
 #from sklearn.metrics import accuracy_score
 #accuracy_score(y_test, y_pred)
 # %load -s mape common/utils.py
