@@ -173,7 +173,7 @@ def detectSignalAnomalyData( metricInfo, modelHolder, metricType, strategy=None)
         upper_bound = modelHolder.getModelByKey(metricType,UPPER_BOUND)
         if upper_bound  == None:
             pass
-            #TODO: raise error
+            #TODO: raise error 
         ts,data,flags =detectLowerUpperAnomalies(series, lower_bound , upper_bound, bound)
         print("Anomaly data: %s" % data)
         triggerAnomalyMetric(metricInfo, ts, data)
