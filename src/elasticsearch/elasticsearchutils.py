@@ -206,7 +206,7 @@ def convertPayload(uuid, status, info = '',reason=''):
         needInfoReason = False
     else:
         query = json.dumps(payload_update_by_query_info)
-      payload = (query.replace(PH_STATUS,str(status))).replace(PH_ID,uuid) 
+    payload = (query.replace(PH_STATUS,str(status))).replace(PH_ID,uuid) 
     
     if needInfoReason == True:
         payload = payload.replace(PH_INFO,info ) 
