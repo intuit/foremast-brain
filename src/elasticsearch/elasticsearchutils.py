@@ -88,7 +88,7 @@ payload_search_status_with_filter = {
     "bool": {
       "must": [
         {
-          "match":{
+          "match":{  
              "status" : "<STATUS>"
           }
         }
