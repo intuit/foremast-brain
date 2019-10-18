@@ -54,8 +54,7 @@ def detectAnomalyData(metricInfo,  modelHolder, metricType, strategy):
         #TODO:
         pass
 
-
-def triggerModelMetric(metricInfo, lower, upper):   
+def triggerModelMetric(metricInfo, lower, upper):               
     logger.warning("## emit upper and lower "+metricInfo.metricName+" ->" +str(metricInfo.metricKeys)+" ("+str(lower)+","+str(upper)+")")
     try:
         modelMetric.sendMetric(metricInfo.metricName, metricInfo.metricKeys, upper, True)
