@@ -69,7 +69,7 @@ payload_search_id = {
 
 payload_search_status = {
     "query": {
-             "match" : {
+             "match" : { 
                 "status" : "<STATUS>"
             }
     },
