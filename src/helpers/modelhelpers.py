@@ -21,23 +21,21 @@ BETA = 'beta'
 logging.basicConfig(format='%(asctime)s %(message)s')
 logger = logging.getLogger('modelhelpers')
 
-#prometheus metric Gauges
-globalConfig =  globalconfig()
-
+#prometheus metric Gauges 
 modelMetric=  modelmetrics()
-anomalymetrics = anomalymetrics()
-
+anomalymetrics = anomalymetrics() 
+globalConfig =  globalconfig()
 
 
 ###################################################
 #
 #  Name : calculateModel
-#  Purpose : this is generic interface to invoke
-#            different models
-#  Parameters: series --- input dataframe
+#  Purpose : this is generic interface to invoke 
+#            different models 
+#  Parameters: series --- input dataframe 
 #              modelHolder  --ModelHolder object
 #                             contains model_name
-#                             configuration, etc.
+#                             configuration, etc. 
 #
 ##################################################
 
