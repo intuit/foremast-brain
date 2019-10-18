@@ -90,9 +90,6 @@ def convertPromesResponseToMetricInfos(json, metricPeriod, isProphet=False, ajso
        metricInfos.append(metricInfo)
     return metricInfos
 
-
-    
-
 def comparsionlableValue(dict1, dict2):
     for key, value in dict1.items():
         if key == KEY_NAME:
@@ -101,7 +98,6 @@ def comparsionlableValue(dict1, dict2):
             return False
     return True
     
-
 #############################################################
 # Name :convertTSToDataFrame
 # Parameters:
