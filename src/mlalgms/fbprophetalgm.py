@@ -62,42 +62,44 @@ def detectAnomalies(df , bound=IS_UPPER_BOUND, returnAnomaliesOnly= True):
     myshape = df.shape
     nrow = myshape[0]
     for i in range(nrow):  
-        isAnomaly = False
-        if (not returnAnomaliesOnly):
+         isAnomaly = False
+         if (not returnAnomaliesOnly):
             ts.append(df['ds'][i])
             adata.append(df['y'][i])
-        if bound==IS_UPPER_BOUND:
+         if bound==IS_UPPER_BOUND:
             if df['y'][i] > df['yhat_upper'][i]:
                 if returnAnomaliesOnly:
                     ts.append(df['ds'][i])
                     adata.append(df['y'][i])
                 isAnomaly = True
-        elif bound==IS_LOWER_BOUND:
+         elif bound==IS_LOWER_BOUND:
             if df['y'][i] < df['yhat_lower'][i]:
                 if returnAnomaliesOnly:
                     ts.append(df['ds'][i])
                     adata.append(df['y'][i])
                 isAnomaly = True            
-        else:   
+         else:   
             if df['y'][i] > df['yhat_upper'][i] or df['y'][i] < df['yhat_lower'][i]:
                 if returnAnomaliesOnly:
                     ts.append(df['ds'][i])
                     adata.append(df['y'][i])
                 isAnomaly = True
                     
-        if returnAnomaliesOnly:
+         if returnAnomaliesOnly:
             if isAnomaly:
                 anomalies.append(True)
-        else:
+         else:
             anomalies.append(isAnomaly)             
     #return  mae, deviation,addHeader(ts,adata)
     return  ts,adata, anomalies
 
 
 
+		
 def merge_dataframe(historical, forecast):
-    return forecast.set_index('ds')[['yhat', 'yhat_lower', 'yhat_upper']].join(historical.set_index('ds'))
-
+	return forecast.set_index('ds')[['yhat', 'yhat_lower', 'yhat_upper']].join(historical.set_index('ds'))
+		
+		
 def calculate_errors(dataframe, prediction_size):    
     # Make a copy
     df = dataframe.copy();
