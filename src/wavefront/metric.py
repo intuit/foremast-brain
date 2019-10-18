@@ -114,7 +114,6 @@ def parseQueryData(data, isPrometheus=True):
 # Parameters:
 #   valuesList is like [[1,2],[3,4],...,]  
 #    convertTime --- if need to convert time 
-
         
 def convertTSToDataFrame(valuesList, convertTime=False, metricName='y', isProphet=False):
     ts_idx = []
