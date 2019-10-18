@@ -1,5 +1,5 @@
 # Foremast Brain
-[![Build Status](https://travis-ci.org/intuit/foremast-brain.svg?branch=master)][travis]
+[![Build Status](https://api.travis-ci.org/joegattnet/joegattnet_v3.png?branch=dev)][travis]
 [![Slack Chat](https://img.shields.io/badge/slack-live-orange.svg)](https://foremastio.slack.com/)
 
 ![](https://github.com/intuit/foremast/blob/master/docs/assets/images/logos/Foremast/foremast-logo-blue.png)
@@ -56,6 +56,12 @@ env:
 
 Please read [CONTRIBUTING.md](CONTRIBUTING.md) for details on our code of conduct, and the process for submitting pull requests to us.
 
+## Setup
+```
+git clone https://github.com/intuit/foremast-brain
+cp .githooks/pre-commit .git/hooks/pre-commit
+chmod +x .git/hooks/pre-commit
+```
 ## License
 
 This project is licensed under the Apache License - see the [LICENSE](LICENSE) file for details
