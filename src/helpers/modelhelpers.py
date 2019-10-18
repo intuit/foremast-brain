@@ -136,7 +136,7 @@ def calculateSingleMetricModel(metricInfo, modelHolder, metricType, strategy=Non
             period=DEFAULT_PROPHET_PERIOD
         freq = modelHolder.getModelConfigByKey(PROPHET_FREQ)
         if freq== None:
-            freq=DEFAULT_PROPHET_FREQ
+            freq=DEFAULT_PROPHET_FREQ           
         lower_bound, upper_bound,_,_ = prophetPredictUpperLower(series, period,freq)    
         if lower_bound<minLowerBound:
             lower_bound = minLowerBound
