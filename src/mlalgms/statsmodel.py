@@ -131,26 +131,23 @@ def detectAnomalies(series, mean, deviation, threshold = 2 , bound=IS_UPPER_BOUN
         if series.iloc[i, 0] > minvalue:
             if (not returnAnomaliesOnly):
                 ts.append(series.index[i])
-                adata.append(series.iloc[i, 0])
-            if bound == IS_UPPER_BOUND:
-                if series.iloc[i, 0] > upper:
+                adata.append(series.iloc[i,0])
+        
+            if bound==IS_UPPER_BOUND:
+                if series.iloc[i,0] > upper:
                     if returnAnomaliesOnly:
                         ts.append(series.index[i])
-                        adata.append(series.iloc[i, 0])
+                        adata.append(series.iloc[i,0])
                     isAnomaly = True
-                    zscore_upper_diff.append(z - threshold)
-                    zscore_lower_diff.append(0)
 
-            elif bound == IS_LOWER_BOUND:
-                if series.iloc[i, 0] < lower:
+            elif bound==IS_LOWER_BOUND:
+                if series.iloc[i,0] < lower:
                     if returnAnomaliesOnly:
                         ts.append(series.index[i])
-                        adata.append(series.iloc[i, 0])
-                    isAnomaly = True
-                    zscore_upper_diff.append(0)
-                    zscore_lower_diff.append(-z + threshold)
+                        adata.append(series.iloc[i,0])  
+                    isAnomaly = True        
             else:
-                if (series.iloc[i, 0] > upper or series.iloc[i, 0] < lower):
+                if (series.iloc[i,0] > upper   or series.iloc[i,0] < lower):
                     if returnAnomaliesOnly:
                         ts.append(series.index[i])
                         adata.append(series.iloc[i, 0])
