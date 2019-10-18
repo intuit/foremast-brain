@@ -180,11 +180,6 @@ def getModelData(jobId):
     #return stored model data
     return {}  
     
-      
-
-
-
-
 def buildElasticSearchUrl(endpoint, indexname, isSearch=True):
     sb = []
     sb.append(endpoint)
