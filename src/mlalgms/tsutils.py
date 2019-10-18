@@ -39,7 +39,6 @@ def inverseScaler(df, scaler,colList):
     return scaler.inverse_transform(df[colList])
 
 
-
 def rollingshift(df, shiftCount=1, T=6):
     df_shifted = df.copy()
     df_shifted['y_t+1'] = df_shifted['y'].shift(-1, freq='H')
