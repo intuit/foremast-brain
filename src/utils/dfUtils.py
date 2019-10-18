@@ -27,7 +27,8 @@ def getDataFrame(dataframe, needDisplay=False):
 
 def mergeDF(left, right):   
     return pandas.merge(left, right,how='outer', on='ds') 
-               
+
+
         
 def mergeColumnmap(leftColumnmap, rightColumnmap, mergedColumnlist):  
     columnmap={}
