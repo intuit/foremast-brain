@@ -57,14 +57,14 @@ payload_update_by_query_info = {
   }
  }
 }
-
+ 
 payload_search_id = {
     "query": {
-             "match" : {
+             "match" : { 
                 "id" : "<ID>"
             }
     }
-}
+} 
 
 
 payload_search_status = {
