@@ -18,7 +18,7 @@ def dorequest(url, data = '', method = 'GET'):
         return resp.data.decode('utf-8')  
   except Exception as e:
     print("dorequest error",url,"  error ",str(e))
-  return '' 
+  return ''  
 
 '''
 from urllib import request, error
