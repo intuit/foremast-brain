@@ -631,4 +631,3 @@ def detectHoltWinderAnomalies( y, predictHours=1, threshold=2, slen=24, bound=IS
     
                
     
-            
