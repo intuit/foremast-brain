@@ -120,10 +120,10 @@ def calculateSingleMetricModel(metricInfo, modelHolder, metricType, strategy=Non
     elif modelHolder.model_name == AI_MODEL.HOLT_WINDER.value:
         nextPredictHours = modelHolder.getModelConfigByKey('nextPredictHours')
         if nextPredictHours == None:
-            nextPredictHours = 1
+            nextPredictHours = 1 
         slen = modelHolder.getModelConfigByKey('slen')
         if slen == None:
-            slen = 1
+             slen = 1      
         lmodel = createHoltWintersModel(series, nextPredictHours, threshold, slen)
         lower_bound, upper_bound = retrieveSaveModelData(series, lmodel)
         if lower_bound<minLowerBound:
@@ -137,8 +137,7 @@ def calculateSingleMetricModel(metricInfo, modelHolder, metricType, strategy=Non
         freq = modelHolder.getModelConfigByKey(PROPHET_FREQ)
         if freq== None:
             freq=DEFAULT_PROPHET_FREQ
-        lower_bound, upper_bound,_,_ = prophetPredictUpperLower(series, period,freq)
-        
+        lower_bound, upper_bound,_,_ = prophetPredictUpperLower(series, period,freq)    
         if lower_bound<minLowerBound:
             lower_bound = minLowerBound
         modelHolder.setModelKV(metricType,LOWER_BOUND,lower_bound)
