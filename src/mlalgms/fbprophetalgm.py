@@ -118,4 +118,13 @@ def calculate_errors(dataframe, prediction_size):
     error_mean = lambda error_name: np.mean(np.abs(predicted_part[error_name]))
     
     return {'MAPE': error_mean('p'), 'MAE': error_mean('e')}
+		
+	
+	
+	
+	
+	
+	
+	
+	
 
