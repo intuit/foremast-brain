@@ -7,7 +7,6 @@ import pandas as pd
 import time
 from dateutil.parser import parse
 
-
 APP_PLACEHOLDER = '[APP]'
 SEVEN_DAY = 24*7*60*60*1000
 ONE_MINUTE = 60*1000
