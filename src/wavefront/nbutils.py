@@ -64,14 +64,3 @@ def retrieveClient(endpoint , token):
 
 def convertDT(dstr):
     return datetime.strptime(dstr, "%m/%d/%y %H:%M").timestamp()*1000
-
-
-
-
-
-
-
-        
-        
-    
-    
