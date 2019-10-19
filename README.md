@@ -56,12 +56,6 @@ env:
 
 Please read [CONTRIBUTING.md](CONTRIBUTING.md) for details on our code of conduct, and the process for submitting pull requests to us.
 
-## Setup
-```
-git clone https://github.com/intuit/foremast-brain
-cp .githooks/pre-commit .git/hooks/pre-commit
-chmod +x .git/hooks/pre-commit
-```
 ## License
 
 This project is licensed under the Apache License - see the [LICENSE](LICENSE) file for details
