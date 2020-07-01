@@ -15,7 +15,6 @@ globalConfig =  globalconfig()
 
 #modeDropAnomaly = globalConfig.getValueByKey('MODE_DROP_ANOMALY')
 
-
 def getModelUrl(url,datasource='prometheus', isUpper=None):
     # None to make sure drop anomaly is tured on
     #if modeDropAnomaly is None:
