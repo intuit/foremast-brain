@@ -5,7 +5,6 @@ from prometheus.apis import retrieveMetricName
 from metadata.globalconfig import globalconfig
 from utils.dictutils import convertDictKey
 
-
 metric_domain = "foremast:"
 wavefront_domain = "foremast."
 wavefront_prefix='custom.iks.'
@@ -27,7 +26,6 @@ def getModelUrl(url,datasource='prometheus', isUpper=None):
     newMetricName = getModelMetricName(origMetricName,datasource,isUpper)
     return url.replace(origMetricName, newMetricName)
 
-   
 def getModelMetricName(metricname,datasource='prometheus', isUpper=None):
         newMetricName = metric_domain
         if datasource=='wavefront':
@@ -42,10 +40,6 @@ def getModelMetricName(metricname,datasource='prometheus', isUpper=None):
         if datasource=='wavefront':
              newMetricName  = wavefront_prefix+ newMetricName
         return newMetricName
-
-        
-     
-        
 
 class modelmetrics:
     class __modelmetrics:
@@ -85,9 +79,6 @@ class modelmetrics:
         newlabeldata = convertDictKey(labeldata,"-", "_")
         self.instance.metrics[newMetricName].labels(**newlabeldata).set(value)
 
-
-
-
 class measurementmetrics:
     class __measurementmetrics:
         def __init__(self):
@@ -117,9 +108,6 @@ class measurementmetrics:
         newlabeldata = convertDictKey(labeldata,"-", "_")
         self.instance.metrics[newMetricName].labels(**newlabeldata).set(value)
 
-
-    
-    
 class anomalymetrics:
     class __anomalymetrics:
         def __init__(self):
@@ -149,8 +137,7 @@ class anomalymetrics:
             self.setMetricInfo(metricname, labeldata)  
         newlabeldata = convertDictKey(labeldata,"-", "_")         
         self.instance.metrics[newMetricName].labels(**newlabeldata).set(value)
-        
-        
+         
 class hpascoremetrics:
     class __hpascoremetrics:
         def __init__(self):
