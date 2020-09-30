@@ -59,3 +59,7 @@ Please read [CONTRIBUTING.md](CONTRIBUTING.md) for details on our code of conduc
 ## License
 
 This project is licensed under the Apache License - see the [LICENSE](LICENSE) file for details
+
+
+https://kubernetes.io/docs/tasks/tools/install-kubectl/
+# this is how you can install kubernetes
