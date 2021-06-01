@@ -11,7 +11,7 @@ pystan==2.18.0.0
 requests==2.21.0
 scipy==1.1.0
 statsmodels==0.9.0
-urllib3==1.24.1
+urllib3==1.26.5
 #pyside2==5.11.2
 scikit-learn==0.20.0
 sklearn==0.0
