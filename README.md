@@ -13,6 +13,47 @@ Foremast-brain will make a judgment, Healthy or Unhealthy, based on the evaluati
 
 Please check out the [architecture and design](https://github.com/intuit/foremast/blob/master/docs/guides/design.md) for more details.
 
+### Models  <a id="models"></a>
+
+<table>
+  <thead>
+    <tr>
+      <th style="text-align:left">One Metrics</th>
+      <th style="text-align:left">Two Metrics</th>
+      <th style="text-align:left">3+ More</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td style="text-align:left">
+        <p>​</p>
+        <ul>
+          <li>Moving Average</li>
+          <li>Exponential Smoothing</li>
+          <li>Double Exponential Smoothing</li>
+          <li>Holt-Winters</li>
+          <li>Prophet (facebook)</li>
+        </ul>
+      </td>
+      <td style="text-align:left">
+        <p>​</p>
+        <ul>
+          <li>Bivariate Normal Distribution</li>
+        </ul>
+      </td>
+      <td style="text-align:left">
+        <p>​</p>
+        <ul>
+          <li>Deep Learning (LSTM)</li>
+        </ul>
+      </td>
+    </tr>
+  </tbody>
+</table>We also support pairwise algorithm \(baseline vs current\)
+
+* Mann-Whitney, Wilcoxon, Kruskal
+* Fried manchi square \(special case\)
+
 ## How to use
 
 ### Overwriting default algorithm and parameters
